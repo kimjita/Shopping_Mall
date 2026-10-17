@@ -183,3 +183,86 @@ include::{snippets}/member/withdraw/request-fields.adoc[]
 ==== 응답
 
 include::{snippets}/member/withdraw/http-response.adoc[]
+
+== 배송지
+
+이 장의 API는 모두 로그인이 필요해요. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`예요.
+배송지는 회원당 최대 10개까지 등록할 수 있고, 휴대폰 번호는 회원과 같은 규칙으로 검증해 숫자만 남겨 저장해요.
+다른 회원의 배송지 ID로 수정·삭제하면 `404 ADDRESS_NOT_FOUND`예요.
+
+기본 배송지 규칙은 아래와 같아요. 배송지가 1개 이상이면 기본 배송지는 항상 정확히 1개예요.
+
+* 첫 배송지는 `isDefault` 값과 상관없이 기본 배송지가 돼요.
+* `isDefault=true`로 등록하거나 수정하면 나머지 배송지는 기본이 해제돼요.
+* 수정에서 `isDefault=false`를 보내도 기본 배송지는 해제되지 않아요. 다른 배송지를 기본으로 지정해야 바뀌어요.
+* 기본 배송지를 삭제하면 남은 배송지 중 가장 먼저 만든 배송지가 기본이 돼요.
+
+=== 배송지 등록
+
+성공하면 `201 Created`예요. 이미 10개를 등록했다면 `400 ADDRESS_LIMIT_EXCEEDED`, 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`(우편번호는 숫자 5자리)이에요.
+
+==== 요청
+
+include::{snippets}/address/create/http-request.adoc[]
+
+include::{snippets}/address/create/request-headers.adoc[]
+
+include::{snippets}/address/create/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/address/create/http-response.adoc[]
+
+include::{snippets}/address/create/response-fields.adoc[]
+
+=== 배송지 목록 조회
+
+기본 배송지가 맨 앞에 오고, 나머지는 먼저 만든 순서예요. 배송지가 없으면 빈 배열이에요.
+
+==== 요청
+
+include::{snippets}/address/list/http-request.adoc[]
+
+include::{snippets}/address/list/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/address/list/http-response.adoc[]
+
+include::{snippets}/address/list/response-fields.adoc[]
+
+=== 배송지 수정
+
+모든 필드를 통째로 바꿔요(`PUT`). 없는 배송지이거나 다른 회원의 배송지면 `404 ADDRESS_NOT_FOUND`예요.
+
+==== 요청
+
+include::{snippets}/address/update/http-request.adoc[]
+
+include::{snippets}/address/update/path-parameters.adoc[]
+
+include::{snippets}/address/update/request-headers.adoc[]
+
+include::{snippets}/address/update/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/address/update/http-response.adoc[]
+
+include::{snippets}/address/update/response-fields.adoc[]
+
+=== 배송지 삭제
+
+성공하면 `204 No Content`예요. 없는 배송지이거나 다른 회원의 배송지면 `404 ADDRESS_NOT_FOUND`예요.
+
+==== 요청
+
+include::{snippets}/address/delete/http-request.adoc[]
+
+include::{snippets}/address/delete/path-parameters.adoc[]
+
+include::{snippets}/address/delete/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/address/delete/http-response.adoc[]
