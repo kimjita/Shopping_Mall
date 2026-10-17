@@ -54,3 +54,39 @@ include::{snippets}/auth/login/http-response.adoc[]
 include::{snippets}/auth/login/response-headers.adoc[]
 
 include::{snippets}/auth/login/response-fields.adoc[]
+
+=== 토큰 재발급
+
+로그인 때 받은 refresh token 쿠키로 새 access token을 받아요. 토큰 없이 호출하고, `Authorization` 헤더는 보지 않아요(만료된 access token이 붙어 있어도 돼요).
+성공하면 `200 OK`와 새 access token을 돌려주고, refresh token은 새 값으로 회전해서 `Set-Cookie`로 내려줘요. 이전 토큰은 한 번 쓰면 끝이에요.
+이미 쓴 토큰을 다시 보내면 탈취로 보고 그 로그인(패밀리)의 토큰을 모두 폐기해요. 다른 기기에서 한 로그인에는 영향이 없어요.
+쿠키가 없거나, 모르는·만료된·폐기된 토큰이거나, 탈퇴한 회원이면 모두 `401 INVALID_REFRESH_TOKEN`이고 쿠키를 지우는 `Set-Cookie`(`Max-Age=0`)가 함께 내려와요.
+
+==== 요청
+
+include::{snippets}/auth/refresh/http-request.adoc[]
+
+include::{snippets}/auth/refresh/request-cookies.adoc[]
+
+==== 응답
+
+include::{snippets}/auth/refresh/http-response.adoc[]
+
+include::{snippets}/auth/refresh/response-headers.adoc[]
+
+include::{snippets}/auth/refresh/response-fields.adoc[]
+
+=== 로그아웃
+
+쿠키의 refresh token이 속한 로그인(패밀리)을 폐기해요. 쿠키가 없거나 잘못된 토큰이어도 항상 `204 No Content`이고, 쿠키를 지우는 `Set-Cookie`(`Max-Age=0`)를 내려줘요.
+이미 발급된 access token은 만료될 때까지 유효해요.
+
+==== 요청
+
+include::{snippets}/auth/logout/http-request.adoc[]
+
+include::{snippets}/auth/logout/request-cookies.adoc[]
+
+==== 응답
+
+include::{snippets}/auth/logout/http-response.adoc[]
