@@ -1,0 +1,10 @@
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/testmigration
+
+app:
+  jwt:
+    secret: test-only-jwt-secret-key-0123456789abcdef
+  auth:
+    refresh:
+      cookie-secure: false

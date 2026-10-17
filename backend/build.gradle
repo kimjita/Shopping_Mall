@@ -30,12 +30,16 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     asciidoctorExt 'org.springframework.restdocs:spring-restdocs-asciidoctor'
@@ -66,4 +70,5 @@ tasks.named('bootJar') {
 
 tasks.named('bootRun') {
     workingDir = rootProject.projectDir
+    environment 'JWT_SECRET', System.getenv('JWT_SECRET') ?: 'local-dev-only-jwt-secret-key-0123456789'
 }

@@ -20,10 +20,10 @@ class DatabaseMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void flyway가_V1을_적용한다() {
-        String version = jdbcTemplate.queryForObject(
-                "select max(version) from flyway_schema_history where success", String.class);
+    void flyway가_V1을_성공적으로_적용했다() {
+        Integer count = jdbcTemplate.queryForObject(
+                "select count(*) from flyway_schema_history where version = '1' and success", Integer.class);
 
-        assertThat(version).isEqualTo("1");
+        assertThat(count).isEqualTo(1);
     }
 }

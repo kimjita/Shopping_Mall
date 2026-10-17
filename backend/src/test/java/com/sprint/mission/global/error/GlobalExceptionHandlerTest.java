@@ -13,21 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprint.mission.support.ApiTest;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = ErrorTestController.class)
-@AutoConfigureRestDocs
-class GlobalExceptionHandlerTest {
-
-    @Autowired
-    MockMvc mockMvc;
+class GlobalExceptionHandlerTest extends ApiTest {
 
     @Test
     void 비즈니스_예외는_ErrorCode의_상태와_메시지로_응답한다() throws Exception {
