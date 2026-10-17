@@ -64,7 +64,7 @@ backend/src/main/java/com/sprint/mission/
 ## 구현 Phase (각 Phase = 하나의 spec→plan→TDD 구현→리뷰→커밋 사이클)
 0. **기반**: git init, 모노레포 구성, Boot 3.5 설정, docker-compose(postgres, minio), Flyway, Testcontainers 베이스, REST Docs, 에러 처리, CI
 1. **회원/인증**: 가입·로그인·JWT·리프레시 회전·로그아웃, 역할, 프로필/피부, 배송지
-2. **카탈로그 + 관리자 상품 API**: 카테고리·브랜드·상품·SKU·세일·이미지 presign
+2. **카탈로그 + 관리자 상품 API**: 카테고리(시드 고정)·브랜드·상품·SKU·세일(상품 단위 할인율, 10원 내림), 이미지는 URL 문자열
 3. **검색**: QueryDSL 필터/정렬/페이징, pg_trgm, 더미 데이터 생성 스크립트(`generate_series`), 인덱스 적용 전후 EXPLAIN 기록
 4. **찜 / 최근 본 상품 / 장바구니**
 5. **쿠폰 / 적립금 / 등급 정책**, PriceCalculator
@@ -73,7 +73,7 @@ backend/src/main/java/com/sprint/mission/
 8. **주문 운영**: 관리자 상태 변경, 자동 구매확정 → 적립, 등급 배치
 9. **리뷰 / 추천 / 랭킹 / 배너**
 10. **프론트(사용자)**: 브랜드 후보 3개 제안 → 선택 → 메인·목록·검색·상세·장바구니·주문/결제·마이페이지
-11. **프론트(관리자)**: `/admin` 대시보드와 각 관리 화면
+11. **프론트(관리자)**: `/admin` 대시보드와 각 관리 화면, 이미지 S3 presigned 업로드(상품·리뷰 사진)
 12. **성능**: k6로 검색·주문 부하 테스트, 개선 전후 TPS·p95를 `docs/performance/`에 기록
 13. **AWS 배포**: ECR + EC2(Docker), RDS, S3/CloudFront, GitHub Actions CD, README(아키텍처 다이어그램, 기술 의사결정, 트러블슈팅)
 
