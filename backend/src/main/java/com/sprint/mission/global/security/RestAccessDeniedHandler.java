@@ -10,7 +10,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 /**
- * 인증은 됐지만 권한이 없을 때 공통 포맷의 403을 내려요.
+ * 인증은 됐지만 권한이 없을 때 공통 포맷의 403을 내린다.
  */
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {

@@ -7,7 +7,7 @@
 
 == 공통 에러 응답
 
-모든 API는 실패하면 아래 형식으로 응답해요. `code` 값은 `ErrorCode` enum 이름이에요.
+모든 API는 실패하면 아래 형식으로 응답한다. `code` 값은 `ErrorCode` enum 이름이다.
 
 include::{snippets}/common/error-response/response-fields.adoc[]
 
@@ -19,8 +19,8 @@ include::{snippets}/common/error-response/http-response.adoc[]
 
 === 회원가입
 
-이메일로 가입해요. 토큰 없이 호출하며, 성공하면 `201 Created`와 `Location: /api/members/me`를 돌려줘요.
-이미 가입된 이메일(대소문자·앞뒤 공백 차이는 무시)이면 `409 DUPLICATE_EMAIL`, 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`이에요.
+이메일로 가입한다. 토큰 없이 호출하며, 성공하면 `201 Created`와 `Location: /api/members/me`를 돌려준다.
+이미 가입된 이메일(대소문자·앞뒤 공백 차이는 무시)이면 `409 DUPLICATE_EMAIL`, 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`이다.
 
 ==== 요청
 
@@ -36,10 +36,10 @@ include::{snippets}/auth/signup/response-fields.adoc[]
 
 === 로그인
 
-이메일과 비밀번호로 로그인해요. 토큰 없이 호출하며, 성공하면 `200 OK`와 access token을 본문에 담아 돌려주고,
-refresh token은 `Set-Cookie`로 내려줘요. 쿠키는 `HttpOnly`, `Path=/api/auth`이고 14일 동안 유효해요.
-`Secure`와 `SameSite`는 서버 설정을 따라요(기본 `Secure`, `SameSite=Lax`).
-이메일이 없거나 탈퇴한 회원이거나 비밀번호가 틀리면 모두 같은 `401 INVALID_CREDENTIALS`예요. 계정 존재 여부는 알려주지 않아요.
+이메일과 비밀번호로 로그인한다. 토큰 없이 호출하며, 성공하면 `200 OK`와 access token을 본문에 담아 돌려주고,
+refresh token은 `Set-Cookie`로 내려준다. 쿠키는 `HttpOnly`, `Path=/api/auth`이고 14일 동안 유효하다.
+`Secure`와 `SameSite`는 서버 설정을 따른다(기본 `Secure`, `SameSite=Lax`).
+이메일이 없거나 탈퇴한 회원이거나 비밀번호가 틀리면 모두 같은 `401 INVALID_CREDENTIALS`다. 계정 존재 여부는 알려주지 않는다.
 
 ==== 요청
 
@@ -57,10 +57,10 @@ include::{snippets}/auth/login/response-fields.adoc[]
 
 === 토큰 재발급
 
-로그인 때 받은 refresh token 쿠키로 새 access token을 받아요. 토큰 없이 호출하고, `Authorization` 헤더는 보지 않아요(만료된 access token이 붙어 있어도 돼요).
-성공하면 `200 OK`와 새 access token을 돌려주고, refresh token은 새 값으로 회전해서 `Set-Cookie`로 내려줘요. 이전 토큰은 한 번 쓰면 끝이에요.
-이미 쓴 토큰을 다시 보내면 탈취로 보고 그 로그인(패밀리)의 토큰을 모두 폐기해요. 다른 기기에서 한 로그인에는 영향이 없어요.
-쿠키가 없거나, 모르는·만료된·폐기된 토큰이거나, 탈퇴한 회원이면 모두 `401 INVALID_REFRESH_TOKEN`이고 쿠키를 지우는 `Set-Cookie`(`Max-Age=0`)가 함께 내려와요.
+로그인 때 받은 refresh token 쿠키로 새 access token을 받는다. 토큰 없이 호출하고, `Authorization` 헤더는 보지 않는다(만료된 access token이 붙어 있어도 된다).
+성공하면 `200 OK`와 새 access token을 돌려주고, refresh token은 새 값으로 회전해서 `Set-Cookie`로 내려준다. 이전 토큰은 한 번 쓰면 끝이다.
+이미 쓴 토큰을 다시 보내면 탈취로 보고 그 로그인(패밀리)의 토큰을 모두 폐기한다. 다른 기기에서 한 로그인에는 영향이 없다.
+쿠키가 없거나, 모르는·만료된·폐기된 토큰이거나, 탈퇴한 회원이면 모두 `401 INVALID_REFRESH_TOKEN`이고 쿠키를 지우는 `Set-Cookie`(`Max-Age=0`)가 함께 내려온다.
 
 ==== 요청
 
@@ -78,8 +78,8 @@ include::{snippets}/auth/refresh/response-fields.adoc[]
 
 === 로그아웃
 
-쿠키의 refresh token이 속한 로그인(패밀리)을 폐기해요. 쿠키가 없거나 잘못된 토큰이어도 항상 `204 No Content`이고, 쿠키를 지우는 `Set-Cookie`(`Max-Age=0`)를 내려줘요.
-이미 발급된 access token은 만료될 때까지 유효해요.
+쿠키의 refresh token이 속한 로그인(패밀리)을 폐기한다. 쿠키가 없거나 잘못된 토큰이어도 항상 `204 No Content`이고, 쿠키를 지우는 `Set-Cookie`(`Max-Age=0`)를 내려준다.
+이미 발급된 access token은 만료될 때까지 유효하다.
 
 ==== 요청
 
@@ -93,12 +93,12 @@ include::{snippets}/auth/logout/http-response.adoc[]
 
 == 회원
 
-이 장의 API는 모두 로그인이 필요해요. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`예요.
-탈퇴한 회원이 탈퇴 전에 받은 access token으로 호출하면 `404 MEMBER_NOT_FOUND`예요.
+이 장의 API는 모두 로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+탈퇴한 회원이 탈퇴 전에 받은 access token으로 호출하면 `404 MEMBER_NOT_FOUND`다.
 
 === 내 정보 조회
 
-로그인한 회원의 정보를 돌려줘요. 피부 프로필을 아직 저장하지 않았다면 `skinType`, `skinTone`은 `null`이고 `skinConcerns`는 빈 배열이에요.
+로그인한 회원의 정보를 돌려준다. 피부 프로필을 아직 저장하지 않았다면 `skinType`, `skinTone`은 `null`이고 `skinConcerns`는 빈 배열이다.
 
 ==== 요청
 
@@ -114,7 +114,7 @@ include::{snippets}/member/me/response-fields.adoc[]
 
 === 프로필 수정
 
-이름과 휴대폰 번호를 바꿔요. 두 값 모두 필수이고 회원가입과 같은 규칙이에요. 휴대폰 번호는 숫자만 남겨 저장해요. 규칙에 맞지 않으면 `400 INVALID_INPUT`이에요.
+이름과 휴대폰 번호를 바꾼다. 두 값 모두 필수이고 회원가입과 같은 규칙이다. 휴대폰 번호는 숫자만 남겨 저장한다. 규칙에 맞지 않으면 `400 INVALID_INPUT`이다.
 
 ==== 요청
 
@@ -132,8 +132,8 @@ include::{snippets}/member/update-profile/response-fields.adoc[]
 
 === 피부 프로필 저장
 
-피부 타입, 피부 톤, 피부 고민을 통째로 저장해요(`PUT`). 기존 고민은 모두 교체하고, 생략하거나 `null`인 항목은 비워요.
-응답의 `skinConcerns`는 enum 선언 순서로 정렬돼요. 정의되지 않은 enum 값을 보내면 `400 INVALID_INPUT`이에요.
+피부 타입, 피부 톤, 피부 고민을 통째로 저장한다(`PUT`). 기존 고민은 모두 교체하고, 생략하거나 `null`인 항목은 비운다.
+응답의 `skinConcerns`는 enum 선언 순서로 정렬된다. 정의되지 않은 enum 값을 보내면 `400 INVALID_INPUT`이다.
 
 ==== 요청
 
@@ -151,9 +151,9 @@ include::{snippets}/member/update-skin-profile/response-fields.adoc[]
 
 === 비밀번호 변경
 
-현재 비밀번호를 확인한 뒤 새 비밀번호로 바꾸고, 성공하면 `204 No Content`예요. 새 비밀번호는 회원가입과 같은 규칙이에요(어긋나면 `400 INVALID_INPUT`).
-현재 비밀번호가 틀리면 `400 PASSWORD_MISMATCH`예요.
-바꾸면 이 회원의 모든 refresh token을 폐기해서 모든 기기에서 다시 로그인해야 해요. 이미 발급된 access token은 만료될 때까지 유효해요.
+현재 비밀번호를 확인한 뒤 새 비밀번호로 바꾸고, 성공하면 `204 No Content`다. 새 비밀번호는 회원가입과 같은 규칙이다(어긋나면 `400 INVALID_INPUT`).
+현재 비밀번호가 틀리면 `400 PASSWORD_MISMATCH`다.
+바꾸면 이 회원의 모든 refresh token을 폐기해서 모든 기기에서 다시 로그인해야 한다. 이미 발급된 access token은 만료될 때까지 유효하다.
 
 ==== 요청
 
@@ -169,8 +169,8 @@ include::{snippets}/member/change-password/http-response.adoc[]
 
 === 회원 탈퇴
 
-비밀번호를 확인한 뒤 탈퇴 처리하고, 성공하면 `204 No Content`예요. 비밀번호가 틀리면 `400 PASSWORD_MISMATCH`예요.
-탈퇴하면 모든 refresh token이 폐기되고 같은 이메일로 로그인할 수 없어요(`401 INVALID_CREDENTIALS`). 탈퇴한 이메일로는 다시 가입할 수 없어요(`409 DUPLICATE_EMAIL`).
+비밀번호를 확인한 뒤 탈퇴 처리하고, 성공하면 `204 No Content`다. 비밀번호가 틀리면 `400 PASSWORD_MISMATCH`다.
+탈퇴하면 모든 refresh token이 폐기되고 같은 이메일로 로그인할 수 없다(`401 INVALID_CREDENTIALS`). 탈퇴한 이메일로는 다시 가입할 수 없다(`409 DUPLICATE_EMAIL`).
 
 ==== 요청
 
@@ -186,20 +186,20 @@ include::{snippets}/member/withdraw/http-response.adoc[]
 
 == 배송지
 
-이 장의 API는 모두 로그인이 필요해요. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`예요.
-배송지는 회원당 최대 10개까지 등록할 수 있고, 휴대폰 번호는 회원과 같은 규칙으로 검증해 숫자만 남겨 저장해요.
-다른 회원의 배송지 ID로 수정·삭제하면 `404 ADDRESS_NOT_FOUND`예요.
+이 장의 API는 모두 로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+배송지는 회원당 최대 10개까지 등록할 수 있고, 휴대폰 번호는 회원과 같은 규칙으로 검증해 숫자만 남겨 저장한다.
+다른 회원의 배송지 ID로 수정·삭제하면 `404 ADDRESS_NOT_FOUND`다.
 
-기본 배송지 규칙은 아래와 같아요. 배송지가 1개 이상이면 기본 배송지는 항상 정확히 1개예요.
+기본 배송지 규칙은 아래와 같다. 배송지가 1개 이상이면 기본 배송지는 항상 정확히 1개다.
 
-* 첫 배송지는 `isDefault` 값과 상관없이 기본 배송지가 돼요.
-* `isDefault=true`로 등록하거나 수정하면 나머지 배송지는 기본이 해제돼요.
-* 수정에서 `isDefault=false`를 보내도 기본 배송지는 해제되지 않아요. 다른 배송지를 기본으로 지정해야 바뀌어요.
-* 기본 배송지를 삭제하면 남은 배송지 중 가장 먼저 만든 배송지가 기본이 돼요.
+* 첫 배송지는 `isDefault` 값과 상관없이 기본 배송지가 된다.
+* `isDefault=true`로 등록하거나 수정하면 나머지 배송지는 기본이 해제된다.
+* 수정에서 `isDefault=false`를 보내도 기본 배송지는 해제되지 않는다. 다른 배송지를 기본으로 지정해야 바뀐다.
+* 기본 배송지를 삭제하면 남은 배송지 중 가장 먼저 만든 배송지가 기본이 된다.
 
 === 배송지 등록
 
-성공하면 `201 Created`예요. 이미 10개를 등록했다면 `400 ADDRESS_LIMIT_EXCEEDED`, 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`(우편번호는 숫자 5자리)이에요.
+성공하면 `201 Created`다. 이미 10개를 등록했다면 `400 ADDRESS_LIMIT_EXCEEDED`, 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`(우편번호는 숫자 5자리)이다.
 
 ==== 요청
 
@@ -217,7 +217,7 @@ include::{snippets}/address/create/response-fields.adoc[]
 
 === 배송지 목록 조회
 
-기본 배송지가 맨 앞에 오고, 나머지는 먼저 만든 순서예요. 배송지가 없으면 빈 배열이에요.
+기본 배송지가 맨 앞에 오고, 나머지는 먼저 만든 순서다. 배송지가 없으면 빈 배열이다.
 
 ==== 요청
 
@@ -233,7 +233,7 @@ include::{snippets}/address/list/response-fields.adoc[]
 
 === 배송지 수정
 
-모든 필드를 통째로 바꿔요(`PUT`). 없는 배송지이거나 다른 회원의 배송지면 `404 ADDRESS_NOT_FOUND`예요.
+모든 필드를 통째로 바꾼다(`PUT`). 없는 배송지이거나 다른 회원의 배송지면 `404 ADDRESS_NOT_FOUND`다.
 
 ==== 요청
 
@@ -253,7 +253,7 @@ include::{snippets}/address/update/response-fields.adoc[]
 
 === 배송지 삭제
 
-성공하면 `204 No Content`예요. 없는 배송지이거나 다른 회원의 배송지면 `404 ADDRESS_NOT_FOUND`예요.
+성공하면 `204 No Content`다. 없는 배송지이거나 다른 회원의 배송지면 `404 ADDRESS_NOT_FOUND`다.
 
 ==== 요청
 

@@ -1,7 +1,7 @@
 package com.sprint.mission.member.domain;
 
 /**
- * 비밀번호 규칙이에요. 공백 없는 ASCII 출력 문자만 허용해서 최대 64바이트가 되고, BCrypt의 72바이트 한도를 넘지 않아요.
+ * 비밀번호 규칙이다. 공백 없는 ASCII 출력 문자만 허용해서 최대 64바이트가 되고, BCrypt의 72바이트 한도를 넘지 않는다.
  */
 public final class PasswordPolicy {
 

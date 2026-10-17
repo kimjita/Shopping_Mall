@@ -57,7 +57,7 @@ public class MemberService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 
-    /** 회원 행을 잠그고 조회해요. 호출한 트랜잭션이 끝날 때까지 같은 회원의 쓰기가 줄을 서요. */
+    /** 회원 행을 잠그고 조회한다. 호출한 트랜잭션이 끝날 때까지 같은 회원의 쓰기가 줄을 선다. */
     @Transactional
     public Member getActiveForUpdate(Long memberId) {
         return memberRepository.findWithLockById(memberId)
@@ -84,7 +84,7 @@ public class MemberService {
         return MemberResponse.from(member);
     }
 
-    /** 바꾸면 이 회원의 모든 refresh token을 폐기해서 다른 기기의 로그인도 끊어요. */
+    /** 바꾸면 이 회원의 모든 refresh token을 폐기해서 다른 기기의 로그인도 끊는다. */
     @Transactional
     public void changePassword(Long memberId, String currentPassword, String newPassword) {
         Member member = getActiveWithPassword(memberId, currentPassword);

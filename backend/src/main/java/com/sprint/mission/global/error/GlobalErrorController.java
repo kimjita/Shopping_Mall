@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 필터처럼 컨트롤러 밖에서 난 에러는 컨테이너가 /error로 보내요. Boot 기본 응답 대신 공통 {@link ErrorResponse}를 써요.
- * Accept 헤더와 상관없이 항상 JSON이 나가도록 {@link ErrorResponseWriter}로 응답에 직접 써요.
+ * 필터처럼 컨트롤러 밖에서 난 에러는 컨테이너가 /error로 보낸다. Boot 기본 응답 대신 공통 {@link ErrorResponse}를 쓴다.
+ * Accept 헤더와 상관없이 항상 JSON이 나가도록 {@link ErrorResponseWriter}로 응답에 직접 쓴다.
  */
 @RestController
 public class GlobalErrorController implements ErrorController {

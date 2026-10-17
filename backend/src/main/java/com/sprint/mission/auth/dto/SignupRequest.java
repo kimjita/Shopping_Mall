@@ -26,7 +26,7 @@ public record SignupRequest(
         String phone) {
 
     /**
-     * {@code @Email}은 앞뒤 공백이 있으면 거절하므로, 검증 전에 앞뒤 공백만 지워요. 소문자 정규화와 중복 검사는 서비스에서 해요.
+     * {@code @Email}은 앞뒤 공백이 있으면 거절하므로, 검증 전에 앞뒤 공백만 지운다. 소문자 정규화와 중복 검사는 서비스에서 한다.
      */
     public SignupRequest {
         if (email != null) {

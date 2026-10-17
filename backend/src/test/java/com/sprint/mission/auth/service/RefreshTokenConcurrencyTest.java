@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/** 클래스에 @Transactional을 붙이면 스레드마다 트랜잭션이 갈려 의미가 없어요. 일부러 붙이지 않아요. */
+/** 클래스에 @Transactional을 붙이면 스레드마다 트랜잭션이 갈려 의미가 없다. 일부러 붙이지 않는다. */
 class RefreshTokenConcurrencyTest extends IntegrationTest {
 
     @Autowired

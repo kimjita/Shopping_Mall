@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** 회원의 배송지예요. 휴대폰 번호는 숫자만 저장해요. */
+/** 회원의 배송지다. 휴대폰 번호는 숫자만 저장한다. */
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

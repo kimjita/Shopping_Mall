@@ -80,8 +80,8 @@ public class Member extends BaseEntity {
     }
 
     /**
-     * 피부 타입·톤과 고민을 통째로 바꿔요. null이면 그 항목을 비워요.
-     * 컬럼이 모두 NULL이면 Hibernate가 임베디드 값을 null로 읽어오므로, 기존 객체를 고치지 않고 새로 만들어 넣어요.
+     * 피부 타입·톤과 고민을 통째로 바꾼다. null이면 그 항목을 비운다.
+     * 컬럼이 모두 NULL이면 Hibernate가 임베디드 값을 null로 읽어오므로, 기존 객체를 고치지 않고 새로 만들어 넣는다.
      */
     public void updateSkinProfile(SkinType type, SkinTone tone, Set<SkinConcern> concerns) {
         this.skinProfile = new SkinProfile(type, tone);

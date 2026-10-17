@@ -73,7 +73,7 @@ class LoginApiTest extends ApiTest {
                         responseHeaders(
                                 headerWithName(HttpHeaders.SET_COOKIE)
                                         .description("refresh token 쿠키 (`refresh_token`, HttpOnly, "
-                                                + "`Path=/api/auth`, 14일). 본문에는 담지 않아요.")),
+                                                + "`Path=/api/auth`, 14일). 본문에는 담지 않는다.")),
                         responseFields(
                                 fieldWithPath("accessToken").type(JsonFieldType.STRING)
                                         .description("access token (JWT)"),

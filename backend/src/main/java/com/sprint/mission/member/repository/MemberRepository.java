@@ -12,7 +12,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Optional<Member> findByEmail(String normalizedEmail);
 
-    /** 같은 회원의 배송지 쓰기를 직렬화하려고 회원 행을 잠가요. */
+    /** 같은 회원의 배송지 쓰기를 직렬화하려고 회원 행을 잠근다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select m from Member m where m.id = :id")
     Optional<Member> findWithLockById(@Param("id") Long id);

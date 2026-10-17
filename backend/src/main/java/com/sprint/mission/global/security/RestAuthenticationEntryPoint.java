@@ -10,7 +10,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 /**
- * 인증이 없거나 토큰이 잘못됐을 때 공통 포맷의 401을 내려요.
+ * 인증이 없거나 토큰이 잘못됐을 때 공통 포맷의 401을 내린다.
  */
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {

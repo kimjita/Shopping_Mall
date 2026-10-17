@@ -90,8 +90,8 @@ class TokenRefreshApiTest extends ApiTest {
                                 cookieWithName("refresh_token").description("로그인 또는 이전 재발급에서 받은 refresh token")),
                         responseHeaders(
                                 headerWithName(HttpHeaders.SET_COOKIE)
-                                        .description("회전된 새 refresh token 쿠키. 이전 토큰은 다시 쓸 수 없어요. "
-                                                + "실패(401)하면 쿠키를 지우는 `Max-Age=0` 쿠키가 내려와요.")),
+                                        .description("회전된 새 refresh token 쿠키. 이전 토큰은 다시 쓸 수 없다. "
+                                                + "실패(401)하면 쿠키를 지우는 `Max-Age=0` 쿠키가 내려온다.")),
                         responseFields(
                                 fieldWithPath("accessToken").type(JsonFieldType.STRING)
                                         .description("새 access token (JWT)"),
@@ -182,7 +182,7 @@ class TokenRefreshApiTest extends ApiTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("auth/logout",
                         requestCookies(
-                                cookieWithName("refresh_token").description("폐기할 refresh token. 없어도 돼요."))))
+                                cookieWithName("refresh_token").description("폐기할 refresh token. 없어도 된다."))))
                 .andReturn();
 
         assertThat(result.getResponse().getHeader(HttpHeaders.SET_COOKIE))

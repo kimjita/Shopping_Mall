@@ -52,7 +52,7 @@ public class SecurityConfig {
     }
 
     /**
-     * 인증 API는 토큰을 읽지 않아요. 만료된 access token 헤더가 붙은 채 refresh/login을 호출해도 401이 나지 않게 해요.
+     * 인증 API는 토큰을 읽지 않는다. 만료된 access token 헤더가 붙은 채 refresh/login을 호출해도 401이 나지 않게 한다.
      */
     private BearerTokenResolver bearerTokenResolver() {
         DefaultBearerTokenResolver delegate = new DefaultBearerTokenResolver();

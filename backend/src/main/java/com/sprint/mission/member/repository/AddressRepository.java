@@ -10,7 +10,7 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
 
     Optional<Address> findByIdAndMemberId(Long id, Long memberId);
 
-    /** 기본 배송지 먼저, 그다음 먼저 만든 순서예요. createdAt이 같으면 id 순서예요. */
+    /** 기본 배송지 먼저, 그다음 먼저 만든 순서다. createdAt이 같으면 id 순서다. */
     @Query("select a from Address a where a.memberId = :memberId "
             + "order by a.isDefault desc, a.createdAt asc, a.id asc")
     List<Address> findAllByMemberId(Long memberId);

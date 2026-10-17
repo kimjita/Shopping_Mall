@@ -13,7 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * 환경변수(ADMIN_EMAIL, ADMIN_PASSWORD)가 있으면 시작할 때 관리자 계정을 한 번 만들어요.
+ * 환경변수(ADMIN_EMAIL, ADMIN_PASSWORD)가 있으면 시작할 때 관리자 계정을 한 번 만든다.
  */
 @Slf4j
 @Component
@@ -38,7 +38,7 @@ public class AdminAccountInitializer implements ApplicationRunner {
     }
 
     /**
-     * @return 새로 만들었으면 true. 설정이 비었거나 이미 있는 이메일이거나 비밀번호가 너무 길면 false예요.
+     * @return 새로 만들었으면 true. 설정이 비었거나 이미 있는 이메일이거나 비밀번호가 너무 길면 false다.
      */
     public boolean createIfAbsent() {
         String rawEmail = properties.email();

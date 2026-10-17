@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/** 클래스에 @Transactional을 붙이면 스레드마다 트랜잭션이 갈려 의미가 없어요. 일부러 붙이지 않아요. */
+/** 클래스에 @Transactional을 붙이면 스레드마다 트랜잭션이 갈려 의미가 없다. 일부러 붙이지 않는다. */
 class AddressConcurrencyTest extends IntegrationTest {
 
     @Autowired
@@ -33,7 +33,7 @@ class AddressConcurrencyTest extends IntegrationTest {
         return new AddressRequest(recipient, "01012345678", "06236", "서울시 강남구", null, false);
     }
 
-    /** 동시에 create를 호출해 성공 수와 ErrorCode별 실패 수를 돌려줘요. */
+    /** 동시에 create를 호출해 성공 수와 ErrorCode별 실패 수를 돌려준다. */
     private List<ErrorCode> createConcurrently(Long memberId, int threads) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         CountDownLatch ready = new CountDownLatch(threads);

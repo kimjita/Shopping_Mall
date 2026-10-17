@@ -83,7 +83,7 @@ public class AuthController {
         return cookie == null ? null : cookie.getValue();
     }
 
-    /** 실패한 응답에도 쿠키를 지우는 Set-Cookie를 같이 내려요. */
+    /** 실패한 응답에도 쿠키를 지우는 Set-Cookie를 같이 내린다. */
     private ResponseEntity<ErrorResponse> invalidRefreshToken() {
         return ResponseEntity.status(ErrorCode.INVALID_REFRESH_TOKEN.status())
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookies.expire().toString())

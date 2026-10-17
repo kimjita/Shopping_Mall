@@ -14,7 +14,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
     /**
-     * 아직 쓰지 않았고 폐기되지 않은 토큰만 사용 처리해요. 동시에 호출하면 행 잠금 때문에 하나만 1을 받아요.
+     * 아직 쓰지 않았고 폐기되지 않은 토큰만 사용 처리한다. 동시에 호출하면 행 잠금 때문에 하나만 1을 받는다.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

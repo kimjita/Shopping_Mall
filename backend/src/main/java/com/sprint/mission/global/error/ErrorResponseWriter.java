@@ -8,7 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 /**
- * 컨트롤러 밖(에러 컨트롤러, 보안 필터)에서 공통 {@link ErrorResponse}를 응답에 직접 써요.
+ * 컨트롤러 밖(에러 컨트롤러, 보안 필터)에서 공통 {@link ErrorResponse}를 응답에 직접 쓴다.
  */
 @Component
 public class ErrorResponseWriter {

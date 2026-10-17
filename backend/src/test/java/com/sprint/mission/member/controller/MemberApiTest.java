@@ -91,7 +91,7 @@ class MemberApiTest extends ApiTest {
 
     @Test
     void 회원가입_직후_내_정보의_피부_프로필은_비어_있다() throws Exception {
-        // 가입 때 쓴 영속성 컨텍스트와 다른 요청이라 DB에서 다시 읽어요. 컬럼이 모두 NULL이면 임베디드 값이 null로 로딩돼요.
+        // 가입 때 쓴 영속성 컨텍스트와 다른 요청이라 DB에서 다시 읽는다. 컬럼이 모두 NULL이면 임베디드 값이 null로 로딩된다.
         mockMvc.perform(get("/api/members/me").header(HttpHeaders.AUTHORIZATION, token()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.skinType").value((Object) null))

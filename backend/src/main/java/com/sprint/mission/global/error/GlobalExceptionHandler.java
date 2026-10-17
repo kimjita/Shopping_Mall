@@ -14,7 +14,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * Spring MVC 표준 예외(400·404·405·415 등)는 상위 클래스가 상태를 정하고, 본문만 공통 {@link ErrorResponse}로 바꿔요.
+ * Spring MVC 표준 예외(400·404·405·415 등)는 상위 클래스가 상태를 정하고, 본문만 공통 {@link ErrorResponse}로 바꾼다.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {

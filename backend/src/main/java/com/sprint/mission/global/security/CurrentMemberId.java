@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 /**
- * 컨트롤러 파라미터에 로그인한 회원 id(JWT의 sub)를 넣어요.
+ * 컨트롤러 파라미터에 로그인한 회원 id(JWT의 sub)를 넣는다.
  */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)

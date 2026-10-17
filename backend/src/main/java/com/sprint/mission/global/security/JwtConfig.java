@@ -37,7 +37,7 @@ public class JwtConfig {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey(properties))
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
-        // 기본 검증기는 시스템 시계와 60초 허용 오차를 써요. Clock 빈 기준으로, 오차 없이, exp가 필수가 되도록 바꿔요.
+        // 기본 검증기는 시스템 시계와 60초 허용 오차를 쓴다. Clock 빈 기준으로, 오차 없이, exp가 필수가 되도록 바꾼다.
         JwtTimestampValidator timestampValidator = new JwtTimestampValidator(Duration.ZERO);
         timestampValidator.setClock(clock);
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(

@@ -22,7 +22,7 @@ public enum ErrorCode {
     ADDRESS_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "배송지는 최대 10개까지 등록할 수 있습니다.");
 
     /**
-     * {@link #from(HttpStatusCode)}가 고르는 공통 코드예요. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않아요.
+     * {@link #from(HttpStatusCode)}가 고르는 공통 코드다. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않는다.
      */
     private static final List<ErrorCode> COMMON_CODES = List.of(
             INVALID_INPUT, RESOURCE_NOT_FOUND, METHOD_NOT_ALLOWED, UNSUPPORTED_MEDIA_TYPE,
@@ -37,7 +37,7 @@ public enum ErrorCode {
     }
 
     /**
-     * Spring이 정한 HTTP 상태에 맞는 공통 코드를 찾아요. 같은 상태의 코드가 없으면 4xx는 INVALID_INPUT, 나머지는 INTERNAL_ERROR예요.
+     * Spring이 정한 HTTP 상태에 맞는 공통 코드를 찾는다. 같은 상태의 코드가 없으면 4xx는 INVALID_INPUT, 나머지는 INTERNAL_ERROR다.
      */
     public static ErrorCode from(HttpStatusCode status) {
         return COMMON_CODES.stream()

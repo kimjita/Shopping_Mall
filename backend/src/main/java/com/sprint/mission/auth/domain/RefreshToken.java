@@ -15,8 +15,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * refresh token 한 개예요. 원문은 저장하지 않고 SHA-256 해시만 저장해요.
- * 같은 로그인에서 회전(rotation)으로 이어지는 토큰들은 같은 familyId를 가져요.
+ * refresh token 한 개다. 원문은 저장하지 않고 SHA-256 해시만 저장한다.
+ * 같은 로그인에서 회전(rotation)으로 이어지는 토큰들은 같은 familyId를 가진다.
  */
 @Getter
 @Entity

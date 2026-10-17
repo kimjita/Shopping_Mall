@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 배송지가 1개 이상인 회원은 항상 기본 배송지가 정확히 1개예요.
- * 회원당 최대 10개라서 목록을 통째로 읽어 기본 여부를 맞춰요.
+ * 배송지가 1개 이상인 회원은 항상 기본 배송지가 정확히 1개다.
+ * 회원당 최대 10개라서 목록을 통째로 읽어 기본 여부를 맞춘다.
  */
 @Service
 @RequiredArgsConstructor
@@ -47,7 +47,7 @@ public class AddressService {
         return AddressResponse.from(addressRepository.save(address));
     }
 
-    /** 기본 배송지를 없애는 요청(isDefault=false)은 무시해요. 다른 배송지를 기본으로 지정해야 바뀌어요. */
+    /** 기본 배송지를 없애는 요청(isDefault=false)은 무시한다. 다른 배송지를 기본으로 지정해야 바뀐다. */
     @Transactional
     public AddressResponse update(Long memberId, Long addressId, AddressRequest request) {
         memberService.getActiveForUpdate(memberId);

@@ -18,7 +18,7 @@ public record MemberResponse(
         SkinTone skinTone,
         List<SkinConcern> skinConcerns) {
 
-    /** 피부 프로필이 비어 있으면 Hibernate가 null로 읽어오므로 null도 처리해요. 고민은 enum 선언 순서로 정렬해요. */
+    /** 피부 프로필이 비어 있으면 Hibernate가 null로 읽어오므로 null도 처리한다. 고민은 enum 선언 순서로 정렬한다. */
     public static MemberResponse from(Member member) {
         SkinProfile skinProfile = member.getSkinProfile();
         return new MemberResponse(
