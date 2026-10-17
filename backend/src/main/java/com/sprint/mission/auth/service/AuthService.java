@@ -36,8 +36,8 @@ public class AuthService {
     /**
      * 회원이 없거나 탈퇴했거나 비밀번호가 틀리면 모두 같은 INVALID_CREDENTIALS예요.
      * 계정 존재 여부를 응답 내용으로도, 응답 시간으로도 알 수 없게 회원이 없을 때도 비밀번호 비교를 한 번 해요.
+     * BCrypt 비교 동안 DB 연결을 잡지 않으려고 트랜잭션을 걸지 않아요. 조회·저장은 저장소가 각각 짧게 처리해요.
      */
-    @Transactional
     public IssuedTokens login(String email, String rawPassword) {
         Member member = memberRepository.findByEmail(EmailNormalizer.normalize(email)).orElse(null);
         if (member == null) {
