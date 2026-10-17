@@ -1,10 +1,9 @@
 package com.sprint.mission;
 
+import com.sprint.mission.support.IntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class ShoppingMallApplicationTest {
+class ShoppingMallApplicationTest extends IntegrationTest {
 
     @Test
     void contextLoads() {
