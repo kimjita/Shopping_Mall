@@ -48,14 +48,26 @@ class SecurityIntegrationTest extends ApiTest {
     @Test
     void 만료된_토큰은_401() throws Exception {
         Instant now = clock.instant();
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .subject("7")
-                .claim("role", Role.USER.name())
-                .issuedAt(now.minus(10, ChronoUnit.MINUTES))
-                .expiresAt(now.minus(1, ChronoUnit.MINUTES))
-                .build();
-        String token = jwtEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
-                .getTokenValue();
+        String token = encode(now.minus(10, ChronoUnit.MINUTES), now.minus(1, ChronoUnit.MINUTES));
+
+        mockMvc.perform(get("/api/test/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
+    }
+
+    @Test
+    void 만료_직후_토큰도_401() throws Exception {
+        Instant now = clock.instant();
+        String token = encode(now.minus(10, ChronoUnit.MINUTES), now.minus(1, ChronoUnit.SECONDS));
+
+        mockMvc.perform(get("/api/test/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
+    }
+
+    @Test
+    void exp가_없는_토큰은_401() throws Exception {
+        String token = encode(clock.instant(), null);
 
         mockMvc.perform(get("/api/test/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isUnauthorized())
@@ -91,5 +103,17 @@ class SecurityIntegrationTest extends ApiTest {
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"));
+    }
+
+    private String encode(Instant issuedAt, Instant expiresAt) {
+        JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
+                .subject("7")
+                .claim("role", Role.USER.name())
+                .issuedAt(issuedAt);
+        if (expiresAt != null) {
+            claims.expiresAt(expiresAt);
+        }
+        return jwtEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims.build()))
+                .getTokenValue();
     }
 }
