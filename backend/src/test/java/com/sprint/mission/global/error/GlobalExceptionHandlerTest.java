@@ -98,4 +98,21 @@ class GlobalExceptionHandlerTest {
 
         assertThat(body).doesNotContain("secret");
     }
+
+    @Test
+    void 지원하지_않는_Content_Type은_415로_응답한다() throws Exception {
+        mockMvc.perform(post("/test/errors/validation")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("hello"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"));
+    }
+
+    @Test
+    void 요청_파라미터_검증_실패는_400과_필드_오류로_응답한다() throws Exception {
+        mockMvc.perform(get("/test/errors/param").param("page", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.errors[0].field").value("page"));
+    }
 }
