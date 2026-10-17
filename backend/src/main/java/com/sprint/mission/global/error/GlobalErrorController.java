@@ -1,32 +1,29 @@
 package com.sprint.mission.global.error;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 필터처럼 컨트롤러 밖에서 난 에러는 컨테이너가 /error로 보내요. Boot 기본 응답 대신 공통 {@link ErrorResponse}를 써요.
- * Accept 헤더와 상관없이 항상 JSON을 쓰려고 콘텐츠 협상을 거치지 않고 응답에 직접 써요.
+ * Accept 헤더와 상관없이 항상 JSON이 나가도록 {@link ErrorResponseWriter}로 응답에 직접 써요.
  */
 @RestController
 public class GlobalErrorController implements ErrorController {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalErrorController.class);
 
-    private final ObjectMapper objectMapper;
+    private final ErrorResponseWriter errorResponseWriter;
 
-    public GlobalErrorController(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public GlobalErrorController(ErrorResponseWriter errorResponseWriter) {
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @RequestMapping("${server.error.path:/error}")
@@ -35,10 +32,7 @@ public class GlobalErrorController implements ErrorController {
         if (status.is5xxServerError()) {
             log.error("컨트롤러 밖에서 처리되지 않은 예외", (Throwable) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION));
         }
-        response.setStatus(status.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getOutputStream(), ErrorResponse.of(ErrorCode.from(status)));
+        errorResponseWriter.write(response, ErrorCode.from(status));
     }
 
     private HttpStatus resolveStatus(HttpServletRequest request) {
