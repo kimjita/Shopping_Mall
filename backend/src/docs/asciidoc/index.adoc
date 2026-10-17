@@ -14,3 +14,22 @@ include::{snippets}/common/error-response/response-fields.adoc[]
 === 응답 예시
 
 include::{snippets}/common/error-response/http-response.adoc[]
+
+== 인증
+
+=== 회원가입
+
+이메일로 가입해요. 토큰 없이 호출하며, 성공하면 `201 Created`와 `Location: /api/members/me`를 돌려줘요.
+이미 가입된 이메일(대소문자·앞뒤 공백 차이는 무시)이면 `409 DUPLICATE_EMAIL`, 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`이에요.
+
+==== 요청
+
+include::{snippets}/auth/signup/http-request.adoc[]
+
+include::{snippets}/auth/signup/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/auth/signup/http-response.adoc[]
+
+include::{snippets}/auth/signup/response-fields.adoc[]
