@@ -108,6 +108,21 @@ class SignupApiTest extends ApiTest {
     }
 
     @Test
+    void 한글이_섞인_비밀번호는_400() throws Exception {
+        signup("user@mall.com", "비밀번호abc12345", "홍길동", "01012345678")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.errors[*].field").value(hasItems("password")));
+    }
+
+    @Test
+    void 긴_한글_비밀번호도_500이_아니라_400() throws Exception {
+        signup("user@mall.com", "가".repeat(30) + "a1", "홍길동", "01012345678")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
     void 토큰_없이_호출할_수_있다() throws Exception {
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)

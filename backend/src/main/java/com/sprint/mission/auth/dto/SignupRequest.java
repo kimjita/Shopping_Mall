@@ -1,5 +1,6 @@
 package com.sprint.mission.auth.dto;
 
+import com.sprint.mission.member.domain.PasswordPolicy;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -12,8 +13,7 @@ public record SignupRequest(
         String email,
 
         @NotBlank(message = "비밀번호를 입력해 주세요.")
-        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,64}$",
-                message = "비밀번호는 영문과 숫자를 포함해 8~64자여야 합니다.")
+        @Pattern(regexp = PasswordPolicy.REGEX, message = PasswordPolicy.MESSAGE)
         String password,
 
         @NotBlank(message = "이름은 1~30자여야 합니다.")
