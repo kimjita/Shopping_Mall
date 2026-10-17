@@ -33,3 +33,24 @@ include::{snippets}/auth/signup/request-fields.adoc[]
 include::{snippets}/auth/signup/http-response.adoc[]
 
 include::{snippets}/auth/signup/response-fields.adoc[]
+
+=== 로그인
+
+이메일과 비밀번호로 로그인해요. 토큰 없이 호출하며, 성공하면 `200 OK`와 access token을 본문에 담아 돌려주고,
+refresh token은 `Set-Cookie`로 내려줘요. 쿠키는 `HttpOnly`, `Path=/api/auth`이고 14일 동안 유효해요.
+`Secure`와 `SameSite`는 서버 설정을 따라요(기본 `Secure`, `SameSite=Lax`).
+이메일이 없거나 탈퇴한 회원이거나 비밀번호가 틀리면 모두 같은 `401 INVALID_CREDENTIALS`예요. 계정 존재 여부는 알려주지 않아요.
+
+==== 요청
+
+include::{snippets}/auth/login/http-request.adoc[]
+
+include::{snippets}/auth/login/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/auth/login/http-response.adoc[]
+
+include::{snippets}/auth/login/response-headers.adoc[]
+
+include::{snippets}/auth/login/response-fields.adoc[]
