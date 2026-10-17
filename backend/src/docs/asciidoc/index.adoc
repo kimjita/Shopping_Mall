@@ -1,0 +1,16 @@
+= Shopping Mall API
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 2
+
+== 공통 에러 응답
+
+모든 API는 실패하면 아래 형식으로 응답해요. `code` 값은 `ErrorCode` enum 이름이에요.
+
+include::{snippets}/common/error-response/response-fields.adoc[]
+
+=== 응답 예시
+
+include::{snippets}/common/error-response/http-response.adoc[]
