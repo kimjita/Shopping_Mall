@@ -33,7 +33,7 @@ public class AddressService {
 
     @Transactional
     public AddressResponse create(Long memberId, AddressRequest request) {
-        memberService.getActive(memberId);
+        memberService.getActiveForUpdate(memberId);
         List<Address> existing = addressRepository.findAllByMemberId(memberId);
         if (existing.size() >= MAX_ADDRESSES) {
             throw new BusinessException(ErrorCode.ADDRESS_LIMIT_EXCEEDED);
@@ -50,7 +50,7 @@ public class AddressService {
     /** 기본 배송지를 없애는 요청(isDefault=false)은 무시해요. 다른 배송지를 기본으로 지정해야 바뀌어요. */
     @Transactional
     public AddressResponse update(Long memberId, Long addressId, AddressRequest request) {
-        memberService.getActive(memberId);
+        memberService.getActiveForUpdate(memberId);
         Address address = findOwned(addressId, memberId);
         address.update(request.recipient(), PhonePolicy.normalize(request.phone()),
                 request.zipCode(), request.address1(), request.address2());
@@ -63,7 +63,7 @@ public class AddressService {
 
     @Transactional
     public void delete(Long memberId, Long addressId) {
-        memberService.getActive(memberId);
+        memberService.getActiveForUpdate(memberId);
         Address address = findOwned(addressId, memberId);
         addressRepository.delete(address);
         if (address.isDefault()) {

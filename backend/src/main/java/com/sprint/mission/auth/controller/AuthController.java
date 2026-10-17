@@ -1,6 +1,7 @@
 package com.sprint.mission.auth.controller;
 
 import com.sprint.mission.auth.RefreshTokenCookies;
+import com.sprint.mission.auth.RefreshTokenProperties;
 import com.sprint.mission.auth.dto.IssuedTokens;
 import com.sprint.mission.auth.dto.LoginRequest;
 import com.sprint.mission.auth.dto.SignupRequest;
@@ -11,15 +12,17 @@ import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.global.error.ErrorResponse;
 import com.sprint.mission.member.service.MemberService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.WebUtils;
 
 import java.net.URI;
 
@@ -31,6 +34,7 @@ public class AuthController {
     private final MemberService memberService;
     private final AuthService authService;
     private final RefreshTokenCookies refreshTokenCookies;
+    private final RefreshTokenProperties refreshTokenProperties;
 
     @PostMapping("/signup")
     public ResponseEntity<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
@@ -47,7 +51,8 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@CookieValue(name = "refresh_token", required = false) String refreshToken) {
+    public ResponseEntity<?> refresh(HttpServletRequest request) {
+        String refreshToken = refreshTokenValue(request);
         if (refreshToken == null || refreshToken.isBlank()) {
             return invalidRefreshToken();
         }
@@ -65,11 +70,17 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CookieValue(name = "refresh_token", required = false) String refreshToken) {
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        String refreshToken = refreshTokenValue(request);
         authService.logout(refreshToken);
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookies.expire().toString())
                 .build();
+    }
+
+    private String refreshTokenValue(HttpServletRequest request) {
+        Cookie cookie = WebUtils.getCookie(request, refreshTokenProperties.cookieName());
+        return cookie == null ? null : cookie.getValue();
     }
 
     /** 실패한 응답에도 쿠키를 지우는 Set-Cookie를 같이 내려요. */

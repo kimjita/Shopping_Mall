@@ -57,6 +57,14 @@ public class MemberService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 
+    /** 회원 행을 잠그고 조회해요. 호출한 트랜잭션이 끝날 때까지 같은 회원의 쓰기가 줄을 서요. */
+    @Transactional
+    public Member getActiveForUpdate(Long memberId) {
+        return memberRepository.findWithLockById(memberId)
+                .filter(Member::isActive)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
     @Transactional(readOnly = true)
     public MemberResponse getMe(Long memberId) {
         return MemberResponse.from(getActive(memberId));

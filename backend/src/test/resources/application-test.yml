@@ -8,3 +8,6 @@ app:
   auth:
     refresh:
       cookie-secure: false
+  admin:
+    email: ""
+    password: ""
