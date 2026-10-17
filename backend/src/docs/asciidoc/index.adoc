@@ -90,3 +90,96 @@ include::{snippets}/auth/logout/request-cookies.adoc[]
 ==== 응답
 
 include::{snippets}/auth/logout/http-response.adoc[]
+
+== 회원
+
+이 장의 API는 모두 로그인이 필요해요. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`예요.
+탈퇴한 회원이 탈퇴 전에 받은 access token으로 호출하면 `404 MEMBER_NOT_FOUND`예요.
+
+=== 내 정보 조회
+
+로그인한 회원의 정보를 돌려줘요. 피부 프로필을 아직 저장하지 않았다면 `skinType`, `skinTone`은 `null`이고 `skinConcerns`는 빈 배열이에요.
+
+==== 요청
+
+include::{snippets}/member/me/http-request.adoc[]
+
+include::{snippets}/member/me/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/member/me/http-response.adoc[]
+
+include::{snippets}/member/me/response-fields.adoc[]
+
+=== 프로필 수정
+
+이름과 휴대폰 번호를 바꿔요. 두 값 모두 필수이고 회원가입과 같은 규칙이에요. 휴대폰 번호는 숫자만 남겨 저장해요. 규칙에 맞지 않으면 `400 INVALID_INPUT`이에요.
+
+==== 요청
+
+include::{snippets}/member/update-profile/http-request.adoc[]
+
+include::{snippets}/member/update-profile/request-headers.adoc[]
+
+include::{snippets}/member/update-profile/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/member/update-profile/http-response.adoc[]
+
+include::{snippets}/member/update-profile/response-fields.adoc[]
+
+=== 피부 프로필 저장
+
+피부 타입, 피부 톤, 피부 고민을 통째로 저장해요(`PUT`). 기존 고민은 모두 교체하고, 생략하거나 `null`인 항목은 비워요.
+응답의 `skinConcerns`는 enum 선언 순서로 정렬돼요. 정의되지 않은 enum 값을 보내면 `400 INVALID_INPUT`이에요.
+
+==== 요청
+
+include::{snippets}/member/update-skin-profile/http-request.adoc[]
+
+include::{snippets}/member/update-skin-profile/request-headers.adoc[]
+
+include::{snippets}/member/update-skin-profile/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/member/update-skin-profile/http-response.adoc[]
+
+include::{snippets}/member/update-skin-profile/response-fields.adoc[]
+
+=== 비밀번호 변경
+
+현재 비밀번호를 확인한 뒤 새 비밀번호로 바꾸고, 성공하면 `204 No Content`예요. 새 비밀번호는 회원가입과 같은 규칙이에요(어긋나면 `400 INVALID_INPUT`).
+현재 비밀번호가 틀리면 `400 PASSWORD_MISMATCH`예요.
+바꾸면 이 회원의 모든 refresh token을 폐기해서 모든 기기에서 다시 로그인해야 해요. 이미 발급된 access token은 만료될 때까지 유효해요.
+
+==== 요청
+
+include::{snippets}/member/change-password/http-request.adoc[]
+
+include::{snippets}/member/change-password/request-headers.adoc[]
+
+include::{snippets}/member/change-password/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/member/change-password/http-response.adoc[]
+
+=== 회원 탈퇴
+
+비밀번호를 확인한 뒤 탈퇴 처리하고, 성공하면 `204 No Content`예요. 비밀번호가 틀리면 `400 PASSWORD_MISMATCH`예요.
+탈퇴하면 모든 refresh token이 폐기되고 같은 이메일로 로그인할 수 없어요(`401 INVALID_CREDENTIALS`). 탈퇴한 이메일로는 다시 가입할 수 없어요(`409 DUPLICATE_EMAIL`).
+
+==== 요청
+
+include::{snippets}/member/withdraw/http-request.adoc[]
+
+include::{snippets}/member/withdraw/request-headers.adoc[]
+
+include::{snippets}/member/withdraw/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/member/withdraw/http-response.adoc[]

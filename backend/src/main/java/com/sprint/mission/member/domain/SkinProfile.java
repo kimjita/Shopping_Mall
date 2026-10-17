@@ -17,4 +17,9 @@ public class SkinProfile {
 
     @Enumerated(EnumType.STRING)
     private SkinTone skinTone;
+
+    public SkinProfile(SkinType skinType, SkinTone skinTone) {
+        this.skinType = skinType;
+        this.skinTone = skinTone;
+    }
 }

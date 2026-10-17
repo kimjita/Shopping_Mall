@@ -73,4 +73,33 @@ public class Member extends BaseEntity {
     public boolean isActive() {
         return status == MemberStatus.ACTIVE;
     }
+
+    public void updateProfile(String name, String phone) {
+        this.name = name;
+        this.phone = phone;
+    }
+
+    /**
+     * 피부 타입·톤과 고민을 통째로 바꿔요. null이면 그 항목을 비워요.
+     * 컬럼이 모두 NULL이면 Hibernate가 임베디드 값을 null로 읽어오므로, 기존 객체를 고치지 않고 새로 만들어 넣어요.
+     */
+    public void updateSkinProfile(SkinType type, SkinTone tone, Set<SkinConcern> concerns) {
+        this.skinProfile = new SkinProfile(type, tone);
+        this.skinConcerns.clear();
+        if (concerns != null) {
+            this.skinConcerns.addAll(concerns);
+        }
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public void withdraw(Instant now) {
+        if (status == MemberStatus.WITHDRAWN) {
+            throw new IllegalStateException("이미 탈퇴한 회원이에요.");
+        }
+        this.status = MemberStatus.WITHDRAWN;
+        this.withdrawnAt = now;
+    }
 }
