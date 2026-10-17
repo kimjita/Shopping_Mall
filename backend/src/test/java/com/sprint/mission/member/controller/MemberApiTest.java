@@ -198,6 +198,13 @@ class MemberApiTest extends ApiTest {
     }
 
     @Test
+    void 피부_고민에_null이_있으면_400() throws Exception {
+        json(put("/api/members/me/skin-profile"), "{\"skinType\":\"DRY\",\"skinConcerns\":[null]}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
     void 비밀번호를_바꾸면_기존_refresh_token이_폐기된다() throws Exception {
         MvcResult loginResult = login("password1").andExpect(status().isOk()).andReturn();
         Cookie refreshCookie = loginResult.getResponse().getCookie("refresh_token");

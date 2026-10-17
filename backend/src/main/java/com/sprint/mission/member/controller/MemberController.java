@@ -36,7 +36,7 @@ public class MemberController {
     }
 
     @PutMapping("/skin-profile")
-    public MemberResponse updateSkinProfile(@CurrentMemberId Long memberId, @RequestBody UpdateSkinProfileRequest request) {
+    public MemberResponse updateSkinProfile(@CurrentMemberId Long memberId, @Valid @RequestBody UpdateSkinProfileRequest request) {
         return memberService.updateSkinProfile(memberId, request.skinType(), request.skinTone(), request.skinConcerns());
     }
 
