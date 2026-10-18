@@ -34,6 +34,9 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    implementation 'io.github.openfeign.querydsl:querydsl-jpa:6.12'
+    annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:6.12:jpa'
+    annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

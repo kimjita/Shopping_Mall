@@ -52,6 +52,14 @@ public class Product extends BaseEntity {
     @Column(nullable = false)
     private long basePrice;
 
+    /** 옵션 중 가장 싼 정가(정가 + 추가금액)다. 목록 정렬·가격 필터용으로 옵션이 바뀔 때마다 다시 계산한다. */
+    @Column(nullable = false)
+    private long minPrice;
+
+    /** 검색용 문자열("브랜드명 상품명")이다. 상품이나 브랜드 이름이 바뀔 때마다 다시 만든다. */
+    @Column(nullable = false, columnDefinition = "text")
+    private String searchText;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ProductStatus status;
@@ -77,6 +85,9 @@ public class Product extends BaseEntity {
         product.description = description;
         product.ingredients = ingredients;
         product.basePrice = basePrice;
+        // 옵션과 브랜드 이름은 저장 뒤에야 알 수 있으므로 임시 값을 두고, 서비스가 곧바로 refresh로 맞춘다.
+        product.minPrice = basePrice;
+        product.searchText = name;
         product.status = ProductStatus.ON_SALE;
         product.imageUrls = new ArrayList<>(imageUrls);
         return product;
@@ -103,6 +114,18 @@ public class Product extends BaseEntity {
         this.basePrice = basePrice;
         this.imageUrls.clear();
         this.imageUrls.addAll(imageUrls);
+    }
+
+    /** 옵션 가격 중 가장 싼 값으로 최저가를 다시 계산한다. 옵션이 하나도 없으면 계산할 수 없다. */
+    public void refreshMinPrice(List<Sku> skus) {
+        this.minPrice = skus.stream()
+                .mapToLong(sku -> sku.price(basePrice))
+                .min()
+                .orElseThrow(() -> new IllegalStateException("옵션이 없는 상품의 최저가는 계산할 수 없다."));
+    }
+
+    public void refreshSearchText(String brandName) {
+        this.searchText = brandName + " " + name;
     }
 
     /** 삭제된 상품은 상태를 바꿀 수 없다. */

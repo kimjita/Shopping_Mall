@@ -2,6 +2,7 @@ package com.sprint.mission.product.service;
 
 import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
+import com.sprint.mission.product.domain.Brand;
 import com.sprint.mission.product.domain.Category;
 import com.sprint.mission.product.domain.Product;
 import com.sprint.mission.product.domain.Sale;
@@ -37,16 +38,18 @@ public class AdminProductService {
 
     @Transactional
     public Long create(ProductCreateRequest request) {
-        brandService.get(request.brandId());
+        Brand brand = brandService.get(request.brandId());
         categoryService.getLeaf(request.categoryId());
         validateUniqueSkuNames(request.skus());
 
         Product product = productRepository.save(Product.create(
                 request.brandId(), request.categoryId(), request.name(), request.summary(),
                 request.description(), request.ingredients(), request.basePrice(), request.imageUrls()));
-        skuRepository.saveAll(request.skus().stream()
+        List<Sku> skus = skuRepository.saveAll(request.skus().stream()
                 .map(sku -> Sku.create(product.getId(), sku.name(), sku.additionalPrice(), sku.stock()))
                 .toList());
+        product.refreshMinPrice(skus);
+        product.refreshSearchText(brand.getName());
         return product.getId();
     }
 
@@ -54,10 +57,12 @@ public class AdminProductService {
     @Transactional
     public AdminProductResponse update(Long productId, ProductUpdateRequest request) {
         Product product = productService.getProduct(productId);
-        brandService.get(request.brandId());
+        Brand brand = brandService.get(request.brandId());
         categoryService.getLeaf(request.categoryId());
         product.update(request.brandId(), request.categoryId(), request.name(), request.summary(),
                 request.description(), request.ingredients(), request.basePrice(), request.imageUrls());
+        product.refreshMinPrice(skuRepository.findAllByProductIdOrderByIdAsc(productId));
+        product.refreshSearchText(brand.getName());
         return toResponse(product);
     }
 
