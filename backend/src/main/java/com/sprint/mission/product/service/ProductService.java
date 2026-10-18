@@ -46,6 +46,6 @@ public class ProductService {
         }
         return ProductResponse.of(product, brandService.get(product.getBrandId()),
                 categoryService.path(product.getCategoryId()),
-                skuRepository.findAllByProductIdOrderByIdAsc(id), product.activeSale(Instant.now(clock)));
+                skuRepository.findAllByProductIdOrderByIdAsc(id), Instant.now(clock));
     }
 }

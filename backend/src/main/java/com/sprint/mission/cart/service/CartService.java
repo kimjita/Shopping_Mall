@@ -1,7 +1,7 @@
 package com.sprint.mission.cart.service;
 
 import com.sprint.mission.cart.domain.CartItem;
-import com.sprint.mission.cart.domain.CartItemStatus;
+import com.sprint.mission.cart.domain.CartLine;
 import com.sprint.mission.cart.dto.CartAddRequest;
 import com.sprint.mission.cart.dto.CartItemResponse;
 import com.sprint.mission.cart.dto.CartResponse;
@@ -11,18 +11,11 @@ import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.member.service.MemberService;
 import com.sprint.mission.product.domain.Product;
 import com.sprint.mission.product.domain.Sku;
-import com.sprint.mission.product.dto.ProductCard;
 import com.sprint.mission.product.dto.ProductSummary;
-import com.sprint.mission.product.repository.ProductRepository;
-import com.sprint.mission.product.repository.ProductSearchRepository;
 import com.sprint.mission.product.repository.SkuRepository;
 import com.sprint.mission.product.service.ProductService;
 import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,15 +35,15 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final MemberService memberService;
     private final ProductService productService;
-    private final ProductRepository productRepository;
     private final SkuRepository skuRepository;
-    private final ProductSearchRepository productSearchRepository;
+    private final CartLineLoader cartLineLoader;
     private final Clock clock;
 
     /** 쿼리 수는 항목 수와 상관없이 일정하다. 판매 중지·삭제된 상품의 줄도 UNAVAILABLE로 보여준다. */
     public CartResponse get(Long memberId) {
         memberService.getActive(memberId);
-        return new CartResponse(toResponses(cartItemRepository.findByMemberIdOrderByIdAsc(memberId)));
+        return new CartResponse(cartLineLoader.loadAll(memberId, clock.instant()).stream()
+                .map(CartService::toResponse).toList());
     }
 
     /** 이미 담은 옵션이면 수량을 더한다. 합친 수량이 99를 넘으면 400, 재고보다 많으면 409이고 기존 수량은 그대로다. */
@@ -69,13 +62,13 @@ public class CartService {
 
         if (existing != null) {
             existing.addQuantity(request.quantity());
-            return toResponses(List.of(existing)).get(0);
+            return toResponse(existing);
         }
         if (cartItemRepository.countByMemberId(memberId) >= MAX_LINES) {
             throw new BusinessException(ErrorCode.CART_LIMIT_EXCEEDED);
         }
         CartItem item = cartItemRepository.save(CartItem.create(memberId, sku.getId(), request.quantity()));
-        return toResponses(List.of(item)).get(0);
+        return toResponse(item);
     }
 
     /** 수량을 대체한다. 판매 중이 아닌 상품은 바꿀 수 없다(뺄 수는 있다). */
@@ -90,7 +83,7 @@ public class CartService {
         requireStock(sku, quantity);
 
         item.changeQuantity(quantity);
-        return toResponses(List.of(item)).get(0);
+        return toResponse(item);
     }
 
     /** 상품 상태와 상관없이 뺄 수 있다. */
@@ -126,33 +119,14 @@ public class CartService {
         }
     }
 
-    /**
-     * 줄 목록을 응답으로 바꾼다. 옵션, 상품(정가·세일), 카드(이름·브랜드·이미지·상태)를 각각 한 번에 읽어서
-     * 쿼리 수가 줄 수와 무관하다. 가격은 하나의 now로 계산한다.
-     */
-    private List<CartItemResponse> toResponses(List<CartItem> items) {
-        if (items.isEmpty()) {
-            return List.of();
-        }
-        Instant now = clock.instant();
-        Map<Long, Sku> skus = skuRepository.findAllById(items.stream().map(CartItem::getSkuId).distinct().toList())
-                .stream().collect(Collectors.toMap(Sku::getId, Function.identity()));
-        List<Long> productIds = skus.values().stream().map(Sku::getProductId).distinct().toList();
-        Map<Long, Product> products = productRepository.findAllById(productIds)
-                .stream().collect(Collectors.toMap(Product::getId, Function.identity()));
-        Map<Long, ProductCard> cards = productSearchRepository.findCards(productIds, now);
+    private CartItemResponse toResponse(CartItem item) {
+        return toResponse(cartLineLoader.load(List.of(item), clock.instant()).get(0));
+    }
 
-        return items.stream().map(item -> {
-            Sku sku = skus.get(item.getSkuId());
-            Product product = products.get(sku.getProductId());
-            ProductCard card = cards.get(sku.getProductId());
-            ProductSummary summary = card.summary();
-            long unitPrice = sku.price(product.getBasePrice());
-            long unitSalePrice = product.activeSale(now).map(sale -> sale.apply(unitPrice)).orElse(unitPrice);
-            return new CartItemResponse(item.getId(), sku.getId(), sku.getName(), product.getId(),
-                    summary.name(), summary.brandName(), summary.thumbnailUrl(), item.getQuantity(),
-                    unitPrice, unitSalePrice, unitSalePrice * item.getQuantity(),
-                    CartItemStatus.of(product.getStatus(), sku.getStock(), item.getQuantity()));
-        }).toList();
+    private static CartItemResponse toResponse(CartLine line) {
+        ProductSummary summary = line.card().summary();
+        return new CartItemResponse(line.item().getId(), line.sku().getId(), line.sku().getName(),
+                line.product().getId(), summary.name(), summary.brandName(), summary.thumbnailUrl(),
+                line.item().getQuantity(), line.unitPrice(), line.unitSalePrice(), line.lineTotal(), line.status());
     }
 }

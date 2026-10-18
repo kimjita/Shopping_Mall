@@ -5,6 +5,7 @@ import com.sprint.mission.product.domain.Category;
 import com.sprint.mission.product.domain.Product;
 import com.sprint.mission.product.domain.Sku;
 import com.sprint.mission.product.domain.Sale;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,16 +33,16 @@ public record ProductResponse(
     /** price는 정가, salePrice는 진행 중인 세일을 적용한 가격이다. 세일이 없으면 둘이 같다. */
     public record PublicSku(Long id, String name, long price, long salePrice, boolean soldOut) {
 
-        static PublicSku of(Sku sku, long basePrice, Optional<Sale> sale) {
-            long price = sku.price(basePrice);
-            return new PublicSku(sku.getId(), sku.getName(), price,
-                    sale.map(s -> s.apply(price)).orElse(price), sku.isSoldOut());
+        static PublicSku of(Sku sku, Product product, Instant now) {
+            return new PublicSku(sku.getId(), sku.getName(), product.unitPrice(sku),
+                    product.unitSalePrice(sku, now), sku.isSoldOut());
         }
     }
 
-    /** 모든 옵션이 품절이면 상품도 품절이다. 세일은 {@code activeSale}로 진행 중인 것만 반영한다. */
+    /** 모든 옵션이 품절이면 상품도 품절이다. 세일은 {@code now}에 진행 중인 것만 반영한다. */
     public static ProductResponse of(Product product, Brand brand, List<Category> categoryPath, List<Sku> skus,
-            Optional<Sale> activeSale) {
+            Instant now) {
+        Optional<Sale> activeSale = product.activeSale(now);
         return new ProductResponse(product.getId(), product.getName(),
                 new BrandSummary(brand.getId(), brand.getName()),
                 categoryPath.stream().map(c -> new CategorySummary(c.getId(), c.getName())).toList(),
@@ -49,6 +50,6 @@ public record ProductResponse(
                 List.copyOf(product.getImageUrls()), product.getBasePrice(),
                 activeSale.map(Sale::getRate).orElse(null),
                 skus.stream().allMatch(Sku::isSoldOut),
-                skus.stream().map(sku -> PublicSku.of(sku, product.getBasePrice(), activeSale)).toList());
+                skus.stream().map(sku -> PublicSku.of(sku, product, now)).toList());
     }
 }

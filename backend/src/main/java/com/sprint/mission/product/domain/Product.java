@@ -124,7 +124,7 @@ public class Product extends BaseEntity {
     /** 옵션 가격 중 가장 싼 값으로 최저가를 다시 계산한다. 옵션이 하나도 없으면 계산할 수 없다. */
     public void refreshMinPrice(List<Sku> skus) {
         this.minPrice = skus.stream()
-                .mapToLong(sku -> sku.price(basePrice))
+                .mapToLong(this::unitPrice)
                 .min()
                 .orElseThrow(() -> new IllegalStateException("옵션이 없는 상품의 최저가는 계산할 수 없다."));
     }
@@ -153,5 +153,16 @@ public class Product extends BaseEntity {
     /** 지금 진행 중인 세일이다. 세일이 없거나 기간이 아니면 비어 있다. */
     public Optional<Sale> activeSale(Instant now) {
         return Optional.ofNullable(sale).filter(s -> s.isActive(now));
+    }
+
+    /** 옵션 정가다. 상품 정가에 옵션 추가금액을 더한다. */
+    public long unitPrice(Sku sku) {
+        return sku.price(basePrice);
+    }
+
+    /** 옵션 판매가다. 진행 중인 세일이 있으면 옵션 정가에 적용하고, 없으면 옵션 정가 그대로다. */
+    public long unitSalePrice(Sku sku, Instant now) {
+        long unitPrice = unitPrice(sku);
+        return activeSale(now).map(s -> s.apply(unitPrice)).orElse(unitPrice);
     }
 }
