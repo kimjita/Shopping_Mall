@@ -418,6 +418,120 @@ include::{snippets}/recent-view/clear/request-headers.adoc[]
 
 include::{snippets}/recent-view/clear/http-response.adoc[]
 
+== 장바구니
+
+이 장의 API는 모두 로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+탈퇴한 회원의 토큰이면 `404 MEMBER_NOT_FOUND`다.
+장바구니는 옵션(SKU) 단위다. 같은 옵션은 한 줄이고, 다시 담으면 새 줄을 만들지 않고 기존 수량에 더한다. 한 줄의 수량은 1~99, 한 회원이 담을 수 있는 줄은 최대 50개다.
+
+**재고**: 담거나 수량을 바꿀 때 결과 수량이 현재 재고보다 많으면 `409 STOCK_NOT_ENOUGH`이고 기존 수량은 그대로다.
+장바구니는 재고를 차감하지 않는다. 실제 재고 차감은 주문할 때 일어나므로, 담은 뒤 재고가 줄어 있을 수 있다.
+
+**가격**: 가격 필드는 모두 원 단위 정수다.
+
+* `unitPrice`: 옵션 정가다. 상품 정가에 옵션 추가금액을 더한 값이다.
+* `unitSalePrice`: 옵션 판매가다. 진행 중인 세일이 있으면 옵션 정가에 할인율을 적용하고(10원 단위 미만은 내린다) 없으면 `unitPrice`와 같다. 상품 상세의 옵션별 `salePrice`와 같은 값이다.
+* `lineTotal`: 줄 합계다. `unitSalePrice` × `quantity`다.
+
+서버는 장바구니 전체 합계를 내려주지 않는다. 선택한 항목의 합계는 프론트가 `lineTotal`을 더해 계산하고, 쿠폰과 배송비는 주문 단계에서 계산한다.
+
+**상태(`status`)**: 조회할 때마다 상품 상태와 현재 재고로 계산한다. 재고 수량 자체는 내려주지 않는다.
+
+[cols="1,3"]
+|===
+|값 |의미
+
+|`UNAVAILABLE`
+|상품이 판매 중지되었거나 삭제되었다. 재고와 상관없이 이 값이 우선한다.
+
+|`SOLD_OUT`
+|재고가 0이다.
+
+|`NOT_ENOUGH_STOCK`
+|재고는 있지만 담은 수량보다 적다.
+
+|`AVAILABLE`
+|담은 수량만큼 구매할 수 있다.
+|===
+
+판매 중지·삭제된 상품의 줄도 목록에 그대로 나오고 `status`가 `UNAVAILABLE`이다. 이런 줄은 수량을 바꿀 수 없고 뺄 수만 있다.
+
+=== 장바구니 담기
+
+이미 담은 옵션이면 수량을 더하고, 이 경우에도 `201 Created`이며 합쳐진 줄을 돌려준다.
+없는 옵션이면 `404 SKU_NOT_FOUND`, 판매 중이 아닌 상품이면 `404 PRODUCT_NOT_FOUND`다.
+합친 수량이 99를 넘거나 `quantity`가 1~99가 아니면 `400 INVALID_INPUT`, 재고보다 많으면 `409 STOCK_NOT_ENOUGH`다.
+새 줄을 만드는데 이미 50줄이면 `400 CART_LIMIT_EXCEEDED`다.
+
+==== 요청
+
+include::{snippets}/cart/add/http-request.adoc[]
+
+include::{snippets}/cart/add/request-headers.adoc[]
+
+include::{snippets}/cart/add/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/cart/add/http-response.adoc[]
+
+include::{snippets}/cart/add/response-fields.adoc[]
+
+=== 장바구니 조회
+
+담은 순서로 내려준다. 항목이 없으면 `items`는 빈 배열이다.
+
+==== 요청
+
+include::{snippets}/cart/get/http-request.adoc[]
+
+include::{snippets}/cart/get/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/cart/get/http-response.adoc[]
+
+include::{snippets}/cart/get/response-fields.adoc[]
+
+=== 수량 변경
+
+수량을 요청 값으로 바꾼다(더하지 않는다). 바꾼 줄을 돌려준다.
+`quantity`가 1~99가 아니면 `400 INVALID_INPUT`, 재고보다 많으면 `409 STOCK_NOT_ENOUGH`이고 기존 수량은 그대로다.
+판매 중이 아닌 상품이면 `404 PRODUCT_NOT_FOUND`다. 없거나 다른 회원의 항목이면 `404 CART_ITEM_NOT_FOUND`다.
+
+==== 요청
+
+include::{snippets}/cart/change-quantity/http-request.adoc[]
+
+include::{snippets}/cart/change-quantity/path-parameters.adoc[]
+
+include::{snippets}/cart/change-quantity/request-headers.adoc[]
+
+include::{snippets}/cart/change-quantity/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/cart/change-quantity/http-response.adoc[]
+
+include::{snippets}/cart/change-quantity/response-fields.adoc[]
+
+=== 장바구니에서 빼기
+
+성공하면 `204 No Content`다. 상품 상태와 상관없이 뺄 수 있다.
+없거나 다른 회원의 항목이면 `404 CART_ITEM_NOT_FOUND`다. 여러 줄을 지우려면 프론트가 항목마다 호출한다.
+
+==== 요청
+
+include::{snippets}/cart/remove/http-request.adoc[]
+
+include::{snippets}/cart/remove/path-parameters.adoc[]
+
+include::{snippets}/cart/remove/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/cart/remove/http-response.adoc[]
+
 == 카탈로그
 
 카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.
