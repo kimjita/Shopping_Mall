@@ -200,7 +200,7 @@ class CouponApiTest extends ApiTest {
                 .andDo(document("coupon/download",
                         pathParameters(parameterWithName("couponId").description("받을 쿠폰 ID")),
                         requestHeaders(AUTHORIZATION),
-                        responseFields(myCouponFields("", false))));
+                        responseFields(myCouponFields(""))));
 
         // 받은 쿠폰은 받을 수 있는 목록에서 빠진다.
         mockMvc.perform(get("/api/members/me/coupons/downloadable").header(HttpHeaders.AUTHORIZATION, user()))
@@ -217,10 +217,10 @@ class CouponApiTest extends ApiTest {
                 .andExpect(jsonPath("$[0].status").value("AVAILABLE"))
                 .andDo(document("coupon/my",
                         requestHeaders(AUTHORIZATION),
-                        responseFields(myCouponFields("[].", true))));
+                        responseFields(myCouponFields("[]."))));
     }
 
-    private static FieldDescriptor[] myCouponFields(String prefix, boolean list) {
+    private static FieldDescriptor[] myCouponFields(String prefix) {
         return new FieldDescriptor[] {
                 fieldWithPath(prefix + "id").type(JsonFieldType.NUMBER).description("내 쿠폰 ID (주문에 쓰는 값)"),
                 fieldWithPath(prefix + "couponId").type(JsonFieldType.NUMBER).description("쿠폰 ID"),
@@ -305,19 +305,16 @@ class CouponApiTest extends ApiTest {
     @Test
     void 사용_기간이_지난_쿠폰은_EXPIRED로_보인다() throws Exception {
         Instant now = Instant.now();
-        // 발급 기간은 지금이지만 사용 기간은 이미 끝난 쿠폰이다.
-        Long expiredId = adminCouponService.create(CouponFixtures.fixed("만료", 10, null,
-                now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(1)),
-                now.minus(Duration.ofDays(10)), now.minus(Duration.ofHours(1)))).id();
+        Long expiredId = adminCouponService.create(CouponFixtures.fixed("만료", 10, null)).id();
         Long liveId = adminCouponService.create(CouponFixtures.fixed("유효", 10, null)).id();
         Long usedId = adminCouponService.create(CouponFixtures.fixed("사용함", 10, null)).id();
         couponService.download(memberId, expiredId);
         couponService.download(memberId, liveId);
         couponService.download(memberId, usedId);
         jdbcTemplate.update("update member_coupon set status = 'USED', used_at = now() where coupon_id = ?", usedId);
-        // 사용한 쿠폰은 기간이 지나도 USED로 남는다.
+        // 받은 뒤 사용 기간이 끝난 상황을 만든다. 사용한 쿠폰은 기간이 지나도 USED로 남는다.
         jdbcTemplate.update("update coupon set use_ends_at = now() - interval '1 hour', "
-                + "use_starts_at = now() - interval '2 days' where id = ?", usedId);
+                + "use_starts_at = now() - interval '10 days' where id in (?, ?)", expiredId, usedId);
 
         mockMvc.perform(get("/api/members/me/coupons").header(HttpHeaders.AUTHORIZATION, user()))
                 .andExpect(status().isOk())
@@ -362,6 +359,9 @@ class CouponApiTest extends ApiTest {
         // 사용 종료가 시작보다 빠르다
         createAsAdmin(couponJson("FIXED", "3000", "null", is, ie, ue, us))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        // 사용 종료가 발급 종료보다 빠르다
+        createAsAdmin(couponJson("FIXED", "3000", "null", is, ie, us, now.plus(Duration.ofHours(1)).toString()))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
         // 필수 값 누락, 이름 51자, 수량 0, 알 수 없는 할인 방식
         createAsAdmin("{}").andExpect(status().isBadRequest());
         createAsAdmin(couponJson("FIXED", "3000", "null", is, ie, us, ue).replace("가을 쿠폰", "가".repeat(51)))
@@ -373,6 +373,26 @@ class CouponApiTest extends ApiTest {
         assertThat(jdbcTemplate.queryForObject("select count(*) from coupon", Integer.class)).isZero();
         // 정상 값은 만들어진다.
         createAsAdmin(couponJson("RATE", "90", "5000", is, ie, us, ue)).andExpect(status().isCreated());
+    }
+
+    @Test
+    void 앞뒤_공백을_뺀_이름이_50자면_만들어진다() throws Exception {
+        Instant now = Instant.now();
+        String body = couponJson("FIXED", "3000", "null", now.minus(Duration.ofDays(1)).toString(),
+                now.plus(Duration.ofDays(1)).toString(), now.minus(Duration.ofDays(1)).toString(),
+                now.plus(Duration.ofDays(30)).toString());
+        String name = "가".repeat(50);
+
+        createAsAdmin(body.replace("가을 쿠폰", "  " + name + "  "))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value(name));
+        // 공백을 빼도 51자면 거절된다.
+        createAsAdmin(body.replace("가을 쿠폰", " " + name + "나 "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        // 공백뿐인 이름도 거절된다.
+        createAsAdmin(body.replace("가을 쿠폰", "   "))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

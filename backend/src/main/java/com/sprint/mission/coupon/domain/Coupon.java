@@ -97,6 +97,8 @@ public class Coupon extends BaseEntity {
                 "발급 종료 시각은 시작 시각보다 늦어야 합니다.");
         require(useStartsAt != null && useEndsAt != null && useEndsAt.isAfter(useStartsAt),
                 "사용 종료 시각은 시작 시각보다 늦어야 합니다.");
+        // 발급이 열려 있는 동안 받은 쿠폰이 이미 사용 기간이 끝나 있으면 안 된다.
+        require(!useEndsAt.isBefore(issueEndsAt), "사용 종료 시각은 발급 종료 시각보다 빠를 수 없습니다.");
 
         Coupon coupon = new Coupon();
         coupon.name = name;

@@ -7,16 +7,14 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
 /**
- * 관리자 쿠폰 등록 요청이다. 널·길이·범위는 Bean Validation이, 할인 방식별 규칙(정률 1~90%와 최대 할인 금액,
+ * 관리자 쿠폰 등록 요청이다. 널·범위는 Bean Validation이, 이름 길이(앞뒤 공백을 지운 값 1~50자)와 할인 방식별 규칙(정률 1~90%와 최대 할인 금액,
  * 정액 100~1,000,000원)과 기간 선후는 {@code Coupon.create}가 검증한다.
  */
 public record CouponCreateRequest(
         @NotBlank(message = "쿠폰 이름을 입력해 주세요.")
-        @Size(max = 50, message = "쿠폰 이름은 50자 이하여야 합니다.")
         String name,
         @NotNull(message = "할인 방식을 입력해 주세요.")
         DiscountType discountType,

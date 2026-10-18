@@ -77,6 +77,9 @@ class CouponTest {
         assertInvalid(DiscountType.FIXED, 3_000, null, 0, 10, ISSUE_END, ISSUE_START, USE_START, USE_END);
         assertInvalid(DiscountType.FIXED, 3_000, null, 0, 10, ISSUE_START, ISSUE_START, USE_START, USE_END);
         assertInvalid(DiscountType.FIXED, 3_000, null, 0, 10, ISSUE_START, ISSUE_END, USE_END, USE_START);
+        // 사용 종료가 발급 종료보다 빠르면 받자마자 못 쓰는 쿠폰이 된다.
+        assertInvalid(DiscountType.FIXED, 3_000, null, 0, 10, ISSUE_START, ISSUE_END, USE_START,
+                ISSUE_END.minusMillis(1));
     }
 
     @Test
@@ -84,6 +87,8 @@ class CouponTest {
         Coupon.create("최소", DiscountType.FIXED, 100, null, 0, 1, null, ISSUE_START, ISSUE_END, USE_START, USE_END);
         Coupon.create("최대", DiscountType.FIXED, 1_000_000, null, 0, 1_000_000, null,
                 ISSUE_START, ISSUE_END, USE_START, USE_END);
+        Coupon.create("사용 종료가 발급 종료와 같다", DiscountType.FIXED, 100, null, 0, 1, null,
+                ISSUE_START, ISSUE_END, USE_START, ISSUE_END);
         Coupon.create("정률 1", DiscountType.RATE, 1, 1L, 0, 1, null, ISSUE_START, ISSUE_END, USE_START, USE_END);
         Coupon.create("정률 90", DiscountType.RATE, 90, 1L, 0, 1, null, ISSUE_START, ISSUE_END, USE_START, USE_END);
     }
