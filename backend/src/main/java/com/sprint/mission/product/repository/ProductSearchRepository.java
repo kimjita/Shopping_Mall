@@ -48,9 +48,10 @@ public class ProductSearchRepository {
     public List<Row> search(ProductSearchCondition condition, List<Long> leafIds, Instant now, int limit) {
         NumberExpression<Long> currentPrice = currentPrice(now);
         BooleanExpression saleActive = saleActive(now);
-        BooleanExpression noStock = JPAExpressions.selectOne().from(sku)
-                .where(sku.productId.eq(product.id), sku.stock.gt(0))
-                .notExists();
+        // not exists는 플래너가 SKU 전체를 읽어 해시로 만드는 서브플랜이 되기 쉽다.
+        // 상품별 최대 재고 스칼라 서브쿼리는 sku (product_id, name) 인덱스 조회로 계산된다.
+        BooleanExpression noStock = Expressions.numberTemplate(Integer.class, "coalesce({0}, 0)",
+                JPAExpressions.select(sku.stock.max()).from(sku).where(sku.productId.eq(product.id))).loe(0);
 
         List<Tuple> tuples = queryFactory
                 .select(product.id, product.name, brand.name, IMAGE, product.minPrice, currentPrice,
