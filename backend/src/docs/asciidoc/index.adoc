@@ -347,6 +347,77 @@ include::{snippets}/wishlist/ids/http-response.adoc[]
 
 include::{snippets}/wishlist/ids/response-fields.adoc[]
 
+== 최근 본 상품
+
+이 장의 API는 모두 로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+탈퇴한 회원의 토큰이면 `404 MEMBER_NOT_FOUND`다.
+최근 본 상품은 회원마다 최대 50개까지 서버에 저장하고, 같은 상품을 다시 보면 새로 쌓지 않고 본 시각만 갱신해 맨 앞으로 올린다. 50개를 넘으면 가장 오래된 것부터 지워진다.
+
+**사용법**: 프론트는 회원이 상품 상세 화면을 열 때마다 기록 API를 한 번 호출한다. 목록 화면에서는 조회 API로 최근에 본 순서대로 읽는다.
+
+=== 본 상품 기록
+
+성공하면 `204 No Content`다. 이미 기록된 상품이면 본 시각만 갱신한다(멱등).
+없거나 판매 중지·삭제된 상품이면 `404 PRODUCT_NOT_FOUND`이고, `productId`가 없거나 숫자가 아니면 `400 INVALID_INPUT`이다.
+
+==== 요청
+
+include::{snippets}/recent-view/record/http-request.adoc[]
+
+include::{snippets}/recent-view/record/request-headers.adoc[]
+
+include::{snippets}/recent-view/record/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/recent-view/record/http-response.adoc[]
+
+=== 최근 본 상품 목록
+
+최근에 본 순서로 최대 50개를 내려준다. 본 뒤 판매가 중지된 상품은 `available`이 `false`인 채로 나오고, 삭제된 상품은 나오지 않는다.
+
+==== 요청
+
+include::{snippets}/recent-view/list/http-request.adoc[]
+
+include::{snippets}/recent-view/list/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/recent-view/list/http-response.adoc[]
+
+include::{snippets}/recent-view/list/response-fields.adoc[]
+
+=== 최근 본 상품 하나 지우기
+
+성공하면 `204 No Content`다. 기록에 없거나 없는 상품이어도 `204`다(멱등).
+
+==== 요청
+
+include::{snippets}/recent-view/remove/http-request.adoc[]
+
+include::{snippets}/recent-view/remove/path-parameters.adoc[]
+
+include::{snippets}/recent-view/remove/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/recent-view/remove/http-response.adoc[]
+
+=== 최근 본 상품 전체 지우기
+
+내 기록을 모두 지운다. 기록이 없어도 `204 No Content`다.
+
+==== 요청
+
+include::{snippets}/recent-view/clear/http-request.adoc[]
+
+include::{snippets}/recent-view/clear/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/recent-view/clear/http-response.adoc[]
+
 == 카탈로그
 
 카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.
