@@ -56,7 +56,7 @@ public class AdminProductService {
     /** 상품 정보를 바꾼다. 브랜드와 카테고리는 등록할 때와 똑같이 확인한다. 삭제된 상품은 수정할 수 없다. */
     @Transactional
     public AdminProductResponse update(Long productId, ProductUpdateRequest request) {
-        Product product = productService.getProduct(productId);
+        Product product = productService.getProductForUpdate(productId);
         Brand brand = brandService.get(request.brandId());
         categoryService.getLeaf(request.categoryId());
         product.update(request.brandId(), request.categoryId(), request.name(), request.summary(),

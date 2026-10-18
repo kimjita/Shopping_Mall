@@ -20,10 +20,15 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
-/** 판매 상품이다. 브랜드·카테고리는 id로만 참조하고, 옵션은 {@link Sku}가 상품 id를 들고 있다. */
+/**
+ * 판매 상품이다. 브랜드·카테고리는 id로만 참조하고, 옵션은 {@link Sku}가 상품 id를 들고 있다.
+ * 상태·세일·최저가를 서로 다른 요청이 고치므로, 읽어 둔 낡은 값이 다른 컬럼을 덮어쓰지 않도록 바뀐 컬럼만 갱신한다.
+ */
 @Getter
 @Entity
+@DynamicUpdate
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Product extends BaseEntity {
 

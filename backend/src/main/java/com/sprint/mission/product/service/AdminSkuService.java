@@ -32,7 +32,7 @@ public class AdminSkuService {
 
     @Transactional
     public AdminProductResponse add(Long productId, SkuRequest request) {
-        Product product = productService.getProduct(productId);
+        Product product = productService.getProductForUpdate(productId);
         if (skuRepository.countByProductId(productId) >= MAX_SKUS_PER_PRODUCT) {
             throw new BusinessException(ErrorCode.SKU_LIMIT_EXCEEDED);
         }
@@ -47,7 +47,7 @@ public class AdminSkuService {
     /** 이름과 추가금액만 바꾼다. 같은 이름의 다른 옵션이 있으면 거절하고, 자기 자신의 이름은 허용한다. */
     @Transactional
     public AdminProductResponse update(Long productId, Long skuId, SkuUpdateRequest request) {
-        Product product = productService.getProduct(productId);
+        Product product = productService.getProductForUpdate(productId);
         Sku sku = getSku(productId, skuId);
         if (skuRepository.existsByProductIdAndNameAndIdNot(productId, request.name(), skuId)) {
             throw new BusinessException(ErrorCode.DUPLICATE_SKU_NAME);

@@ -31,6 +31,13 @@ public class ProductService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
     }
 
+    /** {@link #getProduct}와 같지만 행 잠금을 건다. 쓰기 트랜잭션 안에서만 쓴다. */
+    public Product getProductForUpdate(Long id) {
+        return productRepository.findByIdForUpdate(id)
+                .filter(product -> !product.isDeleted())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+
     /** 고객에게 보이는 상품 상세다. ON_SALE이 아니면 PRODUCT_NOT_FOUND다. */
     public ProductResponse getPublic(Long id) {
         Product product = getProduct(id);
