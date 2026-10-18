@@ -1,0 +1,36 @@
+CREATE INDEX
+CREATE INDEX
+                                         Table "public.product"
+     Column     |           Type           | Collation | Nullable |               Default               
+----------------+--------------------------+-----------+----------+-------------------------------------
+ id             | bigint                   |           | not null | nextval('product_id_seq'::regclass)
+ brand_id       | bigint                   |           | not null | 
+ category_id    | bigint                   |           | not null | 
+ name           | character varying(100)   |           | not null | 
+ summary        | character varying(200)   |           |          | 
+ description    | text                     |           | not null | 
+ ingredients    | text                     |           |          | 
+ base_price     | bigint                   |           | not null | 
+ status         | character varying(20)    |           | not null | 
+ sale_rate      | integer                  |           |          | 
+ sale_starts_at | timestamp with time zone |           |          | 
+ sale_ends_at   | timestamp with time zone |           |          | 
+ created_at     | timestamp with time zone |           | not null | 
+ updated_at     | timestamp with time zone |           | not null | 
+ min_price      | bigint                   |           | not null | 
+ search_text    | text                     |           | not null | 
+Indexes:
+    "product_pkey" PRIMARY KEY, btree (id)
+    "idx_product_brand_id" btree (brand_id)
+    "idx_product_category_id" btree (category_id)
+    "idx_product_search_text_trgm" gin (search_text gin_trgm_ops)
+    "idx_product_status_created" btree (status, created_at DESC, id DESC)
+Check constraints:
+    "chk_product_sale_consistency" CHECK (sale_rate IS NULL AND sale_starts_at IS NULL AND sale_ends_at IS NULL OR sale_rate >= 1 AND sale_rate <= 90 AND sale_starts_at IS NOT NULL AND sale_ends_at > sale_starts_at)
+Foreign-key constraints:
+    "product_brand_id_fkey" FOREIGN KEY (brand_id) REFERENCES brand(id)
+    "product_category_id_fkey" FOREIGN KEY (category_id) REFERENCES category(id)
+Referenced by:
+    TABLE "product_image" CONSTRAINT "product_image_product_id_fkey" FOREIGN KEY (product_id) REFERENCES product(id)
+    TABLE "sku" CONSTRAINT "sku_product_id_fkey" FOREIGN KEY (product_id) REFERENCES product(id)
+

@@ -1,0 +1,614 @@
+Pager usage is off.
+
+=== a1: 3글자 이상 검색어 히알루론, 신상품순 첫 페이지
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5813.01..6104.74 rows=21 width=132) (actual time=25.347..26.804 rows=21 loops=1)
+   Buffers: shared hit=4321
+   ->  Nested Loop Left Join  (cost=5813.01..125964.34 rows=8649 width=132) (actual time=25.346..26.802 rows=21 loops=1)
+         Buffers: shared hit=4321
+         ->  Gather Merge  (cost=5812.59..6817.12 rows=8625 width=98) (actual time=25.281..26.670 rows=21 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=4153
+               ->  Sort  (cost=4812.57..4821.55 rows=3594 width=98) (actual time=23.437..23.452 rows=376 loops=3)
+                     Sort Key: p.created_at DESC, p.id DESC
+                     Sort Method: quicksort  Memory: 229kB
+                     Buffers: shared hit=4153
+                     Worker 0:  Sort Method: quicksort  Memory: 213kB
+                     Worker 1:  Sort Method: quicksort  Memory: 210kB
+                     ->  Hash Join  (cost=10.75..4600.32 rows=3594 width=98) (actual time=0.228..23.012 rows=1574 loops=3)
+                           Hash Cond: (p.brand_id = b.id)
+                           Buffers: shared hit=4065
+                           ->  Parallel Seq Scan on product p  (cost=0.00..4580.00 rows=3594 width=87) (actual time=0.032..22.577 rows=1574 loops=3)
+                                 Filter: ((search_text ~~* '%히알루론%'::text) AND ((status)::text = 'ON_SALE'::text))
+                                 Rows Removed by Filter: 31760
+                                 Buffers: shared hit=3955
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27) (actual time=0.117..0.118 rows=300 loops=3)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 27kB
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.009..0.035 rows=300 loops=3)
+                                       Buffers: shared hit=12
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..1.76 rows=1 width=49) (actual time=0.002..0.002 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.003..0.003 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.003..0.003 rows=2 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=360
+ Planning Time: 1.492 ms
+ Execution Time: 26.912 ms
+(39 rows)
+
+
+=== a2: 히알루론 + 스킨케어(categoryId=1) + 가격 낮은순 첫 페이지
+                                                                                                          QUERY PLAN                                                                                                          
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5342.36..5712.58 rows=21 width=132) (actual time=6.855..8.213 rows=21 loops=1)
+   Buffers: shared hit=4172
+   ->  Nested Loop Left Join  (cost=5342.36..30464.31 rows=1425 width=132) (actual time=6.854..8.210 rows=21 loops=1)
+         Buffers: shared hit=4172
+         ->  Gather Merge  (cost=5341.94..5507.44 rows=1421 width=98) (actual time=6.801..7.881 rows=21 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=4003
+               ->  Sort  (cost=4341.92..4343.40 rows=592 width=98) (actual time=5.304..5.312 rows=161 loops=3)
+                     Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+                     Sort Method: quicksort  Memory: 61kB
+                     Buffers: shared hit=4003
+                     Worker 0:  Sort Method: quicksort  Memory: 52kB
+                     Worker 1:  Sort Method: quicksort  Memory: 55kB
+                     ->  Hash Join  (cost=212.17..4314.66 rows=592 width=98) (actual time=0.542..5.231 rows=260 loops=3)
+                           Hash Cond: (p.brand_id = b.id)
+                           Buffers: shared hit=3987
+                           ->  Parallel Bitmap Heap Scan on product p  (cost=201.42..4302.33 rows=592 width=87) (actual time=0.423..5.061 rows=260 loops=3)
+                                 Recheck Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                                 Filter: ((search_text ~~* '%히알루론%'::text) AND ((status)::text = 'ON_SALE'::text))
+                                 Rows Removed by Filter: 5297
+                                 Heap Blocks: exact=1481
+                                 Buffers: shared hit=3877
+                                 ->  Bitmap Index Scan on idx_product_category_id  (cost=0.00..201.06 rows=16480 width=0) (actual time=0.855..0.855 rows=16669 loops=1)
+                                       Index Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                                       Buffers: shared hit=16
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27) (actual time=0.057..0.057 rows=300 loops=3)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 27kB
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.007..0.026 rows=300 loops=3)
+                                       Buffers: shared hit=12
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..5.50 rows=1 width=49) (actual time=0.007..0.007 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.007..0.008 rows=1 loops=21)
+                 Buffers: shared hit=85
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.006..0.007 rows=3 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=85
+ Planning:
+   Buffers: shared hit=27
+ Planning Time: 0.411 ms
+ Execution Time: 8.276 ms
+(44 rows)
+
+
+=== a3: 드문 검색어 더미브랜드150(약 330건), 신상품순 첫 페이지
+                                                                          QUERY PLAN                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5578.92..5687.26 rows=9 width=132) (actual time=72.962..73.036 rows=21 loops=1)
+   Buffers: shared hit=5391
+   ->  Result  (cost=5578.92..5687.26 rows=9 width=132) (actual time=72.961..73.034 rows=21 loops=1)
+         Buffers: shared hit=5391
+         ->  Sort  (cost=5578.92..5578.94 rows=9 width=131) (actual time=72.938..72.940 rows=21 loops=1)
+               Sort Key: p.created_at DESC, p.id DESC
+               Sort Method: top-N heapsort  Memory: 36kB
+               Buffers: shared hit=5307
+               ->  Nested Loop Left Join  (cost=0.42..5578.78 rows=9 width=131) (actual time=67.328..72.866 rows=337 loops=1)
+                     Buffers: shared hit=5307
+                     ->  Nested Loop  (cost=0.00..5502.52 rows=9 width=98) (actual time=67.294..71.986 rows=337 loops=1)
+                           Join Filter: (p.brand_id = b.id)
+                           Rows Removed by Join Filter: 100763
+                           Buffers: shared hit=3959
+                           ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.005..0.024 rows=300 loops=1)
+                                 Buffers: shared hit=4
+                           ->  Materialize  (cost=0.00..5455.05 rows=9 width=87) (actual time=0.001..0.220 rows=337 loops=300)
+                                 Buffers: shared hit=3955
+                                 ->  Seq Scan on product p  (cost=0.00..5455.00 rows=9 width=87) (actual time=0.175..62.605 rows=337 loops=1)
+                                       Filter: ((search_text ~~* '%더미브랜드150%'::text) AND ((status)::text = 'ON_SALE'::text))
+                                       Rows Removed by Filter: 99663
+                                       Buffers: shared hit=3955
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..8.44 rows=1 width=49) (actual time=0.002..0.002 rows=1 loops=337)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+                           Buffers: shared hit=1348
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.004..0.004 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.003..0.003 rows=3 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=38
+ Planning Time: 0.371 ms
+ Execution Time: 73.078 ms
+(35 rows)
+
+
+=== a4: 드문 검색어 더미브랜드150(약 330건), 가격 낮은순 첫 페이지
+                                                                                                       QUERY PLAN                                                                                                       
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5578.92..5687.26 rows=9 width=132) (actual time=72.926..73.014 rows=21 loops=1)
+   Buffers: shared hit=5391
+   ->  Result  (cost=5578.92..5687.26 rows=9 width=132) (actual time=72.926..73.012 rows=21 loops=1)
+         Buffers: shared hit=5391
+         ->  Sort  (cost=5578.92..5578.94 rows=9 width=131) (actual time=72.904..72.906 rows=21 loops=1)
+               Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+               Sort Method: top-N heapsort  Memory: 32kB
+               Buffers: shared hit=5307
+               ->  Nested Loop Left Join  (cost=0.42..5578.78 rows=9 width=131) (actual time=67.619..72.847 rows=337 loops=1)
+                     Buffers: shared hit=5307
+                     ->  Nested Loop  (cost=0.00..5502.52 rows=9 width=98) (actual time=67.580..72.152 rows=337 loops=1)
+                           Join Filter: (p.brand_id = b.id)
+                           Rows Removed by Join Filter: 100763
+                           Buffers: shared hit=3959
+                           ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.005..0.022 rows=300 loops=1)
+                                 Buffers: shared hit=4
+                           ->  Materialize  (cost=0.00..5455.05 rows=9 width=87) (actual time=0.001..0.221 rows=337 loops=300)
+                                 Buffers: shared hit=3955
+                                 ->  Seq Scan on product p  (cost=0.00..5455.00 rows=9 width=87) (actual time=0.181..62.941 rows=337 loops=1)
+                                       Filter: ((search_text ~~* '%더미브랜드150%'::text) AND ((status)::text = 'ON_SALE'::text))
+                                       Rows Removed by Filter: 99663
+                                       Buffers: shared hit=3955
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..8.44 rows=1 width=49) (actual time=0.002..0.002 rows=1 loops=337)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+                           Buffers: shared hit=1348
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.005..0.005 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.004..0.004 rows=2 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=24
+ Planning Time: 0.403 ms
+ Execution Time: 73.061 ms
+(35 rows)
+
+
+=== b1: 2글자 검색어 토너, 신상품순 첫 페이지
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5813.01..6104.74 rows=21 width=132) (actual time=27.089..29.232 rows=21 loops=1)
+   Buffers: shared hit=4321
+   ->  Nested Loop Left Join  (cost=5813.01..125964.34 rows=8649 width=132) (actual time=27.088..29.229 rows=21 loops=1)
+         Buffers: shared hit=4321
+         ->  Gather Merge  (cost=5812.59..6817.12 rows=8625 width=98) (actual time=27.035..29.103 rows=21 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=4153
+               ->  Sort  (cost=4812.57..4821.55 rows=3594 width=98) (actual time=23.336..23.351 rows=381 loops=3)
+                     Sort Key: p.created_at DESC, p.id DESC
+                     Sort Method: quicksort  Memory: 403kB
+                     Buffers: shared hit=4153
+                     Worker 0:  Sort Method: quicksort  Memory: 327kB
+                     Worker 1:  Sort Method: quicksort  Memory: 344kB
+                     ->  Hash Join  (cost=10.75..4600.32 rows=3594 width=98) (actual time=0.144..22.624 rows=2494 loops=3)
+                           Hash Cond: (p.brand_id = b.id)
+                           Buffers: shared hit=4065
+                           ->  Parallel Seq Scan on product p  (cost=0.00..4580.00 rows=3594 width=87) (actual time=0.012..22.043 rows=2494 loops=3)
+                                 Filter: ((search_text ~~* '%토너%'::text) AND ((status)::text = 'ON_SALE'::text))
+                                 Rows Removed by Filter: 30840
+                                 Buffers: shared hit=3955
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27) (actual time=0.059..0.060 rows=300 loops=3)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 27kB
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.008..0.029 rows=300 loops=3)
+                                       Buffers: shared hit=12
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..1.76 rows=1 width=49) (actual time=0.003..0.003 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.002..0.002 rows=2 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=38
+ Planning Time: 0.415 ms
+ Execution Time: 29.311 ms
+(39 rows)
+
+
+=== b2: 2글자 검색어 토너 + 가격 낮은순 첫 페이지
+                                                                                                          QUERY PLAN                                                                                                          
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5813.01..6104.74 rows=21 width=132) (actual time=24.983..26.939 rows=21 loops=1)
+   Buffers: shared hit=4307
+   ->  Nested Loop Left Join  (cost=5813.01..125964.34 rows=8649 width=132) (actual time=24.982..26.936 rows=21 loops=1)
+         Buffers: shared hit=4307
+         ->  Gather Merge  (cost=5812.59..6817.12 rows=8625 width=98) (actual time=24.916..26.668 rows=21 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=4139
+               ->  Sort  (cost=4812.57..4821.55 rows=3594 width=98) (actual time=23.123..23.144 rows=333 loops=3)
+                     Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+                     Sort Method: quicksort  Memory: 419kB
+                     Buffers: shared hit=4139
+                     Worker 0:  Sort Method: quicksort  Memory: 390kB
+                     Worker 1:  Sort Method: quicksort  Memory: 369kB
+                     ->  Hash Join  (cost=10.75..4600.32 rows=3594 width=98) (actual time=0.232..22.300 rows=2494 loops=3)
+                           Hash Cond: (p.brand_id = b.id)
+                           Buffers: shared hit=4065
+                           ->  Parallel Seq Scan on product p  (cost=0.00..4580.00 rows=3594 width=87) (actual time=0.032..21.569 rows=2494 loops=3)
+                                 Filter: ((search_text ~~* '%토너%'::text) AND ((status)::text = 'ON_SALE'::text))
+                                 Rows Removed by Filter: 30840
+                                 Buffers: shared hit=3955
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27) (actual time=0.065..0.065 rows=300 loops=3)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 27kB
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.011..0.032 rows=300 loops=3)
+                                       Buffers: shared hit=12
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..1.76 rows=1 width=49) (actual time=0.005..0.005 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.006..0.006 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.005..0.005 rows=2 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=24
+ Planning Time: 0.392 ms
+ Execution Time: 27.014 ms
+(39 rows)
+
+
+=== c: 대분류 카테고리(스킨케어 말단 8~12) + 신상품순 첫 페이지
+                                                                               QUERY PLAN                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5729.97..6009.35 rows=21 width=132) (actual time=9.578..12.086 rows=21 loops=1)
+   Buffers: shared hit=4186
+   ->  Nested Loop Left Join  (cost=5729.97..214305.86 rows=15678 width=132) (actual time=9.577..12.083 rows=21 loops=1)
+         Buffers: shared hit=4186
+         ->  Gather Merge  (cost=5729.55..7550.51 rows=15635 width=98) (actual time=9.519..11.966 rows=21 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=4017
+               ->  Sort  (cost=4729.53..4745.82 rows=6515 width=98) (actual time=7.523..7.558 rows=375 loops=3)
+                     Sort Key: p.created_at DESC, p.id DESC
+                     Sort Method: quicksort  Memory: 949kB
+                     Buffers: shared hit=4017
+                     Worker 0:  Sort Method: quicksort  Memory: 514kB
+                     Worker 1:  Sort Method: quicksort  Memory: 693kB
+                     ->  Hash Join  (cost=215.72..4316.82 rows=6515 width=98) (actual time=0.609..6.091 rows=5274 loops=3)
+                           Hash Cond: (p.brand_id = b.id)
+                           Buffers: shared hit=3987
+                           ->  Parallel Bitmap Heap Scan on product p  (cost=204.97..4288.72 rows=6515 width=87) (actual time=0.488..4.836 rows=5274 loops=3)
+                                 Recheck Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 Rows Removed by Filter: 282
+                                 Heap Blocks: exact=1746
+                                 Buffers: shared hit=3877
+                                 ->  Bitmap Index Scan on idx_product_category_id  (cost=0.00..201.06 rows=16480 width=0) (actual time=0.868..0.877 rows=16669 loops=1)
+                                       Index Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                                       Buffers: shared hit=16
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27) (actual time=0.058..0.058 rows=300 loops=3)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 27kB
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.008..0.026 rows=300 loops=3)
+                                       Buffers: shared hit=12
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..1.17 rows=1 width=49) (actual time=0.002..0.002 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=21)
+                 Buffers: shared hit=85
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.001..0.002 rows=2 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=85
+ Planning:
+   Buffers: shared hit=38
+ Planning Time: 0.397 ms
+ Execution Time: 12.192 ms
+(44 rows)
+
+
+=== d: 가격 낮은순 + 가격대 필터(현재 판매가 10,000~30,000원) 첫 페이지
+                                                                                                                                                                                                                            QUERY PLAN                                                                                                                                                                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7578.44..7982.14 rows=21 width=132) (actual time=20.860..22.425 rows=21 loops=1)
+   Buffers: shared hit=4307
+   ->  Nested Loop Left Join  (cost=7578.44..16709.67 rows=475 width=132) (actual time=20.859..22.422 rows=21 loops=1)
+         Buffers: shared hit=4307
+         ->  Gather Merge  (cost=7578.02..7633.23 rows=474 width=98) (actual time=20.788..22.219 rows=21 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=4139
+               ->  Sort  (cost=6578.00..6578.50 rows=198 width=98) (actual time=17.326..17.344 rows=334 loops=3)
+                     Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+                     Sort Method: quicksort  Memory: 1882kB
+                     Buffers: shared hit=4139
+                     Worker 0:  Sort Method: quicksort  Memory: 1177kB
+                     Worker 1:  Sort Method: quicksort  Memory: 1421kB
+                     ->  Hash Join  (cost=10.75..6570.45 rows=198 width=98) (actual time=0.579..12.739 rows=9636 loops=3)
+                           Hash Cond: (p.brand_id = b.id)
+                           Buffers: shared hit=4065
+                           ->  Parallel Seq Scan on product p  (cost=0.00..6559.17 rows=198 width=87) (actual time=0.071..9.602 rows=9636 loops=3)
+                                 Filter: (((status)::text = 'ON_SALE'::text) AND (CASE WHEN ((sale_rate IS NOT NULL) AND (sale_starts_at <= now()) AND (sale_ends_at > now())) THEN ((((min_price * (100 - sale_rate)) / 100) / 10) * 10) ELSE min_price END >= 10000) AND (CASE WHEN ((sale_rate IS NOT NULL) AND (sale_starts_at <= now()) AND (sale_ends_at > now())) THEN ((((min_price * (100 - sale_rate)) / 100) / 10) * 10) ELSE min_price END <= 30000))
+                                 Rows Removed by Filter: 23697
+                                 Buffers: shared hit=3955
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27) (actual time=0.103..0.103 rows=300 loops=3)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 27kB
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.040..0.064 rows=300 loops=3)
+                                       Buffers: shared hit=12
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..7.10 rows=1 width=49) (actual time=0.004..0.004 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.004..0.004 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.004..0.004 rows=3 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=24
+ Planning Time: 0.334 ms
+ Execution Time: 22.525 ms
+(39 rows)
+
+
+=== e1: 신상품순 5,000번째 뒤 21행 - 커서(키셋)
+                                                                                                                        QUERY PLAN                                                                                                                         
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=8629.60..8896.97 rows=21 width=132) (actual time=18.648..51.028 rows=21 loops=1)
+   Buffers: shared hit=4251
+   ->  Nested Loop Left Join  (cost=8629.60..1154548.17 rows=90007 width=132) (actual time=18.647..51.025 rows=21 loops=1)
+         Buffers: shared hit=4251
+         ->  Nested Loop  (cost=8629.18..21372.19 rows=89759 width=98) (actual time=18.594..50.894 rows=21 loops=1)
+               Buffers: shared hit=4083
+               ->  Gather Merge  (cost=8629.03..19082.94 rows=89759 width=87) (actual time=18.516..50.779 rows=21 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=4043
+                     ->  Sort  (cost=7629.00..7722.50 rows=37400 width=87) (actual time=16.742..16.760 rows=436 loops=3)
+                           Sort Key: p.created_at DESC, p.id DESC
+                           Sort Method: quicksort  Memory: 4032kB
+                           Buffers: shared hit=4043
+                           Worker 0:  Sort Method: quicksort  Memory: 3244kB
+                           Worker 1:  Sort Method: quicksort  Memory: 3225kB
+                           ->  Parallel Seq Scan on product p  (cost=0.00..4788.33 rows=37400 width=87) (actual time=0.005..8.590 rows=29957 loops=3)
+                                 Filter: ((created_at <= '2026-09-28 22:32:30.411835+00'::timestamp with time zone) AND ((status)::text = 'ON_SALE'::text) AND ((created_at < '2026-09-28 22:32:30.411835+00'::timestamp with time zone) OR (id < 94729)))
+                                 Rows Removed by Filter: 3376
+                                 Buffers: shared hit=3955
+               ->  Memoize  (cost=0.16..0.18 rows=1 width=27) (actual time=0.005..0.005 rows=1 loops=21)
+                     Cache Key: p.brand_id
+                     Cache Mode: logical
+                     Hits: 1  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+                     Buffers: shared hit=40
+                     ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.17 rows=1 width=27) (actual time=0.003..0.003 rows=1 loops=20)
+                           Index Cond: (id = p.brand_id)
+                           Buffers: shared hit=40
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..0.57 rows=1 width=49) (actual time=0.002..0.002 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.003..0.003 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.002..0.002 rows=2 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=49
+ Planning Time: 0.430 ms
+ Execution Time: 51.870 ms
+(41 rows)
+
+
+=== e2: 신상품순 5,000번째 뒤 21행 - offset
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=74011.18..74278.40 rows=21 width=132) (actual time=47.390..49.854 rows=21 loops=1)
+   Buffers: shared hit=44880
+   ->  Nested Loop Left Join  (cost=10388.10..1220906.41 rows=95132 width=132) (actual time=28.312..49.672 rows=5021 loops=1)
+         Buffers: shared hit=44880
+         ->  Nested Loop  (cost=10387.68..23853.45 rows=94870 width=98) (actual time=28.239..33.682 rows=5021 loops=1)
+               Buffers: shared hit=4643
+               ->  Gather Merge  (cost=10387.52..21436.69 rows=94870 width=87) (actual time=28.162..31.533 rows=5021 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=4043
+                     ->  Sort  (cost=9387.50..9486.32 rows=39529 width=87) (actual time=24.492..24.603 rows=2026 loops=3)
+                           Sort Key: p.created_at DESC, p.id DESC
+                           Sort Method: quicksort  Memory: 3934kB
+                           Buffers: shared hit=4043
+                           Worker 0:  Sort Method: quicksort  Memory: 3659kB
+                           Worker 1:  Sort Method: quicksort  Memory: 3362kB
+                           ->  Parallel Seq Scan on product p  (cost=0.00..4475.83 rows=39529 width=87) (actual time=0.019..12.306 rows=31624 loops=3)
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 Rows Removed by Filter: 1709
+                                 Buffers: shared hit=3955
+               ->  Memoize  (cost=0.16..0.18 rows=1 width=27) (actual time=0.000..0.000 rows=1 loops=5021)
+                     Cache Key: p.brand_id
+                     Cache Mode: logical
+                     Hits: 4721  Misses: 300  Evictions: 0  Overflows: 0  Memory Usage: 40kB
+                     Buffers: shared hit=600
+                     ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.17 rows=1 width=27) (actual time=0.001..0.001 rows=1 loops=300)
+                           Index Cond: (id = p.brand_id)
+                           Buffers: shared hit=600
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..0.56 rows=1 width=49) (actual time=0.001..0.001 rows=1 loops=5021)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=20084
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.002..0.002 rows=1 loops=5021)
+                 Buffers: shared hit=20153
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.001..0.001 rows=2 loops=5021)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=20153
+ Planning:
+   Buffers: shared hit=38
+ Planning Time: 0.417 ms
+ Execution Time: 50.004 ms
+(41 rows)
+
+
+=== e3: 가격 낮은순 5,000번째 뒤 21행 - 커서(키셋)
+                                                                                                                                                                                                                                   QUERY PLAN                                                                                                                                                                                                                                    
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=8620.69..8892.31 rows=21 width=132) (actual time=41.228..45.752 rows=21 loops=1)
+   Buffers: shared hit=4307, temp read=801 written=1287
+   ->  Nested Loop Left Join  (cost=8620.69..422538.81 rows=32001 width=132) (actual time=41.227..45.748 rows=21 loops=1)
+         Buffers: shared hit=4307, temp read=801 written=1287
+         ->  Gather Merge  (cost=8620.27..12337.06 rows=31913 width=98) (actual time=41.124..45.186 rows=21 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=4139, temp read=801 written=1287
+               ->  Sort  (cost=7620.24..7653.49 rows=13297 width=98) (actual time=38.385..38.459 rows=333 loops=3)
+                     Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+                     Sort Method: external merge  Disk: 3728kB
+                     Buffers: shared hit=4139, temp read=801 written=1287
+                     Worker 0:  Sort Method: external merge  Disk: 3280kB
+                     Worker 1:  Sort Method: external merge  Disk: 3280kB
+                     ->  Hash Join  (cost=10.75..6709.48 rows=13297 width=98) (actual time=0.220..18.123 rows=29957 loops=3)
+                           Hash Cond: (p.brand_id = b.id)
+                           Buffers: shared hit=4065
+                           ->  Parallel Seq Scan on product p  (cost=0.00..6663.33 rows=13297 width=87) (actual time=0.010..10.710 rows=29957 loops=3)
+                                 Filter: (((status)::text = 'ON_SALE'::text) AND ((CASE WHEN ((sale_rate IS NOT NULL) AND (sale_starts_at <= now()) AND (sale_ends_at > now())) THEN ((((min_price * (100 - sale_rate)) / 100) / 10) * 10) ELSE min_price END > 7800) OR ((CASE WHEN ((sale_rate IS NOT NULL) AND (sale_starts_at <= now()) AND (sale_ends_at > now())) THEN ((((min_price * (100 - sale_rate)) / 100) / 10) * 10) ELSE min_price END = 7800) AND (id > 8628))))
+                                 Rows Removed by Filter: 3376
+                                 Buffers: shared hit=3955
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27) (actual time=0.091..0.092 rows=300 loops=3)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 27kB
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27) (actual time=0.013..0.043 rows=300 loops=3)
+                                       Buffers: shared hit=12
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..0.80 rows=1 width=49) (actual time=0.011..0.011 rows=1 loops=21)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=84
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.011..0.012 rows=1 loops=21)
+                 Buffers: shared hit=84
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.010..0.011 rows=2 loops=21)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=84
+ Planning:
+   Buffers: shared hit=27
+ Planning Time: 0.339 ms
+ Execution Time: 46.276 ms
+(39 rows)
+
+
+=== e4: 가격 낮은순 5,000번째 뒤 21행 - offset
+                                                                                                             QUERY PLAN                                                                                                             
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=74011.18..74278.40 rows=21 width=132) (actual time=84.248..85.964 rows=21 loops=1)
+   Buffers: shared hit=44875, temp read=496 written=793
+   ->  Nested Loop Left Join  (cost=10388.10..1220906.41 rows=95132 width=132) (actual time=36.239..85.772 rows=5021 loops=1)
+         Buffers: shared hit=44875, temp read=496 written=793
+         ->  Nested Loop  (cost=10387.68..23853.45 rows=94870 width=98) (actual time=36.173..41.580 rows=5021 loops=1)
+               Buffers: shared hit=4629, temp read=496 written=793
+               ->  Gather Merge  (cost=10387.52..21436.69 rows=94870 width=87) (actual time=36.096..39.186 rows=5021 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=4029, temp read=496 written=793
+                     ->  Sort  (cost=9387.50..9486.32 rows=39529 width=87) (actual time=29.283..29.526 rows=2006 loops=3)
+                           Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+                           Sort Method: external merge  Disk: 3168kB
+                           Buffers: shared hit=4029, temp read=496 written=793
+                           Worker 0:  Sort Method: quicksort  Memory: 3966kB
+                           Worker 1:  Sort Method: external merge  Disk: 3176kB
+                           ->  Parallel Seq Scan on product p  (cost=0.00..4475.83 rows=39529 width=87) (actual time=0.017..8.762 rows=31624 loops=3)
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 Rows Removed by Filter: 1709
+                                 Buffers: shared hit=3955
+               ->  Memoize  (cost=0.16..0.18 rows=1 width=27) (actual time=0.000..0.000 rows=1 loops=5021)
+                     Cache Key: p.brand_id
+                     Cache Mode: logical
+                     Hits: 4721  Misses: 300  Evictions: 0  Overflows: 0  Memory Usage: 40kB
+                     Buffers: shared hit=600
+                     ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.17 rows=1 width=27) (actual time=0.001..0.001 rows=1 loops=300)
+                           Index Cond: (id = p.brand_id)
+                           Buffers: shared hit=600
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..0.56 rows=1 width=49) (actual time=0.003..0.003 rows=1 loops=5021)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+               Buffers: shared hit=20084
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4) (actual time=0.005..0.005 rows=1 loops=5021)
+                 Buffers: shared hit=20162
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4) (actual time=0.004..0.004 rows=2 loops=5021)
+                       Index Cond: (product_id = p.id)
+                       Buffers: shared hit=20162
+ Planning:
+   Buffers: shared hit=24
+ Planning Time: 0.359 ms
+ Execution Time: 86.314 ms
+(41 rows)
+
+
+=== g1: count 히알루론(3글자 이상)
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=5476.56..5476.57 rows=1 width=8) (actual time=64.843..64.844 rows=1 loops=1)
+   Buffers: shared hit=3955
+   ->  Seq Scan on product p  (cost=0.00..5455.00 rows=8625 width=0) (actual time=0.013..64.556 rows=4721 loops=1)
+         Filter: ((search_text ~~* '%히알루론%'::text) AND ((status)::text = 'ON_SALE'::text))
+         Rows Removed by Filter: 95279
+         Buffers: shared hit=3955
+ Planning:
+   Buffers: shared hit=6
+ Planning Time: 0.170 ms
+ Execution Time: 64.862 ms
+(10 rows)
+
+
+=== g2: count 토너(2글자)
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=5476.56..5476.57 rows=1 width=8) (actual time=62.988..62.988 rows=1 loops=1)
+   Buffers: shared hit=3955
+   ->  Seq Scan on product p  (cost=0.00..5455.00 rows=8625 width=0) (actual time=0.012..62.513 rows=7481 loops=1)
+         Filter: ((search_text ~~* '%토너%'::text) AND ((status)::text = 'ON_SALE'::text))
+         Rows Removed by Filter: 92519
+         Buffers: shared hit=3955
+ Planning Time: 0.218 ms
+ Execution Time: 63.008 ms
+(8 rows)
+
+
+=== g3: count 토너(2글자), status 조건 없이 시퀀셜 스캔 금지(enable_seqscan = off)
+BEGIN
+SET
+                                                              QUERY PLAN                                                              
+--------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=10000005227.73..10000005227.74 rows=1 width=8) (actual time=120.180..120.180 rows=1 loops=1)
+   Buffers: shared hit=3955
+   ->  Seq Scan on product p  (cost=10000000000.00..10000005205.00 rows=9091 width=0) (actual time=61.070..119.793 rows=7871 loops=1)
+         Filter: (search_text ~~* '%토너%'::text)
+         Rows Removed by Filter: 92129
+         Buffers: shared hit=3955
+ Planning Time: 0.152 ms
+ JIT:
+   Functions: 4
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.304 ms (Deform 0.117 ms), Inlining 31.692 ms, Optimization 12.848 ms, Emission 16.523 ms, Total 61.367 ms
+ Execution Time: 142.480 ms
+(12 rows)
+
+ROLLBACK
+
+=== g4: count 더미브랜드150(약 330건)
+                                                  QUERY PLAN                                                   
+---------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=5455.02..5455.03 rows=1 width=8) (actual time=66.493..66.493 rows=1 loops=1)
+   Buffers: shared hit=3955
+   ->  Seq Scan on product p  (cost=0.00..5455.00 rows=9 width=0) (actual time=0.184..66.449 rows=337 loops=1)
+         Filter: ((search_text ~~* '%더미브랜드150%'::text) AND ((status)::text = 'ON_SALE'::text))
+         Rows Removed by Filter: 99663
+         Buffers: shared hit=3955
+ Planning Time: 0.151 ms
+ Execution Time: 66.507 ms
+(8 rows)
+

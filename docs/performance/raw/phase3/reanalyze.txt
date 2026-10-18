@@ -1,0 +1,370 @@
+##### ANALYZE #1
+ANALYZE
+
+=== a1: 3글자 이상 검색어 히알루론, 신상품순 첫 페이지
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.98..441.53 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=0.98..60397.53 rows=2879 width=132)
+         ->  Nested Loop  (cost=0.56..14646.31 rows=2871 width=98)
+               ->  Index Scan using idx_product_status_created on product p  (cost=0.42..14148.85 rows=2871 width=87)
+                     Index Cond: ((status)::text = 'ON_SALE'::text)
+                     Filter: (search_text ~~* '%히알루론%'::text)
+               ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.17 rows=1 width=27)
+                     Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..3.88 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(14 rows)
+
+
+=== a2: 히알루론 + 스킨케어(categoryId=1) + 가격 낮은순 첫 페이지
+                                                                                                       QUERY PLAN                                                                                                       
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5054.29..5307.08 rows=21 width=132)
+   ->  Result  (cost=5054.29..10772.11 rows=475 width=132)
+         ->  Sort  (cost=5054.29..5055.48 rows=475 width=131)
+               Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+               ->  Nested Loop Left Join  (cost=253.64..5041.49 rows=475 width=131)
+                     ->  Hash Join  (cost=253.22..1661.49 rows=474 width=98)
+                           Hash Cond: (p.brand_id = b.id)
+                           ->  Bitmap Heap Scan on product p  (cost=242.47..1649.47 rows=474 width=87)
+                                 Recheck Cond: ((search_text ~~* '%히알루론%'::text) AND (category_id = ANY ('{8,9,10,11,12}'::bigint[])))
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 ->  BitmapAnd  (cost=242.47..242.47 rows=500 width=0)
+                                       ->  Bitmap Index Scan on idx_product_search_text_trgm  (cost=0.00..40.77 rows=3030 width=0)
+                                             Index Cond: (search_text ~~* '%히알루론%'::text)
+                                       ->  Bitmap Index Scan on idx_product_category_id  (cost=0.00..201.21 rows=16500 width=0)
+                                             Index Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27)
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27)
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..7.10 rows=1 width=49)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(23 rows)
+
+
+=== a3: 드문 검색어 더미브랜드150(약 330건), 신상품순 첫 페이지
+                                                     QUERY PLAN                                                      
+---------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.98..695.97 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=0.98..31771.71 rows=960 width=132)
+         ->  Nested Loop  (cost=0.56..14330.63 rows=957 width=98)
+               ->  Index Scan using idx_product_status_created on product p  (cost=0.42..14148.85 rows=957 width=87)
+                     Index Cond: ((status)::text = 'ON_SALE'::text)
+                     Filter: (search_text ~~* '%더미브랜드150%'::text)
+               ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.19 rows=1 width=27)
+                     Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..6.16 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(14 rows)
+
+##### ANALYZE #2
+ANALYZE
+
+=== a1: 3글자 이상 검색어 히알루론, 신상품순 첫 페이지
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.98..441.64 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=0.98..60349.54 rows=2876 width=132)
+         ->  Nested Loop  (cost=0.56..14639.72 rows=2868 width=98)
+               ->  Index Scan using idx_product_status_created on product p  (cost=0.42..14142.75 rows=2868 width=87)
+                     Index Cond: ((status)::text = 'ON_SALE'::text)
+                     Filter: (search_text ~~* '%히알루론%'::text)
+               ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.17 rows=1 width=27)
+                     Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..3.88 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(14 rows)
+
+
+=== a2: 히알루론 + 스킨케어(categoryId=1) + 가격 낮은순 첫 페이지
+                                                                                                       QUERY PLAN                                                                                                       
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5105.95..5358.74 rows=21 width=132)
+   ->  Result  (cost=5105.95..10895.99 rows=481 width=132)
+         ->  Sort  (cost=5105.95..5107.15 rows=481 width=131)
+               Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+               ->  Nested Loop Left Join  (cost=255.48..5092.98 rows=481 width=131)
+                     ->  Hash Join  (cost=255.06..1678.15 rows=480 width=98)
+                           Hash Cond: (p.brand_id = b.id)
+                           ->  Bitmap Heap Scan on product p  (cost=244.31..1666.12 rows=480 width=87)
+                                 Recheck Cond: ((search_text ~~* '%히알루론%'::text) AND (category_id = ANY ('{8,9,10,11,12}'::bigint[])))
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 ->  BitmapAnd  (cost=244.31..244.31 rows=507 width=0)
+                                       ->  Bitmap Index Scan on idx_product_search_text_trgm  (cost=0.00..40.77 rows=3030 width=0)
+                                             Index Cond: (search_text ~~* '%히알루론%'::text)
+                                       ->  Bitmap Index Scan on idx_product_category_id  (cost=0.00..203.05 rows=16743 width=0)
+                                             Index Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27)
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27)
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..7.08 rows=1 width=49)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(23 rows)
+
+
+=== a3: 드문 검색어 더미브랜드150(약 330건), 신상품순 첫 페이지
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=190.33..298.67 rows=9 width=132)
+   ->  Result  (cost=190.33..298.67 rows=9 width=132)
+         ->  Sort  (cost=190.33..190.36 rows=9 width=131)
+               Sort Key: p.created_at DESC, p.id DESC
+               ->  Nested Loop Left Join  (cost=75.69..190.19 rows=9 width=131)
+                     ->  Hash Join  (cost=75.27..113.94 rows=9 width=98)
+                           Hash Cond: (p.brand_id = b.id)
+                           ->  Bitmap Heap Scan on product p  (cost=64.52..103.16 rows=9 width=87)
+                                 Recheck Cond: (search_text ~~* '%더미브랜드150%'::text)
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 ->  Bitmap Index Scan on idx_product_search_text_trgm  (cost=0.00..64.52 rows=10 width=0)
+                                       Index Cond: (search_text ~~* '%더미브랜드150%'::text)
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27)
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27)
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..8.44 rows=1 width=49)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(20 rows)
+
+##### ANALYZE #3
+ANALYZE
+
+=== a1: 3글자 이상 검색어 히알루론, 신상품순 첫 페이지
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.98..511.70 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=0.98..46694.79 rows=1920 width=132)
+         ->  Nested Loop  (cost=0.56..14436.19 rows=1915 width=98)
+               ->  Index Scan using idx_product_status_created on product p  (cost=0.42..14096.39 rows=1915 width=87)
+                     Index Cond: ((status)::text = 'ON_SALE'::text)
+                     Filter: (search_text ~~* '%히알루론%'::text)
+               ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.18 rows=1 width=27)
+                     Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..4.79 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(14 rows)
+
+
+=== a2: 히알루론 + 스킨케어(categoryId=1) + 가격 낮은순 첫 페이지
+                                                                                                       QUERY PLAN                                                                                                       
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3633.04..3885.83 rows=21 width=132)
+   ->  Result  (cost=3633.04..7436.89 rows=316 width=132)
+         ->  Sort  (cost=3633.04..3633.83 rows=316 width=131)
+               Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+               ->  Nested Loop Left Join  (cost=243.97..3624.52 rows=316 width=131)
+                     ->  Hash Join  (cost=243.55..1255.65 rows=315 width=98)
+                           Hash Cond: (p.brand_id = b.id)
+                           ->  Bitmap Heap Scan on product p  (cost=232.80..1244.06 rows=315 width=87)
+                                 Recheck Cond: ((search_text ~~* '%히알루론%'::text) AND (category_id = ANY ('{8,9,10,11,12}'::bigint[])))
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 ->  BitmapAnd  (cost=232.80..232.80 rows=332 width=0)
+                                       ->  Bitmap Index Scan on idx_product_search_text_trgm  (cost=0.00..31.59 rows=2020 width=0)
+                                             Index Cond: (search_text ~~* '%히알루론%'::text)
+                                       ->  Bitmap Index Scan on idx_product_category_id  (cost=0.00..200.80 rows=16443 width=0)
+                                             Index Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27)
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27)
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..7.49 rows=1 width=49)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(23 rows)
+
+
+=== a3: 드문 검색어 더미브랜드150(약 330건), 신상품순 첫 페이지
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=190.33..298.67 rows=9 width=132)
+   ->  Result  (cost=190.33..298.67 rows=9 width=132)
+         ->  Sort  (cost=190.33..190.36 rows=9 width=131)
+               Sort Key: p.created_at DESC, p.id DESC
+               ->  Nested Loop Left Join  (cost=75.69..190.19 rows=9 width=131)
+                     ->  Hash Join  (cost=75.27..113.94 rows=9 width=98)
+                           Hash Cond: (p.brand_id = b.id)
+                           ->  Bitmap Heap Scan on product p  (cost=64.52..103.16 rows=9 width=87)
+                                 Recheck Cond: (search_text ~~* '%더미브랜드150%'::text)
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 ->  Bitmap Index Scan on idx_product_search_text_trgm  (cost=0.00..64.52 rows=10 width=0)
+                                       Index Cond: (search_text ~~* '%더미브랜드150%'::text)
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27)
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27)
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..8.44 rows=1 width=49)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(20 rows)
+
+##### ANALYZE #4
+ANALYZE
+
+=== a1: 3글자 이상 검색어 히알루론, 신상품순 첫 페이지
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.98..377.24 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=0.98..86252.27 rows=4814 width=132)
+         ->  Nested Loop  (cost=0.56..14903.48 rows=4801 width=98)
+               ->  Index Scan using idx_product_status_created on product p  (cost=0.42..14087.67 rows=4801 width=87)
+                     Index Cond: ((status)::text = 'ON_SALE'::text)
+                     Filter: (search_text ~~* '%히알루론%'::text)
+               ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.17 rows=1 width=27)
+                     Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..2.80 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(14 rows)
+
+
+=== a2: 히알루론 + 스킨케어(categoryId=1) + 가격 낮은순 첫 페이지
+                                                                                                             QUERY PLAN                                                                                                             
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5854.97..6246.62 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=5854.97..20793.45 rows=801 width=132)
+         ->  Nested Loop  (cost=5854.55..6021.87 rows=799 width=98)
+               ->  Gather Merge  (cost=5854.39..5947.45 rows=799 width=87)
+                     Workers Planned: 2
+                     ->  Sort  (cost=4854.37..4855.20 rows=333 width=87)
+                           Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+                           ->  Parallel Seq Scan on product p  (cost=0.00..4840.42 rows=333 width=87)
+                                 Filter: ((search_text ~~* '%히알루론%'::text) AND ((status)::text = 'ON_SALE'::text) AND (category_id = ANY ('{8,9,10,11,12}'::bigint[])))
+               ->  Memoize  (cost=0.16..0.21 rows=1 width=27)
+                     Cache Key: p.brand_id
+                     Cache Mode: logical
+                     ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.20 rows=1 width=27)
+                           Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..6.43 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(20 rows)
+
+
+=== a3: 드문 검색어 더미브랜드150(약 330건), 신상품순 첫 페이지
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=198.83..319.21 rows=10 width=132)
+   ->  Result  (cost=198.83..319.21 rows=10 width=132)
+         ->  Sort  (cost=198.83..198.86 rows=10 width=131)
+               Sort Key: p.created_at DESC, p.id DESC
+               ->  Nested Loop Left Join  (cost=75.69..198.67 rows=10 width=131)
+                     ->  Hash Join  (cost=75.27..113.94 rows=10 width=98)
+                           Hash Cond: (p.brand_id = b.id)
+                           ->  Bitmap Heap Scan on product p  (cost=64.52..103.16 rows=10 width=87)
+                                 Recheck Cond: (search_text ~~* '%더미브랜드150%'::text)
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 ->  Bitmap Index Scan on idx_product_search_text_trgm  (cost=0.00..64.52 rows=10 width=0)
+                                       Index Cond: (search_text ~~* '%더미브랜드150%'::text)
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27)
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27)
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..8.44 rows=1 width=49)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(20 rows)
+
+##### ANALYZE #5
+ANALYZE
+
+=== a1: 3글자 이상 검색어 히알루론, 신상품순 첫 페이지
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.98..441.31 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=0.98..60367.66 rows=2879 width=132)
+         ->  Nested Loop  (cost=0.56..14616.44 rows=2871 width=98)
+               ->  Index Scan using idx_product_status_created on product p  (cost=0.42..14118.98 rows=2871 width=87)
+                     Index Cond: ((status)::text = 'ON_SALE'::text)
+                     Filter: (search_text ~~* '%히알루론%'::text)
+               ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.17 rows=1 width=27)
+                     Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..3.88 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(14 rows)
+
+
+=== a2: 히알루론 + 스킨케어(categoryId=1) + 가격 낮은순 첫 페이지
+                                                                                                       QUERY PLAN                                                                                                       
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5105.87..5358.66 rows=21 width=132)
+   ->  Result  (cost=5105.87..10895.91 rows=481 width=132)
+         ->  Sort  (cost=5105.87..5107.08 rows=481 width=131)
+               Sort Key: (CASE WHEN ((p.sale_rate IS NOT NULL) AND (p.sale_starts_at <= now()) AND (p.sale_ends_at > now())) THEN ((((p.min_price * (100 - p.sale_rate)) / 100) / 10) * 10) ELSE p.min_price END), p.id
+               ->  Nested Loop Left Join  (cost=255.40..5092.91 rows=481 width=131)
+                     ->  Hash Join  (cost=254.98..1678.07 rows=480 width=98)
+                           Hash Cond: (p.brand_id = b.id)
+                           ->  Bitmap Heap Scan on product p  (cost=244.23..1666.04 rows=480 width=87)
+                                 Recheck Cond: ((search_text ~~* '%히알루론%'::text) AND (category_id = ANY ('{8,9,10,11,12}'::bigint[])))
+                                 Filter: ((status)::text = 'ON_SALE'::text)
+                                 ->  BitmapAnd  (cost=244.23..244.23 rows=507 width=0)
+                                       ->  Bitmap Index Scan on idx_product_search_text_trgm  (cost=0.00..40.77 rows=3030 width=0)
+                                             Index Cond: (search_text ~~* '%히알루론%'::text)
+                                       ->  Bitmap Index Scan on idx_product_category_id  (cost=0.00..202.97 rows=16733 width=0)
+                                             Index Cond: (category_id = ANY ('{8,9,10,11,12}'::bigint[]))
+                           ->  Hash  (cost=7.00..7.00 rows=300 width=27)
+                                 ->  Seq Scan on brand b  (cost=0.00..7.00 rows=300 width=27)
+                     ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..7.08 rows=1 width=49)
+                           Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(23 rows)
+
+
+=== a3: 드문 검색어 더미브랜드150(약 330건), 신상품순 첫 페이지
+                                                     QUERY PLAN                                                      
+---------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.98..695.32 rows=21 width=132)
+   ->  Nested Loop Left Join  (cost=0.98..31741.84 rows=960 width=132)
+         ->  Nested Loop  (cost=0.56..14300.76 rows=957 width=98)
+               ->  Index Scan using idx_product_status_created on product p  (cost=0.42..14118.98 rows=957 width=87)
+                     Index Cond: ((status)::text = 'ON_SALE'::text)
+                     Filter: (search_text ~~* '%더미브랜드150%'::text)
+               ->  Index Scan using brand_pkey on brand b  (cost=0.15..0.19 rows=1 width=27)
+                     Index Cond: (id = p.brand_id)
+         ->  Index Scan using product_image_pkey on product_image i  (cost=0.42..6.16 rows=1 width=49)
+               Index Cond: ((product_id = p.id) AND (sort_order = 0))
+         SubPlan 1
+           ->  Aggregate  (cost=11.98..11.99 rows=1 width=4)
+                 ->  Index Scan using sku_product_id_name_key on sku s  (cost=0.42..11.97 rows=3 width=4)
+                       Index Cond: (product_id = p.id)
+(14 rows)
+

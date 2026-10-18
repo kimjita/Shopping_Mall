@@ -73,8 +73,9 @@ SELECT
     (5 + floor(r_rate * 66))::int AS sale_rate,
     now() - ((1 + floor(r_start * 30)) || ' days')::interval AS sale_starts_at,
     now() + ((1 + floor(r_end * 30)) || ' days')::interval AS sale_ends_at,
-    -- 최근 1년에 흩뿌린다.
-    now() - (r_created * interval '365 days') AS created_at,
+    -- 최근 1년에 걸쳐 id가 커질수록 늦게 등록된 것으로 한다(실제 데이터처럼 id와 created_at이 함께 증가한다).
+    -- 최대 2시간의 지터로 순서를 조금 흔들어 시각이 겹치지 않게 한다(상관계수는 1에 가깝다).
+    now() - interval '365 days' * (1 - n / 100000.0) - r_created * interval '2 hours' AS created_at,
     1 + floor(r_sku * 4)::int AS sku_count,
     1 + floor(r_img * 3)::int AS image_count
 FROM base;
