@@ -6,6 +6,8 @@ import com.sprint.mission.product.domain.Product;
 import com.sprint.mission.product.dto.ProductResponse;
 import com.sprint.mission.product.repository.ProductRepository;
 import com.sprint.mission.product.repository.SkuRepository;
+import java.time.Clock;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class ProductService {
     private final SkuRepository skuRepository;
     private final BrandService brandService;
     private final CategoryService categoryService;
+    private final Clock clock;
 
     /** 없거나 DELETED면 PRODUCT_NOT_FOUND다. */
     public Product getProduct(Long id) {
@@ -36,6 +39,6 @@ public class ProductService {
         }
         return ProductResponse.of(product, brandService.get(product.getBrandId()),
                 categoryService.path(product.getCategoryId()),
-                skuRepository.findAllByProductIdOrderByIdAsc(id));
+                skuRepository.findAllByProductIdOrderByIdAsc(id), product.activeSale(Instant.now(clock)));
     }
 }

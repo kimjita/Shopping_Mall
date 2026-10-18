@@ -74,6 +74,8 @@ class ProductApiTest extends ApiTest {
                 .andExpect(jsonPath("$.soldOut").value(false))
                 .andExpect(jsonPath("$.skus[0].name").value("150ml"))
                 .andExpect(jsonPath("$.skus[0].price").value(12_900))
+                .andExpect(jsonPath("$.skus[0].salePrice").value(12_900))
+                .andExpect(jsonPath("$.saleRate").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.skus[0].soldOut").value(false))
                 .andExpect(jsonPath("$.skus[0].stock").doesNotExist())
                 .andExpect(jsonPath("$.skus[1].name").value("300ml"))
@@ -102,13 +104,17 @@ class ProductApiTest extends ApiTest {
                                 fieldWithPath("imageUrls").type(JsonFieldType.ARRAY)
                                         .description("이미지 URL 목록. 첫 번째가 대표 이미지다"),
                                 fieldWithPath("basePrice").type(JsonFieldType.NUMBER).description("정가 (원)"),
+                                fieldWithPath("saleRate").type(JsonFieldType.NUMBER).optional()
+                                        .description("진행 중인 세일의 할인율 (%). 진행 중인 세일이 없으면 `null`"),
                                 fieldWithPath("soldOut").type(JsonFieldType.BOOLEAN)
                                         .description("품절 여부. 모든 옵션이 품절이면 `true`다"),
                                 fieldWithPath("skus").type(JsonFieldType.ARRAY).description("옵션(SKU) 목록"),
                                 fieldWithPath("skus[].id").type(JsonFieldType.NUMBER).description("SKU ID"),
                                 fieldWithPath("skus[].name").type(JsonFieldType.STRING).description("옵션 이름"),
                                 fieldWithPath("skus[].price").type(JsonFieldType.NUMBER)
-                                        .description("옵션 가격 (원). 정가에 추가금액을 더한 값이다"),
+                                        .description("옵션 정가 (원). 상품 정가에 추가금액을 더한 값이다"),
+                                fieldWithPath("skus[].salePrice").type(JsonFieldType.NUMBER)
+                                        .description("옵션 판매가 (원). 세일 중이면 할인율을 적용해 10원 단위로 내린 값이고, 아니면 정가와 같다"),
                                 fieldWithPath("skus[].soldOut").type(JsonFieldType.BOOLEAN)
                                         .description("옵션 품절 여부. 재고 수량은 공개하지 않는다"))));
     }

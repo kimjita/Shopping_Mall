@@ -3,6 +3,7 @@ package com.sprint.mission.product.domain;
 import com.sprint.mission.global.common.BaseEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,7 +14,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -60,6 +63,10 @@ public class Product extends BaseEntity {
     @Column(name = "url", nullable = false, length = 500)
     private List<String> imageUrls = new ArrayList<>();
 
+    /** 걸린 세일이다. 컬럼이 모두 NULL이면 Hibernate가 null로 읽으므로 null을 "세일 없음"으로 본다. */
+    @Embedded
+    private Sale sale;
+
     public static Product create(Long brandId, Long categoryId, String name, String summary, String description,
             String ingredients, long basePrice, List<String> imageUrls) {
         Product product = new Product();
@@ -104,5 +111,19 @@ public class Product extends BaseEntity {
             throw new IllegalStateException("삭제된 상품의 상태는 바꿀 수 없다.");
         }
         this.status = status;
+    }
+
+    /** 세일을 건다. 기존 세일은 통째로 교체된다. */
+    public void startSale(Sale sale) {
+        this.sale = sale;
+    }
+
+    public void endSale() {
+        this.sale = null;
+    }
+
+    /** 지금 진행 중인 세일이다. 세일이 없거나 기간이 아니면 비어 있다. */
+    public Optional<Sale> activeSale(Instant now) {
+        return Optional.ofNullable(sale).filter(s -> s.isActive(now));
     }
 }

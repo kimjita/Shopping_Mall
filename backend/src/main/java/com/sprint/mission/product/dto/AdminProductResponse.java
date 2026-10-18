@@ -3,6 +3,7 @@ package com.sprint.mission.product.dto;
 import com.sprint.mission.product.domain.Product;
 import com.sprint.mission.product.domain.ProductStatus;
 import com.sprint.mission.product.domain.Sku;
+import java.time.Instant;
 import java.util.List;
 
 public record AdminProductResponse(
@@ -17,7 +18,8 @@ public record AdminProductResponse(
         String ingredients,
         long basePrice,
         List<String> imageUrls,
-        List<AdminSku> skus) {
+        List<AdminSku> skus,
+        SaleResponse sale) {
 
     public record AdminSku(Long id, String name, long additionalPrice, long price, int stock) {
 
@@ -28,10 +30,11 @@ public record AdminProductResponse(
     }
 
     public static AdminProductResponse of(Product product, String brandName, List<String> categoryPath,
-            List<Sku> skus) {
+            List<Sku> skus, Instant now) {
         return new AdminProductResponse(product.getId(), product.getStatus(), product.getBrandId(), brandName,
                 categoryPath, product.getName(), product.getSummary(), product.getDescription(),
                 product.getIngredients(), product.getBasePrice(), List.copyOf(product.getImageUrls()),
-                skus.stream().map(sku -> AdminSku.of(sku, product.getBasePrice())).toList());
+                skus.stream().map(sku -> AdminSku.of(sku, product.getBasePrice())).toList(),
+                SaleResponse.from(product.getSale(), now));
     }
 }

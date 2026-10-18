@@ -305,7 +305,9 @@ include::{snippets}/brand/list/response-fields.adoc[]
 
 판매 중(`ON_SALE`)인 상품만 보인다. 없거나 판매 중지·삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
 재고 수량은 내려주지 않고 품절 여부(`soldOut`)만 알린다. 옵션이 모두 품절이면 상품도 품절이다.
-`categoryPath`는 루트부터 상품 카테고리까지의 경로이고, 옵션 가격(`price`)은 정가에 추가금액을 더한 값이다.
+`categoryPath`는 루트부터 상품 카테고리까지의 경로이고, 옵션 정가(`price`)는 상품 정가에 추가금액을 더한 값이다.
+기간 한정 세일이 진행 중이면 `saleRate`에 할인율이 담기고, 옵션 판매가(`salePrice`)는 옵션 정가에 할인율을 적용해 10원 단위 미만을 내린 값이다.
+진행 중인 세일이 없으면(세일을 걸지 않았거나 기간이 아직 오지 않았거나 지났으면) `saleRate`는 `null`이고 `salePrice`는 `price`와 같다.
 
 ==== 요청
 
@@ -518,3 +520,42 @@ include::{snippets}/admin-sku/adjust-stock/request-fields.adoc[]
 include::{snippets}/admin-sku/adjust-stock/http-response.adoc[]
 
 include::{snippets}/admin-sku/adjust-stock/response-fields.adoc[]
+
+=== 세일 설정
+
+성공하면 `200 OK`이고 세일이 걸린 관리자 상세를 돌려준다. 이미 세일이 있으면 새 세일로 교체된다.
+할인율(`rate`)은 1~90이고 시작·종료 시각(`startsAt`, `endsAt`)은 필수이며, 아니면 `400 INVALID_INPUT`이다.
+종료 시각이 시작 시각보다 늦지 않으면 `400 INVALID_SALE_PERIOD`다. 없거나 삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
+시작 시각 정각부터 세일이 적용되고, 종료 시각 정각에는 적용되지 않는다. 응답의 `sale.active`는 지금 세일이 진행 중인지를 나타내며, 기간이 아닌 세일도 관리자에게는 보인다.
+
+==== 요청
+
+include::{snippets}/admin-product/start-sale/http-request.adoc[]
+
+include::{snippets}/admin-product/start-sale/path-parameters.adoc[]
+
+include::{snippets}/admin-product/start-sale/request-headers.adoc[]
+
+include::{snippets}/admin-product/start-sale/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-product/start-sale/http-response.adoc[]
+
+include::{snippets}/admin-product/start-sale/response-fields.adoc[]
+
+=== 세일 종료
+
+성공하면 `204 No Content`이고, 걸린 세일이 없어도 `204`다. 없거나 삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
+
+==== 요청
+
+include::{snippets}/admin-product/end-sale/http-request.adoc[]
+
+include::{snippets}/admin-product/end-sale/path-parameters.adoc[]
+
+include::{snippets}/admin-product/end-sale/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-product/end-sale/http-response.adoc[]

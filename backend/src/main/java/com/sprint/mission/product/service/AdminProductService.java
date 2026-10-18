@@ -4,14 +4,18 @@ import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.product.domain.Category;
 import com.sprint.mission.product.domain.Product;
+import com.sprint.mission.product.domain.Sale;
 import com.sprint.mission.product.domain.Sku;
 import com.sprint.mission.product.dto.AdminProductResponse;
 import com.sprint.mission.product.dto.ProductCreateRequest;
 import com.sprint.mission.product.dto.ProductStatusRequest;
 import com.sprint.mission.product.dto.ProductUpdateRequest;
+import com.sprint.mission.product.dto.SaleRequest;
 import com.sprint.mission.product.dto.SkuRequest;
 import com.sprint.mission.product.repository.ProductRepository;
 import com.sprint.mission.product.repository.SkuRepository;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +33,7 @@ public class AdminProductService {
     private final ProductService productService;
     private final BrandService brandService;
     private final CategoryService categoryService;
+    private final Clock clock;
 
     @Transactional
     public Long create(ProductCreateRequest request) {
@@ -64,6 +69,23 @@ public class AdminProductService {
         return toResponse(product);
     }
 
+    /** 세일을 건다. 기존 세일은 교체되고, 종료 시각이 시작 시각보다 늦지 않으면 INVALID_SALE_PERIOD다. */
+    @Transactional
+    public AdminProductResponse startSale(Long productId, SaleRequest request) {
+        Product product = productService.getProduct(productId);
+        if (!request.endsAt().isAfter(request.startsAt())) {
+            throw new BusinessException(ErrorCode.INVALID_SALE_PERIOD);
+        }
+        product.startSale(new Sale(request.rate(), request.startsAt(), request.endsAt()));
+        return toResponse(product);
+    }
+
+    /** 세일이 없어도 성공한다. */
+    @Transactional
+    public void endSale(Long productId) {
+        productService.getProduct(productId).endSale();
+    }
+
     /** 삭제된 상품은 관리자도 볼 수 없다. */
     public AdminProductResponse get(Long productId) {
         return toResponse(productService.getProduct(productId));
@@ -75,7 +97,7 @@ public class AdminProductService {
                 .map(Category::getName)
                 .toList();
         return AdminProductResponse.of(product, brandService.get(product.getBrandId()).getName(), categoryPath,
-                skuRepository.findAllByProductIdOrderByIdAsc(product.getId()));
+                skuRepository.findAllByProductIdOrderByIdAsc(product.getId()), Instant.now(clock));
     }
 
     private static void validateUniqueSkuNames(List<SkuRequest> skus) {

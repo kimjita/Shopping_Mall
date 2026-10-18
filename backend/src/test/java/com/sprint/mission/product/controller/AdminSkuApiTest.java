@@ -151,7 +151,17 @@ class AdminSkuApiTest extends ApiTest {
                                         .description("추가금액 (원)"),
                                 fieldWithPath("skus[].price").type(JsonFieldType.NUMBER)
                                         .description("옵션 가격 (원). 정가에 추가금액을 더한 값이다"),
-                                fieldWithPath("skus[].stock").type(JsonFieldType.NUMBER).description("재고 수량"))));
+                                fieldWithPath("skus[].stock").type(JsonFieldType.NUMBER).description("재고 수량"),
+                                fieldWithPath("sale").type(JsonFieldType.OBJECT).optional()
+                                        .description("세일 정보. 걸린 세일이 없으면 `null`이고, 기간이 아닌 세일도 보인다"),
+                                fieldWithPath("sale.rate").type(JsonFieldType.NUMBER).optional()
+                                        .description("할인율 (%)"),
+                                fieldWithPath("sale.startsAt").type(JsonFieldType.STRING).optional()
+                                        .description("세일 시작 시각"),
+                                fieldWithPath("sale.endsAt").type(JsonFieldType.STRING).optional()
+                                        .description("세일 종료 시각"),
+                                fieldWithPath("sale.active").type(JsonFieldType.BOOLEAN).optional()
+                                        .description("지금 세일 중인지 여부"))));
     }
 
     @Test
@@ -235,7 +245,17 @@ class AdminSkuApiTest extends ApiTest {
                                 fieldWithPath("skus[].price").type(JsonFieldType.NUMBER)
                                         .description("옵션 가격 (원). 정가에 추가금액을 더한 값이다"),
                                 fieldWithPath("skus[].stock").type(JsonFieldType.NUMBER)
-                                        .description("재고 수량. 옵션 수정으로는 바뀌지 않는다"))));
+                                        .description("재고 수량. 옵션 수정으로는 바뀌지 않는다"),
+                                fieldWithPath("sale").type(JsonFieldType.OBJECT).optional()
+                                        .description("세일 정보. 걸린 세일이 없으면 `null`이고, 기간이 아닌 세일도 보인다"),
+                                fieldWithPath("sale.rate").type(JsonFieldType.NUMBER).optional()
+                                        .description("할인율 (%)"),
+                                fieldWithPath("sale.startsAt").type(JsonFieldType.STRING).optional()
+                                        .description("세일 시작 시각"),
+                                fieldWithPath("sale.endsAt").type(JsonFieldType.STRING).optional()
+                                        .description("세일 종료 시각"),
+                                fieldWithPath("sale.active").type(JsonFieldType.BOOLEAN).optional()
+                                        .description("지금 세일 중인지 여부"))));
     }
 
     @Test
