@@ -163,8 +163,8 @@ class ProductSearchApiTest extends ApiTest {
                                 fieldWithPath("items[].name").type(JsonFieldType.STRING).description("상품명"),
                                 fieldWithPath("items[].brandName").type(JsonFieldType.STRING)
                                         .description("브랜드 이름"),
-                                fieldWithPath("items[].thumbnailUrl").type(JsonFieldType.STRING)
-                                        .description("대표 이미지 URL"),
+                                fieldWithPath("items[].thumbnailUrl").type(JsonFieldType.STRING).optional()
+                                        .description("대표 이미지 URL. 상품에 이미지가 없으면 null이다"),
                                 fieldWithPath("items[].price").type(JsonFieldType.NUMBER)
                                         .description("정가 (원). 옵션 중 가장 싼 정가다"),
                                 fieldWithPath("items[].salePrice").type(JsonFieldType.NUMBER)
@@ -465,6 +465,7 @@ class ProductSearchApiTest extends ApiTest {
                 {"sort", "POPULAR"},
                 {"keyword", "가".repeat(51)},
                 {"keyword", "   "},
+                {"keyword", "a\u0000b"},
                 {"size", "abc"},
                 {"cursor", "깨진커서"},
                 {"brandIds", " "},

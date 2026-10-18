@@ -4,6 +4,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import java.util.List;
  */
 public record ProductSearchCondition(
         @Size(min = 1, max = 50, message = "검색어는 1~50자여야 합니다.")
+        @Pattern(regexp = "[^\\p{Cntrl}]*", message = "검색어가 올바르지 않습니다.")
         String keyword,
 
         Long categoryId,

@@ -52,7 +52,7 @@ order by case when (p.sale_rate is not null and p.sale_starts_at <= now() and p.
 fetch first 21 rows only;
 
 \echo
-\echo === a3: 드문 검색어 더미브랜드150(약 330건), 신상품순 첫 페이지
+\echo === a3: 드문 검색어 더미브랜드150(371건, ON_SALE 337건), 신상품순 첫 페이지
 explain (analyze, buffers)
 select p.id, p.name, b.name, i.url, p.min_price,
        case when (p.sale_rate is not null and p.sale_starts_at <= now() and p.sale_ends_at > now())
@@ -71,7 +71,7 @@ order by p.created_at desc, p.id desc
 fetch first 21 rows only;
 
 \echo
-\echo === a4: 드문 검색어 더미브랜드150(약 330건), 가격 낮은순 첫 페이지
+\echo === a4: 드문 검색어 더미브랜드150(371건, ON_SALE 337건), 가격 낮은순 첫 페이지
 explain (analyze, buffers)
 select p.id, p.name, b.name, i.url, p.min_price,
        case when (p.sale_rate is not null and p.sale_starts_at <= now() and p.sale_ends_at > now())
@@ -277,6 +277,6 @@ select count(*) from product p where p.search_text ilike '%토너%' escape '\';
 rollback;
 
 \echo
-\echo === g4: count 더미브랜드150(약 330건)
+\echo === g4: count 더미브랜드150(371건, ON_SALE 337건)
 explain (analyze, buffers)
 select count(*) from product p where p.status = 'ON_SALE' and p.search_text ilike '%더미브랜드150%' escape '\';

@@ -81,7 +81,7 @@
 | g3. `토너`(2글자), `enable_seqscan = off`로 인덱스를 강제(status 조건 없음) | 130.2 (105.9~151.0). `Seq Scan`. 아래 설명대로 비교에 쓰지 않는다 | 90.6 (88.7~121.6). `Bitmap Index Scan on idx_product_search_text_trgm`이 100,000행(테이블 전체)을 돌려주고 `Bitmap Heap Scan`이 92,129행을 재검사로 제거, 버퍼 4,943 |
 | g4. `더미브랜드150`(371건), `ON_SALE` | 63.7 (61.8~66.9). `Seq Scan on product`(99,663행 제거), 버퍼 3,955 | 2.0 (1.9~3.6). `Bitmap Index Scan on idx_product_search_text_trgm`(371행), 버퍼 474 |
 
-g3의 "전" 값은 비교에 쓸 수 없다. 인덱스가 없는 상태에서 `enable_seqscan = off`를 걸면 시퀀셜 스캔 비용이 10^10으로 부풀려져 JIT 컴파일이 켜지고, 그 비용(원본의 `JIT ... Total 61.4 ms`)이 실행 시간에 들어간다. 7번 모두 JIT가 켜졌다. 2글자 검색의 "전" 기준은 g2(59.1ms)다.
+g3의 "전" 값은 비교에 쓸 수 없다. 인덱스가 없는 상태에서 `enable_seqscan = off`를 걸면 시퀀셜 스캔 비용이 10^10으로 부풀려져 JIT 컴파일이 켜지고, 그 비용(원본의 `JIT` 항목, 약 42~64 ms(7회))이 실행 시간에 들어간다. 7번 모두 JIT가 켜졌다. 2글자 검색의 "전" 기준은 g2(59.1ms)다.
 
 ## 4. 관찰
 
@@ -163,7 +163,7 @@ docker compose exec -T postgres psql -U mall -d shopping_mall -v ON_ERROR_STOP=1
 docker compose exec -T postgres psql -U mall -d shopping_mall -v ON_ERROR_STOP=1 < scripts/perf/explain-search.sql
 ```
 
-`seed-catalog.sql`은 상품이 이미 있거나 더미 브랜드가 있으면 오류로 중단한다. 다시 넣으려면 더미 데이터만 비우거나(`TRUNCATE product_image, sku, product, brand RESTART IDENTITY CASCADE`) `docker compose down -v`로 볼륨을 지우고 1)부터 다시 한다.
+`seed-catalog.sql`은 상품이 이미 있거나 더미 브랜드가 있으면 오류로 중단한다. 다시 넣으려면 `docker compose down -v`로 로컬 볼륨 전체를 지우고 1)부터 다시 하는 것이 가장 안전하다. 실제 브랜드나 이후 단계의 장바구니·찜·주문 데이터를 지우지 않으려면 `TRUNCATE ... CASCADE`를 쓰지 말고, `brand.name like '더미브랜드%'`인 더미 데이터만 지운다. 이 브랜드의 상품에 딸린 `sku`와 `product_image` 행을 먼저 지우고, 그다음 상품, 마지막으로 브랜드를 지운다.
 
 ## 7. 원본 출력
 

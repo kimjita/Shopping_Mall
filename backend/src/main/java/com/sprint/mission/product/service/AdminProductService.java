@@ -69,7 +69,7 @@ public class AdminProductService {
     /** 삭제된 상품은 상태를 되돌릴 수 없다. */
     @Transactional
     public AdminProductResponse changeStatus(Long productId, ProductStatusRequest request) {
-        Product product = productService.getProduct(productId);
+        Product product = productService.getProductForUpdate(productId);
         product.changeStatus(request.status());
         return toResponse(product);
     }
