@@ -680,6 +680,69 @@ include::{snippets}/coupon/my/http-response.adoc[]
 
 include::{snippets}/coupon/my/response-fields.adoc[]
 
+== 주문서
+
+로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+탈퇴한 회원의 토큰이면 `404 MEMBER_NOT_FOUND`다.
+주문서 미리보기는 주문을 만들지 않고 고른 장바구니 줄의 금액만 계산한다. 재고도, 쿠폰도, 적립금도 바뀌지 않는다.
+
+**금액 계산 순서**
+
+[cols="1,3,3"]
+|===
+| 순서 | 항목 | 계산
+
+| 1
+| 상품 금액
+| `itemsPrice`는 정가 × 수량의 합이고 `itemsSalePrice`는 세일가 × 수량의 합이다. `saleDiscount`는 둘의 차이다.
+
+| 2
+| 쿠폰 할인
+| 쿠폰은 `itemsSalePrice`에 적용한다. `itemsSalePrice`가 쿠폰의 최소 주문금액보다 작으면 쓸 수 없고(`COUPON_NOT_APPLICABLE`), 같으면 쓸 수 있다.
+정액 쿠폰은 `min(할인 금액, itemsSalePrice)`이다. 정률 쿠폰은 `itemsSalePrice × 할인율 / 100`을 10원 단위로 내린 값과 최대 할인 금액 중 작은 값이다.
+
+| 3
+| 배송비
+| 쿠폰 적용 후 금액(`itemsSalePrice - couponDiscount`)이 20,000원 이상이면 0원, 아니면 2,500원이다.
+
+| 4
+| 적립금
+| 사용할 적립금은 0 이상이고 잔액 이하여야 한다(`POINTS_NOT_ENOUGH`). 결제금액이 100원 이상 남아야 한다(`POINTS_EXCEED_LIMIT`).
+
+| 5
+| 결제금액
+| `paymentAmount = itemsSalePrice - couponDiscount + shippingFee - pointsUsed`
+|===
+
+**검증 순서와 오류**: 위 계산 전에 다음 순서로 확인하고 처음 걸린 오류를 돌려준다.
+
+* `400 INVALID_INPUT`: `cartItemIds`가 비었거나 50개를 넘거나 같은 ID가 두 번 있다. `points`가 음수이거나 `cartItemIds`에 `null`이 있다.
+* `404 CART_ITEM_NOT_FOUND`: 내 장바구니 줄이 아니거나 없는 줄이 하나라도 있다.
+* `409 CART_ITEM_UNAVAILABLE`: 품절, 재고 부족, 판매 중지, 삭제된 상품이 있다. 해당 줄을 빼고 다시 요청한다.
+* `404 COUPON_NOT_FOUND`: 내 쿠폰이 아니거나 없는 쿠폰이다.
+* `400 COUPON_NOT_USABLE`: 이미 썼거나 사용 기간이 아닌 쿠폰이다.
+* `400 COUPON_NOT_APPLICABLE`: 세일가 합계가 쿠폰의 최소 주문금액에 못 미친다.
+* `409 POINTS_NOT_ENOUGH`: 적립금 잔액보다 많이 쓰려 한다.
+* `400 POINTS_EXCEED_LIMIT`: 결제금액이 100원 미만이 된다.
+
+`lines`는 요청한 `cartItemIds` 순서 그대로이고, 가격은 장바구니 응답과 같은 계산이다. `pointBalance`는 미리보기 시점의 적립금 잔액이다.
+
+=== 주문서 금액 미리보기
+
+==== 요청
+
+include::{snippets}/checkout/preview/http-request.adoc[]
+
+include::{snippets}/checkout/preview/request-headers.adoc[]
+
+include::{snippets}/checkout/preview/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/checkout/preview/http-response.adoc[]
+
+include::{snippets}/checkout/preview/response-fields.adoc[]
+
 == 카탈로그
 
 카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.
