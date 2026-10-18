@@ -209,6 +209,25 @@ class RecentViewApiTest extends ApiTest {
     }
 
     @Test
+    void 오십_개일_때_가장_오래된_것을_다시_보면_오십_개_그대로_맨_앞이다() throws Exception {
+        List<Long> viewed = new ArrayList<>();
+        for (int i = 1; i <= 50; i++) {
+            Long id = register("토너 " + i, 10_000L + i);
+            clock.advance(Duration.ofSeconds(1));
+            recentViewService.record(memberId, id);
+            viewed.add(id);
+        }
+
+        view(viewed.get(0)).andExpect(status().isNoContent());
+
+        assertThat(rows()).isEqualTo(50);
+        list().andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(50))
+                .andExpect(jsonPath("$[0].product.id").value(viewed.get(0)))
+                .andExpect(jsonPath("$[49].product.id").value(viewed.get(1)));
+    }
+
+    @Test
     void 하나를_지우거나_전부_지운다() throws Exception {
         Long a = register("토너 A", 10_000);
         Long b = register("토너 B", 10_000);

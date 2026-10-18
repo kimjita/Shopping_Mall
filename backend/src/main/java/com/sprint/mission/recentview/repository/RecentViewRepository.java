@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** 엔티티 없이 네이티브 SQL로만 다룬다. 쓰기는 모두 문장 하나로 끝나서 동시에 호출해도 안전하다. */
+/** 엔티티 없이 네이티브 SQL로만 다룬다. 쓰기는 문장 하나씩이며, 같은 회원의 기록은 서비스에서 회원 행 락으로 직렬화한다. */
 @Repository
 @RequiredArgsConstructor
 public class RecentViewRepository {

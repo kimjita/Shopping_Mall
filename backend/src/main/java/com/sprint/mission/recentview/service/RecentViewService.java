@@ -35,11 +35,12 @@ public class RecentViewService {
 
     /**
      * 판매 중인 상품만 기록한다. 이미 본 상품은 본 시각만 갱신하고, 50개를 넘으면 오래된 것부터 지운다.
-     * 갱신과 정리가 각각 문장 하나이고 정리는 항상 최신 50개를 남기므로 회원 락은 필요 없다.
+     * 같은 회원의 기록은 회원 행 락으로 직렬화한다. 락이 없으면 갱신과 정리가 겹쳐 방금 다시 본 상품이 지워지거나
+     * 동시에 새로 넣은 기록 때문에 51개가 남을 수 있다.
      */
     @Transactional
     public void record(Long memberId, Long productId) {
-        memberService.getActive(memberId);
+        memberService.getActiveForUpdate(memberId);
         Product product = productService.getProduct(productId);
         if (!product.isVisibleToPublic()) {
             throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
