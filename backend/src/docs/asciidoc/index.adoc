@@ -716,8 +716,9 @@ include::{snippets}/coupon/my/response-fields.adoc[]
 
 **검증 순서와 오류**: 다음 순서로 확인하고 처음 걸린 오류를 돌려준다. 쿠폰의 최소 주문금액과 결제금액 하한은 금액을 계산할 때 확인하므로 적립금 잔액 확인보다 뒤다.
 
-* `400 INVALID_INPUT`: `cartItemIds`가 비었거나 50개를 넘거나 `null`이 있거나, `points`가 음수이거나, 같은 ID가 두 번 있다.
-* `404 MEMBER_NOT_FOUND`: 탈퇴한 회원이다.
+* `400 INVALID_INPUT`: `cartItemIds`가 비었거나 50개를 넘거나 `null`이 있거나, `points`가 음수이다.
+* `404 MEMBER_NOT_FOUND`: 없거나 탈퇴한 회원이다.
+* `400 INVALID_INPUT`: `cartItemIds`에 같은 ID가 두 번 있다.
 * `404 CART_ITEM_NOT_FOUND`: 내 장바구니 줄이 아니거나 없는 줄이 하나라도 있다.
 * `409 CART_ITEM_UNAVAILABLE`: 품절, 재고 부족, 판매 중지, 삭제된 상품이 있다. 해당 줄을 빼고 다시 요청한다.
 * `404 COUPON_NOT_FOUND`: 내 쿠폰이 아니거나 없는 쿠폰이다.
