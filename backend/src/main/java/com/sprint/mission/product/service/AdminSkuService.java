@@ -64,14 +64,15 @@ public class AdminSkuService {
         productService.getProduct(productId);
         getSku(productId, skuId);
         int updated = skuRepository.adjustStock(skuId, request.delta(), Instant.now(clock));
-        int stock = skuRepository.findById(skuId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.SKU_NOT_FOUND))
-                .getStock();
         if (updated == 0) {
-            throw new BusinessException(stock + request.delta() < 0
+            // 재고는 항상 0~100,000 안에 있고 옵션은 삭제되지 않으므로, 출고 실패는 부족이고 입고 실패는 상한 초과다.
+            throw new BusinessException(request.delta() < 0
                     ? ErrorCode.STOCK_NOT_ENOUGH
                     : ErrorCode.INVALID_INPUT);
         }
+        int stock = skuRepository.findById(skuId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SKU_NOT_FOUND))
+                .getStock();
         return new StockResponse(skuId, stock);
     }
 
