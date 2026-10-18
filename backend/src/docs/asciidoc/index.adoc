@@ -714,15 +714,16 @@ include::{snippets}/coupon/my/response-fields.adoc[]
 | `paymentAmount = itemsSalePrice - couponDiscount + shippingFee - pointsUsed`
 |===
 
-**검증 순서와 오류**: 위 계산 전에 다음 순서로 확인하고 처음 걸린 오류를 돌려준다.
+**검증 순서와 오류**: 다음 순서로 확인하고 처음 걸린 오류를 돌려준다. 쿠폰의 최소 주문금액과 결제금액 하한은 금액을 계산할 때 확인하므로 적립금 잔액 확인보다 뒤다.
 
-* `400 INVALID_INPUT`: `cartItemIds`가 비었거나 50개를 넘거나 같은 ID가 두 번 있다. `points`가 음수이거나 `cartItemIds`에 `null`이 있다.
+* `400 INVALID_INPUT`: `cartItemIds`가 비었거나 50개를 넘거나 `null`이 있거나, `points`가 음수이거나, 같은 ID가 두 번 있다.
+* `404 MEMBER_NOT_FOUND`: 탈퇴한 회원이다.
 * `404 CART_ITEM_NOT_FOUND`: 내 장바구니 줄이 아니거나 없는 줄이 하나라도 있다.
 * `409 CART_ITEM_UNAVAILABLE`: 품절, 재고 부족, 판매 중지, 삭제된 상품이 있다. 해당 줄을 빼고 다시 요청한다.
 * `404 COUPON_NOT_FOUND`: 내 쿠폰이 아니거나 없는 쿠폰이다.
 * `400 COUPON_NOT_USABLE`: 이미 썼거나 사용 기간이 아닌 쿠폰이다.
-* `400 COUPON_NOT_APPLICABLE`: 세일가 합계가 쿠폰의 최소 주문금액에 못 미친다.
 * `409 POINTS_NOT_ENOUGH`: 적립금 잔액보다 많이 쓰려 한다.
+* `400 COUPON_NOT_APPLICABLE`: 세일가 합계가 쿠폰의 최소 주문금액에 못 미친다.
 * `400 POINTS_EXCEED_LIMIT`: 결제금액이 100원 미만이 된다.
 
 `lines`는 요청한 `cartItemIds` 순서 그대로이고, 가격은 장바구니 응답과 같은 계산이다. `pointBalance`는 미리보기 시점의 적립금 잔액이다.

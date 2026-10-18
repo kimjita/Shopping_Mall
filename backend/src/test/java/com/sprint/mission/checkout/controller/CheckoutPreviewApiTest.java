@@ -31,7 +31,10 @@ import com.sprint.mission.product.service.AdminSkuService;
 import com.sprint.mission.product.service.BrandService;
 import com.sprint.mission.support.ApiTest;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -322,6 +325,19 @@ class CheckoutPreviewApiTest extends ApiTest {
     }
 
     @Test
+    void 최소_주문금액_미달_쿠폰과_잔액_초과_적립금이_함께면_POINTS_NOT_ENOUGH가_먼저다() throws Exception {
+        Long lineId = saleLine();
+        Long couponId = adminCouponService.create(CouponFixtures.fixed("10만원 이상", 10, null)).id();
+        Long memberCouponId = memberCouponId(memberId, couponId);
+        jdbcTemplate.update("update coupon set min_order_amount = 100000 where id = ?", couponId);
+
+        // 잔액은 0원이다. 잔액 확인(5단계)이 계산기의 쿠폰 최소 주문금액 확인(6단계)보다 앞선다.
+        preview(body("[" + lineId + "]", memberCouponId, 1_000))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("POINTS_NOT_ENOUGH"));
+    }
+
+    @Test
     void 잔액보다_많은_적립금은_409_POINTS_NOT_ENOUGH() throws Exception {
         Long lineId = saleLine();
         pointService.grant(memberId, 1_000, "이벤트");
@@ -352,9 +368,9 @@ class CheckoutPreviewApiTest extends ApiTest {
     @Test
     void 잘못된_요청은_400() throws Exception {
         Long lineId = saleLine();
-        String fiftyOne = "[" + String.join(",", java.util.Collections.nCopies(51, lineId.toString())) + "]";
-        String fiftyOneDistinct = "[" + java.util.stream.LongStream.rangeClosed(1, 51)
-                .mapToObj(Long::toString).collect(java.util.stream.Collectors.joining(",")) + "]";
+        String fiftyOne = "[" + String.join(",", Collections.nCopies(51, lineId.toString())) + "]";
+        String fiftyOneDistinct = "[" + LongStream.rangeClosed(1, 51)
+                .mapToObj(Long::toString).collect(Collectors.joining(",")) + "]";
 
         preview("{\"cartItemIds\":[],\"points\":0}").andExpect(status().isBadRequest());
         preview("{\"points\":0}").andExpect(status().isBadRequest());
