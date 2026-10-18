@@ -467,6 +467,12 @@ class ProductSearchApiTest extends ApiTest {
                 {"keyword", "   "},
                 {"size", "abc"},
                 {"cursor", "깨진커서"},
+                {"brandIds", " "},
+                {"brandIds", ","},
+                {"brandIds", "1,"},
+                {"cursor", encodeCursor("NEWEST|+300000-01-01T00:00:00Z|1")},
+                {"cursor", encodeCursor("NEWEST|2026-10-18T00:00:00Z|0")},
+                {"sort", "PRICE_ASC", "cursor", encodeCursor("PRICE_ASC|-1|1")},
         };
 
         for (String[] params : invalid) {
@@ -474,6 +480,11 @@ class ProductSearchApiTest extends ApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
         }
+    }
+
+    private static String encodeCursor(String raw) {
+        return java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     @Test

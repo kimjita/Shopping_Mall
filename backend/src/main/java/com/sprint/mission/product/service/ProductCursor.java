@@ -15,6 +15,8 @@ import java.util.Base64;
 public final class ProductCursor {
 
     private static final String DELIMITER = "|";
+    private static final Instant MIN_INSTANT = Instant.parse("0001-01-01T00:00:00Z");
+    private static final Instant MAX_INSTANT = Instant.parse("9999-12-31T23:59:59.999999Z");
 
     private ProductCursor() {
     }
@@ -40,10 +42,22 @@ public final class ProductCursor {
                 case NEWEST -> Instant.parse(parts[1]);
                 case PRICE_ASC, PRICE_DESC -> Long.valueOf(parts[1]);
             };
-            return new Decoded(value, Long.parseLong(parts[2]));
+            long id = Long.parseLong(parts[2]);
+            if (id < 1 || !isInRange(value)) {
+                throw invalid();
+            }
+            return new Decoded(value, id);
         } catch (IllegalArgumentException | DateTimeParseException e) {
             throw invalid();
         }
+    }
+
+    /** 위조된 값이 DB 범위를 넘어 500이 되지 않도록 시각은 0001~9999년, 가격은 0 이상만 받는다. */
+    private static boolean isInRange(Object value) {
+        if (value instanceof Instant instant) {
+            return !instant.isBefore(MIN_INSTANT) && !instant.isAfter(MAX_INSTANT);
+        }
+        return (Long) value >= 0;
     }
 
     private static BusinessException invalid() {

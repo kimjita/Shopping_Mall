@@ -122,8 +122,9 @@ public class ProductSearchRepository {
     private BooleanExpression afterCursor(ProductSearchCondition condition, NumberExpression<Long> currentPrice) {
         ProductCursor.Decoded cursor = ProductCursor.decode(condition.cursor(), condition.sort());
         return switch (condition.sort()) {
-            case NEWEST -> product.createdAt.lt(cursor.instantValue())
-                    .or(product.createdAt.eq(cursor.instantValue()).and(product.id.lt(cursor.id())));
+            // created_at <= v 를 따로 두어 (status, created_at, id) 인덱스가 시작 위치를 바로 찾게 한다.
+            case NEWEST -> product.createdAt.loe(cursor.instantValue())
+                    .and(product.createdAt.lt(cursor.instantValue()).or(product.id.lt(cursor.id())));
             case PRICE_ASC -> currentPrice.gt(cursor.longValue())
                     .or(currentPrice.eq(cursor.longValue()).and(product.id.gt(cursor.id())));
             case PRICE_DESC -> currentPrice.lt(cursor.longValue())

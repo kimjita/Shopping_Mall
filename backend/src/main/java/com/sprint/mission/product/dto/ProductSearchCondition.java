@@ -3,6 +3,7 @@ package com.sprint.mission.product.dto;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -17,7 +18,7 @@ public record ProductSearchCondition(
         Long categoryId,
 
         @Size(max = 20, message = "브랜드는 최대 20개까지 고를 수 있습니다.")
-        List<Long> brandIds,
+        List<@NotNull(message = "브랜드 ID가 올바르지 않습니다.") Long> brandIds,
 
         @Min(value = 0, message = "최소 가격은 0원 이상이어야 합니다.")
         Long minPrice,

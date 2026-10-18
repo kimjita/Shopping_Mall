@@ -48,16 +48,22 @@ class ProductCursorTest {
         String notInstant = encodeRaw("NEWEST|yesterday|7");
         String unknownSort = encodeRaw("POPULAR|100|7");
         String missingId = encodeRaw("PRICE_ASC|100");
+        String negativePrice = encodeRaw("PRICE_ASC|-1|7");
+        String zeroId = encodeRaw("PRICE_ASC|100|0");
 
-        for (String broken : new String[] {"", "%%%", "not-a-cursor", notNumber, notInstant, unknownSort, missingId}) {
+        for (String broken : new String[] {"", "%%%", "not-a-cursor", notNumber, notInstant, unknownSort, missingId, negativePrice, zeroId}) {
             assertThatThrownBy(() -> ProductCursor.decode(broken, ProductSort.PRICE_ASC))
                     .as(broken)
                     .isInstanceOfSatisfying(BusinessException.class,
                             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
         }
-        assertThatThrownBy(() -> ProductCursor.decode(notInstant, ProductSort.NEWEST))
-                .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        for (String raw : new String[] {"NEWEST|yesterday|7", "NEWEST|+300000-01-01T00:00:00Z|7",
+                "NEWEST|-0001-01-01T00:00:00Z|7", "NEWEST|2026-10-18T00:00:00Z|-5"}) {
+            assertThatThrownBy(() -> ProductCursor.decode(encodeRaw(raw), ProductSort.NEWEST))
+                    .as(raw)
+                    .isInstanceOfSatisfying(BusinessException.class,
+                            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        }
     }
 
     private static String encodeRaw(String raw) {
