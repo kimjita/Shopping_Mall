@@ -21,6 +21,16 @@ class MemberTest {
         assertThat(member.getStatus()).isEqualTo(MemberStatus.ACTIVE);
         assertThat(member.isActive()).isTrue();
         assertThat(member.getSkinConcerns()).isEmpty();
+        assertThat(member.getGrade()).isEqualTo(Grade.BABY);
+    }
+
+    @Test
+    void 등급을_바꾼다() {
+        Member member = Member.create("a@mall.com", "encoded", "홍길동", "01012345678", Role.USER);
+
+        member.changeGrade(Grade.GOLD);
+
+        assertThat(member.getGrade()).isEqualTo(Grade.GOLD);
     }
 
     @Test

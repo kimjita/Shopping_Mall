@@ -48,6 +48,10 @@ public class Member extends BaseEntity {
     @Column(nullable = false, length = 20)
     private MemberStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Grade grade;
+
     @Embedded
     private SkinProfile skinProfile = new SkinProfile();
 
@@ -67,6 +71,7 @@ public class Member extends BaseEntity {
         member.phone = phone;
         member.role = role;
         member.status = MemberStatus.ACTIVE;
+        member.grade = Grade.BABY;
         return member;
     }
 
@@ -93,6 +98,10 @@ public class Member extends BaseEntity {
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void changeGrade(Grade grade) {
+        this.grade = grade;
     }
 
     public void withdraw(Instant now) {

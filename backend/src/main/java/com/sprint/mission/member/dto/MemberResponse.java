@@ -1,5 +1,6 @@
 package com.sprint.mission.member.dto;
 
+import com.sprint.mission.member.domain.Grade;
 import com.sprint.mission.member.domain.Member;
 import com.sprint.mission.member.domain.Role;
 import com.sprint.mission.member.domain.SkinConcern;
@@ -14,6 +15,7 @@ public record MemberResponse(
         String name,
         String phone,
         Role role,
+        Grade grade,
         SkinType skinType,
         SkinTone skinTone,
         List<SkinConcern> skinConcerns) {
@@ -27,6 +29,7 @@ public record MemberResponse(
                 member.getName(),
                 member.getPhone(),
                 member.getRole(),
+                member.getGrade(),
                 skinProfile == null ? null : skinProfile.getSkinType(),
                 skinProfile == null ? null : skinProfile.getSkinTone(),
                 member.getSkinConcerns().stream().sorted().toList());

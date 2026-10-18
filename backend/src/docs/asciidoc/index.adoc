@@ -99,6 +99,7 @@ include::{snippets}/auth/logout/http-response.adoc[]
 === 내 정보 조회
 
 로그인한 회원의 정보를 돌려준다. 피부 프로필을 아직 저장하지 않았다면 `skinType`, `skinTone`은 `null`이고 `skinConcerns`는 빈 배열이다.
+`grade`는 회원 등급(`BABY`, `PINK`, `GREEN`, `BLACK`, `GOLD`)이며 가입 직후에는 `BABY`다.
 
 ==== 요청
 

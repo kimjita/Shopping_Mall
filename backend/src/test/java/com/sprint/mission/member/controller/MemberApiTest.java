@@ -72,6 +72,7 @@ class MemberApiTest extends ApiTest {
                 .andExpect(jsonPath("$.name").value("홍길동"))
                 .andExpect(jsonPath("$.phone").value("01012345678"))
                 .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(jsonPath("$.grade").value("BABY"))
                 .andExpect(jsonPath("$.skinConcerns").isEmpty())
                 .andDo(document("member/me",
                         requestHeaders(AUTHORIZATION),
@@ -81,12 +82,22 @@ class MemberApiTest extends ApiTest {
                                 fieldWithPath("name").type(JsonFieldType.STRING).description("이름"),
                                 fieldWithPath("phone").type(JsonFieldType.STRING).description("휴대폰 번호 (숫자만)"),
                                 fieldWithPath("role").type(JsonFieldType.STRING).description("권한 (`USER`, `ADMIN`)"),
+                                fieldWithPath("grade").type(JsonFieldType.STRING)
+                                        .description("회원 등급 (`BABY`, `PINK`, `GREEN`, `BLACK`, `GOLD`)"),
                                 fieldWithPath("skinType").type(JsonFieldType.STRING).optional()
                                         .description("피부 타입 (`DRY`, `OILY`, `COMBINATION`, `SENSITIVE`, `NORMAL`). 설정 전에는 `null`"),
                                 fieldWithPath("skinTone").type(JsonFieldType.STRING).optional()
                                         .description("피부 톤 (`COOL`, `WARM`, `NEUTRAL`). 설정 전에는 `null`"),
                                 fieldWithPath("skinConcerns").type(JsonFieldType.ARRAY)
                                         .description("피부 고민 (선언 순서로 정렬, 없으면 빈 배열)"))));
+    }
+
+    @Test
+    void 내_정보에_등급이_나온다() throws Exception {
+        // 가입 직후 다른 요청에서 DB 값을 읽는다.
+        mockMvc.perform(get("/api/members/me").header(HttpHeaders.AUTHORIZATION, token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.grade").value("BABY"));
     }
 
     @Test
@@ -117,6 +128,7 @@ class MemberApiTest extends ApiTest {
                                 fieldWithPath("name").type(JsonFieldType.STRING).description("바뀐 이름"),
                                 fieldWithPath("phone").type(JsonFieldType.STRING).description("바뀐 휴대폰 번호 (숫자만)"),
                                 fieldWithPath("role").type(JsonFieldType.STRING).description("권한"),
+                                fieldWithPath("grade").type(JsonFieldType.STRING).description("회원 등급"),
                                 fieldWithPath("skinType").type(JsonFieldType.STRING).optional().description("피부 타입"),
                                 fieldWithPath("skinTone").type(JsonFieldType.STRING).optional().description("피부 톤"),
                                 fieldWithPath("skinConcerns").type(JsonFieldType.ARRAY).description("피부 고민"))));
@@ -158,6 +170,7 @@ class MemberApiTest extends ApiTest {
                                 fieldWithPath("name").type(JsonFieldType.STRING).description("이름"),
                                 fieldWithPath("phone").type(JsonFieldType.STRING).description("휴대폰 번호 (숫자만)"),
                                 fieldWithPath("role").type(JsonFieldType.STRING).description("권한"),
+                                fieldWithPath("grade").type(JsonFieldType.STRING).description("회원 등급"),
                                 fieldWithPath("skinType").type(JsonFieldType.STRING).optional().description("저장된 피부 타입"),
                                 fieldWithPath("skinTone").type(JsonFieldType.STRING).optional().description("저장된 피부 톤"),
                                 fieldWithPath("skinConcerns").type(JsonFieldType.ARRAY)
