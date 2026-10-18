@@ -535,6 +535,79 @@ include::{snippets}/cart/remove/request-headers.adoc[]
 
 include::{snippets}/cart/remove/http-response.adoc[]
 
+== 적립금
+
+회원 API는 모두 로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+탈퇴한 회원의 토큰이면 `404 MEMBER_NOT_FOUND`다.
+적립금은 원 단위 정수이고, 잔액은 0 밑으로 내려가지 않는다. 잔액이 바뀔 때마다 내역이 한 줄씩 남는다.
+
+**내역 종류**: `amount`는 항상 양수이고 증가인지 감소인지는 `type`으로 구분한다.
+
+* `EARN`: 구매 적립이다(잔액 증가).
+* `USE`: 주문에서 사용한 적립금이다(잔액 감소).
+* `RESTORE`: 주문 취소 등으로 사용분을 되돌린 것이다(잔액 증가).
+* `ADMIN_GRANT`: 관리자가 지급한 적립금이다(잔액 증가).
+
+`balanceAfter`는 그 변동 직후의 잔액이다. 잔액보다 많이 쓰려 하면 `409 POINTS_NOT_ENOUGH`이고 잔액과 내역은 그대로다.
+적립금 사용·복원·적립은 주문 흐름에서 서버가 처리하며, 이 장에서 호출할 수 있는 API는 조회와 관리자 지급뿐이다.
+
+=== 내 적립금 잔액
+
+==== 요청
+
+include::{snippets}/point/balance/http-request.adoc[]
+
+include::{snippets}/point/balance/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/point/balance/http-response.adoc[]
+
+include::{snippets}/point/balance/response-fields.adoc[]
+
+=== 적립금 내역
+
+최근 순으로 내려준다.
+
+**커서 페이지네이션**: 첫 페이지는 `cursor` 없이 요청한다. 응답에 `nextCursor`가 있으면 그 값을 그대로 `cursor`로 보내 다음 페이지를 읽는다.
+`nextCursor`가 `null`이면 마지막 페이지다. `size`는 기본 20, 1~50이다. 해석할 수 없는 커서나 범위를 벗어난 `size`는 `400 INVALID_INPUT`이다.
+
+==== 요청
+
+include::{snippets}/point/history/http-request.adoc[]
+
+include::{snippets}/point/history/request-headers.adoc[]
+
+include::{snippets}/point/history/query-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/point/history/http-response.adoc[]
+
+include::{snippets}/point/history/response-fields.adoc[]
+
+=== 관리자 적립금 지급
+
+관리자 전용이다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`, 관리자가 아니면 `403 FORBIDDEN`이다.
+지급 금액은 1~1,000,000원이고 사유는 앞뒤 공백을 지운 값이 1~100자여야 한다. 규칙에 맞지 않으면 `400 INVALID_INPUT`이다.
+없거나 탈퇴한 회원이면 `404 MEMBER_NOT_FOUND`다. 성공하면 `200 OK`이고 지급 후 잔액을 내려준다. 내역에는 `ADMIN_GRANT`로 남는다.
+
+==== 요청
+
+include::{snippets}/admin-point/grant/http-request.adoc[]
+
+include::{snippets}/admin-point/grant/path-parameters.adoc[]
+
+include::{snippets}/admin-point/grant/request-headers.adoc[]
+
+include::{snippets}/admin-point/grant/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-point/grant/http-response.adoc[]
+
+include::{snippets}/admin-point/grant/response-fields.adoc[]
+
 == 카탈로그
 
 카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.

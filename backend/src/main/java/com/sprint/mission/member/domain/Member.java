@@ -18,9 +18,11 @@ import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Getter
 @Entity
+@DynamicUpdate
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends BaseEntity {
 
@@ -51,6 +53,13 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Grade grade;
+
+    /**
+     * 적립금 잔액이다. 읽기 전용 매핑이라 엔티티를 저장해도 잔액은 쓰이지 않는다.
+     * 잔액은 {@code MemberRepository.changePointBalance}의 조건부 UPDATE로만 바뀐다.
+     */
+    @Column(name = "point_balance", insertable = false, updatable = false)
+    private long pointBalance;
 
     @Embedded
     private SkinProfile skinProfile = new SkinProfile();

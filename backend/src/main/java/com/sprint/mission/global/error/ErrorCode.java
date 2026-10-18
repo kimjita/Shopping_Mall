@@ -31,7 +31,9 @@ public enum ErrorCode {
     SKU_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "옵션은 최대 20개까지 등록할 수 있습니다."),
     INVALID_SALE_PERIOD(HttpStatus.BAD_REQUEST, "세일 종료 시각은 시작 시각보다 늦어야 합니다."),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "장바구니 상품을 찾을 수 없습니다."),
-    CART_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "장바구니에는 최대 50개 상품을 담을 수 있습니다.");
+    CART_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "장바구니에는 최대 50개 상품을 담을 수 있습니다."),
+    POINTS_NOT_ENOUGH(HttpStatus.CONFLICT, "적립금이 부족합니다."),
+    POINTS_EXCEED_LIMIT(HttpStatus.BAD_REQUEST, "적립금은 결제금액이 100원 이상 남도록 사용할 수 있습니다.");
 
     /**
      * {@link #from(HttpStatusCode)}가 고르는 공통 코드다. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않는다.
