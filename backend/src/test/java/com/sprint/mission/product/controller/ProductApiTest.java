@@ -156,4 +156,11 @@ class ProductApiTest extends ApiTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
     }
+
+    @Test
+    void 상품_하위_경로는_공개가_아니다() throws Exception {
+        mockMvc.perform(get("/api/products/{productId}/anything", 1L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
 }

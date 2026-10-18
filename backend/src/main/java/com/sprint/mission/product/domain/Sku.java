@@ -9,10 +9,15 @@ import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
-/** 상품의 옵션이자 재고 단위다. 이름은 상품 안에서 중복될 수 없다. */
+/**
+ * 상품의 옵션이자 재고 단위다. 이름은 상품 안에서 중복될 수 없다.
+ * 재고는 벌크 UPDATE로 바뀌므로, 옵션을 수정할 때 읽어 둔 낡은 재고를 덮어쓰지 않도록 바뀐 컬럼만 갱신한다.
+ */
 @Getter
 @Entity
+@DynamicUpdate
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Sku extends BaseEntity {
 
