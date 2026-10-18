@@ -33,7 +33,13 @@ public enum ErrorCode {
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "장바구니 상품을 찾을 수 없습니다."),
     CART_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "장바구니에는 최대 50개 상품을 담을 수 있습니다."),
     POINTS_NOT_ENOUGH(HttpStatus.CONFLICT, "적립금이 부족합니다."),
-    POINTS_EXCEED_LIMIT(HttpStatus.BAD_REQUEST, "적립금은 결제금액이 100원 이상 남도록 사용할 수 있습니다.");
+    POINTS_EXCEED_LIMIT(HttpStatus.BAD_REQUEST, "적립금은 결제금액이 100원 이상 남도록 사용할 수 있습니다."),
+    COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
+    COUPON_SOLD_OUT(HttpStatus.CONFLICT, "쿠폰이 모두 소진되었습니다."),
+    COUPON_ALREADY_ISSUED(HttpStatus.CONFLICT, "이미 받은 쿠폰입니다."),
+    COUPON_NOT_ISSUABLE(HttpStatus.BAD_REQUEST, "지금은 받을 수 없는 쿠폰입니다."),
+    COUPON_NOT_USABLE(HttpStatus.BAD_REQUEST, "사용할 수 없는 쿠폰입니다."),
+    COUPON_NOT_APPLICABLE(HttpStatus.BAD_REQUEST, "쿠폰 최소 주문금액을 채우지 못했습니다.");
 
     /**
      * {@link #from(HttpStatusCode)}가 고르는 공통 코드다. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않는다.
