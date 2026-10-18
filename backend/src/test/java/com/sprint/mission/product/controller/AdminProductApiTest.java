@@ -7,7 +7,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -241,5 +243,214 @@ class AdminProductApiTest extends ApiTest {
         mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, admin()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
+    }
+
+    private static final String UPDATE_BODY = """
+            {"brandId":%s,"categoryId":%s,"name":"  수정된 토너  ","summary":null,
+             "description":"수정된 설명이다.","ingredients":"정제수",
+             "basePrice":15000,"imageUrls":["https://img.example.com/new.jpg"]}""";
+
+    private Long registered() throws Exception {
+        return productId(register(admin(), body(brandId, tonerId, TWO_IMAGES, TWO_SKUS))
+                .andReturn().getResponse().getHeader(HttpHeaders.LOCATION));
+    }
+
+    private ResultActions changeStatus(Long productId, String status) throws Exception {
+        return mockMvc.perform(patch("/api/admin/products/{productId}/status", productId)
+                .header(HttpHeaders.AUTHORIZATION, admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"" + status + "\"}"));
+    }
+
+    @Test
+    void 관리자가_상품을_수정한다() throws Exception {
+        Long productId = registered();
+        Long serumId = categoryId("에센스·세럼");
+        Long otherBrandId = brandService.create(new BrandRequest("닥터지", null)).id();
+
+        mockMvc.perform(put("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(UPDATE_BODY.formatted(otherBrandId, serumId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productId))
+                .andExpect(jsonPath("$.brandName").value("닥터지"))
+                .andExpect(jsonPath("$.categoryPath[1]").value("에센스·세럼"))
+                .andExpect(jsonPath("$.name").value("수정된 토너"))
+                .andExpect(jsonPath("$.summary").doesNotExist())
+                .andExpect(jsonPath("$.description").value("수정된 설명이다."))
+                .andExpect(jsonPath("$.basePrice").value(15_000))
+                .andExpect(jsonPath("$.imageUrls.length()").value(1))
+                .andExpect(jsonPath("$.imageUrls[0]").value("https://img.example.com/new.jpg"))
+                .andExpect(jsonPath("$.skus.length()").value(2))
+                .andExpect(jsonPath("$.skus[1].price").value(15_000 + 8_000))
+                .andDo(document("admin-product/update",
+                        pathParameters(parameterWithName("productId").description("상품 ID")),
+                        requestHeaders(AUTHORIZATION),
+                        requestFields(
+                                fieldWithPath("brandId").type(JsonFieldType.NUMBER).description("브랜드 ID"),
+                                fieldWithPath("categoryId").type(JsonFieldType.NUMBER)
+                                        .description("카테고리 ID. 가장 아래 단계 카테고리여야 한다"),
+                                fieldWithPath("name").type(JsonFieldType.STRING).description("상품명 (1~100자)"),
+                                fieldWithPath("summary").type(JsonFieldType.STRING).optional()
+                                        .description("한 줄 요약 (200자 이하, 생략하면 비워진다)"),
+                                fieldWithPath("description").type(JsonFieldType.STRING).description("상세 설명"),
+                                fieldWithPath("ingredients").type(JsonFieldType.STRING).optional()
+                                        .description("전성분 (생략하면 비워진다)"),
+                                fieldWithPath("basePrice").type(JsonFieldType.NUMBER)
+                                        .description("정가 (원, 100~10,000,000)"),
+                                fieldWithPath("imageUrls").type(JsonFieldType.ARRAY)
+                                        .description("이미지 URL 1~10개. 보낸 목록으로 통째로 바뀐다")),
+                        responseFields(
+                                fieldWithPath("id").type(JsonFieldType.NUMBER).description("상품 ID"),
+                                fieldWithPath("status").type(JsonFieldType.STRING).description("상품 상태"),
+                                fieldWithPath("brandId").type(JsonFieldType.NUMBER).description("브랜드 ID"),
+                                fieldWithPath("brandName").type(JsonFieldType.STRING).description("브랜드 이름"),
+                                fieldWithPath("categoryPath").type(JsonFieldType.ARRAY)
+                                        .description("루트부터 상품 카테고리까지의 이름 경로"),
+                                fieldWithPath("name").type(JsonFieldType.STRING).description("상품명"),
+                                fieldWithPath("summary").type(JsonFieldType.STRING).optional()
+                                        .description("한 줄 요약. 없으면 `null`"),
+                                fieldWithPath("description").type(JsonFieldType.STRING).description("상세 설명"),
+                                fieldWithPath("ingredients").type(JsonFieldType.STRING).optional()
+                                        .description("전성분. 없으면 `null`"),
+                                fieldWithPath("basePrice").type(JsonFieldType.NUMBER).description("정가 (원)"),
+                                fieldWithPath("imageUrls").type(JsonFieldType.ARRAY).description("이미지 URL 목록"),
+                                fieldWithPath("skus").type(JsonFieldType.ARRAY).description("옵션(SKU) 목록"),
+                                fieldWithPath("skus[].id").type(JsonFieldType.NUMBER).description("SKU ID"),
+                                fieldWithPath("skus[].name").type(JsonFieldType.STRING).description("옵션 이름"),
+                                fieldWithPath("skus[].additionalPrice").type(JsonFieldType.NUMBER)
+                                        .description("추가금액 (원)"),
+                                fieldWithPath("skus[].price").type(JsonFieldType.NUMBER)
+                                        .description("옵션 가격 (원). 새 정가에 추가금액을 더한 값이다"),
+                                fieldWithPath("skus[].stock").type(JsonFieldType.NUMBER).description("재고 수량"))));
+
+        mockMvc.perform(get("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin()))
+                .andExpect(jsonPath("$.name").value("수정된 토너"))
+                .andExpect(jsonPath("$.imageUrls.length()").value(1));
+    }
+
+    @Test
+    void 수정할_때도_말단이_아닌_카테고리와_없는_브랜드는_거절한다() throws Exception {
+        Long productId = registered();
+
+        mockMvc.perform(put("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(UPDATE_BODY.formatted(brandId, skincareId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CATEGORY_NOT_LEAF"));
+        mockMvc.perform(put("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(UPDATE_BODY.formatted(9999L, tonerId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("BRAND_NOT_FOUND"));
+        mockMvc.perform(put("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(UPDATE_BODY.formatted(brandId, tonerId).replace("\"basePrice\":15000", "\"basePrice\":50")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void 판매중지한_상품도_관리자는_본다() throws Exception {
+        Long productId = registered();
+
+        changeStatus(productId, "STOPPED")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("STOPPED"));
+
+        mockMvc.perform(get("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("STOPPED"));
+        mockMvc.perform(get("/api/products/{productId}", productId))
+                .andExpect(status().isNotFound());
+
+        changeStatus(productId, "ON_SALE")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ON_SALE"));
+        mockMvc.perform(get("/api/products/{productId}", productId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void 삭제한_상품은_관리자도_404이고_상태를_되돌릴_수_없다() throws Exception {
+        Long productId = registered();
+
+        mockMvc.perform(patch("/api/admin/products/{productId}/status", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"DELETED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DELETED"))
+                .andDo(document("admin-product/change-status",
+                        pathParameters(parameterWithName("productId").description("상품 ID")),
+                        requestHeaders(AUTHORIZATION),
+                        requestFields(fieldWithPath("status").type(JsonFieldType.STRING)
+                                .description("바꿀 상태 (`ON_SALE`, `STOPPED`, `DELETED`)")),
+                        responseFields(
+                                fieldWithPath("id").type(JsonFieldType.NUMBER).description("상품 ID"),
+                                fieldWithPath("status").type(JsonFieldType.STRING).description("바뀐 상품 상태"),
+                                fieldWithPath("brandId").type(JsonFieldType.NUMBER).description("브랜드 ID"),
+                                fieldWithPath("brandName").type(JsonFieldType.STRING).description("브랜드 이름"),
+                                fieldWithPath("categoryPath").type(JsonFieldType.ARRAY)
+                                        .description("루트부터 상품 카테고리까지의 이름 경로"),
+                                fieldWithPath("name").type(JsonFieldType.STRING).description("상품명"),
+                                fieldWithPath("summary").type(JsonFieldType.STRING).optional()
+                                        .description("한 줄 요약. 없으면 `null`"),
+                                fieldWithPath("description").type(JsonFieldType.STRING).description("상세 설명"),
+                                fieldWithPath("ingredients").type(JsonFieldType.STRING).optional()
+                                        .description("전성분. 없으면 `null`"),
+                                fieldWithPath("basePrice").type(JsonFieldType.NUMBER).description("정가 (원)"),
+                                fieldWithPath("imageUrls").type(JsonFieldType.ARRAY).description("이미지 URL 목록"),
+                                fieldWithPath("skus").type(JsonFieldType.ARRAY).description("옵션(SKU) 목록"),
+                                fieldWithPath("skus[].id").type(JsonFieldType.NUMBER).description("SKU ID"),
+                                fieldWithPath("skus[].name").type(JsonFieldType.STRING).description("옵션 이름"),
+                                fieldWithPath("skus[].additionalPrice").type(JsonFieldType.NUMBER)
+                                        .description("추가금액 (원)"),
+                                fieldWithPath("skus[].price").type(JsonFieldType.NUMBER)
+                                        .description("옵션 가격 (원)"),
+                                fieldWithPath("skus[].stock").type(JsonFieldType.NUMBER).description("재고 수량"))));
+
+        mockMvc.perform(get("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
+        changeStatus(productId, "ON_SALE")
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
+        mockMvc.perform(put("/api/admin/products/{productId}", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(UPDATE_BODY.formatted(brandId, tonerId)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void 상태가_없거나_알_수_없으면_400() throws Exception {
+        Long productId = registered();
+
+        mockMvc.perform(patch("/api/admin/products/{productId}/status", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        mockMvc.perform(patch("/api/admin/products/{productId}/status", productId)
+                        .header(HttpHeaders.AUTHORIZATION, admin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"SOLD\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 비회원은_관리자_상품_상세를_볼_수_없다() throws Exception {
+        mockMvc.perform(get("/api/admin/products/{productId}", 1L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 }

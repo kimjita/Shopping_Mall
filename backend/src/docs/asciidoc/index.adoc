@@ -301,6 +301,24 @@ include::{snippets}/brand/list/http-response.adoc[]
 
 include::{snippets}/brand/list/response-fields.adoc[]
 
+=== 상품 상세
+
+판매 중(`ON_SALE`)인 상품만 보인다. 없거나 판매 중지·삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
+재고 수량은 내려주지 않고 품절 여부(`soldOut`)만 알린다. 옵션이 모두 품절이면 상품도 품절이다.
+`categoryPath`는 루트부터 상품 카테고리까지의 경로이고, 옵션 가격(`price`)은 정가에 추가금액을 더한 값이다.
+
+==== 요청
+
+include::{snippets}/product/get/http-request.adoc[]
+
+include::{snippets}/product/get/path-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/product/get/http-response.adoc[]
+
+include::{snippets}/product/get/response-fields.adoc[]
+
 == 관리자 - 브랜드
 
 이 장의 API는 관리자 전용이다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`, 관리자가 아니면 `403 FORBIDDEN`이다.
@@ -389,3 +407,47 @@ include::{snippets}/admin-product/get/request-headers.adoc[]
 include::{snippets}/admin-product/get/http-response.adoc[]
 
 include::{snippets}/admin-product/get/response-fields.adoc[]
+
+=== 상품 수정
+
+성공하면 `200 OK`이고 수정된 관리자 상세를 돌려준다. 옵션(SKU)은 바꾸지 않고, 이미지는 보낸 목록으로 통째로 바뀐다.
+브랜드와 카테고리는 등록할 때와 같게 확인해서 `404 BRAND_NOT_FOUND`, `404 CATEGORY_NOT_FOUND`, `400 CATEGORY_NOT_LEAF`가 날 수 있고, 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`이다.
+없거나 삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
+
+==== 요청
+
+include::{snippets}/admin-product/update/http-request.adoc[]
+
+include::{snippets}/admin-product/update/path-parameters.adoc[]
+
+include::{snippets}/admin-product/update/request-headers.adoc[]
+
+include::{snippets}/admin-product/update/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-product/update/http-response.adoc[]
+
+include::{snippets}/admin-product/update/response-fields.adoc[]
+
+=== 상품 상태 변경
+
+성공하면 `200 OK`이고 바뀐 관리자 상세를 돌려준다. `ON_SALE`과 `STOPPED`는 서로 오갈 수 있고, `STOPPED` 상품은 공개 조회에서 보이지 않는다.
+`DELETED`로 바꾸면 되돌릴 수 없다. 삭제한 뒤에는 관리자 조회·수정·상태 변경이 모두 `404 PRODUCT_NOT_FOUND`다.
+상태가 없거나 알 수 없는 값이면 `400`이다.
+
+==== 요청
+
+include::{snippets}/admin-product/change-status/http-request.adoc[]
+
+include::{snippets}/admin-product/change-status/path-parameters.adoc[]
+
+include::{snippets}/admin-product/change-status/request-headers.adoc[]
+
+include::{snippets}/admin-product/change-status/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-product/change-status/http-response.adoc[]
+
+include::{snippets}/admin-product/change-status/response-fields.adoc[]

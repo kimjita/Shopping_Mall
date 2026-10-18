@@ -7,6 +7,8 @@ import com.sprint.mission.product.domain.Product;
 import com.sprint.mission.product.domain.Sku;
 import com.sprint.mission.product.dto.AdminProductResponse;
 import com.sprint.mission.product.dto.ProductCreateRequest;
+import com.sprint.mission.product.dto.ProductStatusRequest;
+import com.sprint.mission.product.dto.ProductUpdateRequest;
 import com.sprint.mission.product.dto.SkuRequest;
 import com.sprint.mission.product.repository.ProductRepository;
 import com.sprint.mission.product.repository.SkuRepository;
@@ -43,14 +45,37 @@ public class AdminProductService {
         return product.getId();
     }
 
+    /** 상품 정보를 바꾼다. 브랜드와 카테고리는 등록할 때와 똑같이 확인한다. 삭제된 상품은 수정할 수 없다. */
+    @Transactional
+    public AdminProductResponse update(Long productId, ProductUpdateRequest request) {
+        Product product = productService.getProduct(productId);
+        brandService.get(request.brandId());
+        categoryService.getLeaf(request.categoryId());
+        product.update(request.brandId(), request.categoryId(), request.name(), request.summary(),
+                request.description(), request.ingredients(), request.basePrice(), request.imageUrls());
+        return toResponse(product);
+    }
+
+    /** 삭제된 상품은 상태를 되돌릴 수 없다. */
+    @Transactional
+    public AdminProductResponse changeStatus(Long productId, ProductStatusRequest request) {
+        Product product = productService.getProduct(productId);
+        product.changeStatus(request.status());
+        return toResponse(product);
+    }
+
     /** 삭제된 상품은 관리자도 볼 수 없다. */
     public AdminProductResponse get(Long productId) {
-        Product product = productService.getProduct(productId);
+        return toResponse(productService.getProduct(productId));
+    }
+
+    /** 방금 DELETED로 바꾼 상품의 응답도 만들어야 해서 상태를 거르지 않는다. */
+    private AdminProductResponse toResponse(Product product) {
         List<String> categoryPath = categoryService.path(product.getCategoryId()).stream()
                 .map(Category::getName)
                 .toList();
         return AdminProductResponse.of(product, brandService.get(product.getBrandId()).getName(), categoryPath,
-                skuRepository.findAllByProductIdOrderByIdAsc(productId));
+                skuRepository.findAllByProductIdOrderByIdAsc(product.getId()));
     }
 
     private static void validateUniqueSkuNames(List<SkuRequest> skus) {

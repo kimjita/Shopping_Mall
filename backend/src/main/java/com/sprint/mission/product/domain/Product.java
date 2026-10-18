@@ -83,4 +83,26 @@ public class Product extends BaseEntity {
     public boolean isDeleted() {
         return status == ProductStatus.DELETED;
     }
+
+    /** 상품 정보를 바꾼다. 이미지 목록은 통째로 교체한다. */
+    public void update(Long brandId, Long categoryId, String name, String summary, String description,
+            String ingredients, long basePrice, List<String> imageUrls) {
+        this.brandId = brandId;
+        this.categoryId = categoryId;
+        this.name = name;
+        this.summary = summary;
+        this.description = description;
+        this.ingredients = ingredients;
+        this.basePrice = basePrice;
+        this.imageUrls.clear();
+        this.imageUrls.addAll(imageUrls);
+    }
+
+    /** 삭제된 상품은 상태를 바꿀 수 없다. */
+    public void changeStatus(ProductStatus status) {
+        if (isDeleted()) {
+            throw new IllegalStateException("삭제된 상품의 상태는 바꿀 수 없다.");
+        }
+        this.status = status;
+    }
 }
