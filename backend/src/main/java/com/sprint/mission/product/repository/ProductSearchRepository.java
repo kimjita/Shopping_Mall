@@ -14,26 +14,35 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.mission.product.domain.ProductStatus;
+import com.sprint.mission.product.dto.ProductCard;
 import com.sprint.mission.product.dto.ProductSearchCondition;
 import com.sprint.mission.product.dto.ProductSort;
 import com.sprint.mission.product.dto.ProductSummary;
 import com.sprint.mission.product.service.ProductCursor;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 /**
- * 공개 상품 목록 조회다. 상품·브랜드·대표 이미지와 품절 여부를 쿼리 한 번으로 읽으므로 쿼리 수가 페이지 크기와 무관하다.
+ * 공개 상품 목록과 상품 id별 카드 조회다. 상품·브랜드·대표 이미지와 품절 여부를 쿼리 한 번으로 읽으므로 쿼리 수가 페이지 크기와 무관하다.
  */
 @Repository
 @RequiredArgsConstructor
 public class ProductSearchRepository {
 
     private static final StringPath IMAGE = Expressions.stringPath("img");
+
+    /** {@link #cardQuery}의 select 목록에서 요약 뒤에 오는 컬럼의 위치다. */
+    private static final int CREATED_AT = 8;
+    private static final int STATUS = 9;
 
     private final JPAQueryFactory queryFactory;
 
@@ -48,30 +57,58 @@ public class ProductSearchRepository {
     public List<Row> search(ProductSearchCondition condition, List<Long> leafIds, Instant now, int limit) {
         NumberExpression<Long> currentPrice = currentPrice(now);
         BooleanExpression saleActive = saleActive(now);
-        // not exists는 플래너가 SKU 전체를 읽어 해시로 만드는 서브플랜이 되기 쉽다.
-        // 상품별 최대 재고 스칼라 서브쿼리는 sku (product_id, name) 인덱스 조회로 계산된다.
-        BooleanExpression noStock = Expressions.numberTemplate(Integer.class, "coalesce({0}, 0)",
-                JPAExpressions.select(sku.stock.max()).from(sku).where(sku.productId.eq(product.id))).loe(0);
 
-        List<Tuple> tuples = queryFactory
-                .select(product.id, product.name, brand.name, IMAGE, product.minPrice, currentPrice,
-                        new CaseBuilder().when(saleActive).then(product.sale.rate)
-                                .otherwise(Expressions.nullExpression(Integer.class)),
-                        new CaseBuilder().when(noStock).then(true).otherwise(false),
-                        product.createdAt)
-                .from(product)
-                .join(brand).on(brand.id.eq(product.brandId))
-                .leftJoin(product.imageUrls, IMAGE)
-                .on(Expressions.numberTemplate(Integer.class, "index({0})", IMAGE).eq(0))
+        List<Tuple> tuples = cardQuery(now)
                 .where(conditions(condition, leafIds, now, currentPrice, saleActive))
                 .orderBy(orderBy(condition.sort(), currentPrice))
                 .limit(limit)
                 .fetch();
 
-        return tuples.stream().map(t -> new Row(new ProductSummary(
-                t.get(product.id), t.get(product.name), t.get(brand.name), t.get(IMAGE),
-                t.get(product.minPrice), t.get(currentPrice), t.get(6, Integer.class),
-                Boolean.TRUE.equals(t.get(7, Boolean.class))), t.get(product.createdAt))).toList();
+        return tuples.stream().map(t -> new Row(summaryOf(t), t.get(CREATED_AT, Instant.class))).toList();
+    }
+
+    /**
+     * 상품 id로 카드를 한 번의 쿼리로 읽는다. 상태와 상관없이 있는 상품을 모두 돌려주며(DELETED 포함),
+     * 거르는 일과 순서는 호출자가 정한다. 없는 id는 결과에 없고, 빈 목록이면 쿼리 없이 빈 맵을 돌려준다.
+     */
+    public Map<Long, ProductCard> findCards(Collection<Long> productIds, Instant now) {
+        if (productIds.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        Map<Long, ProductCard> cards = new LinkedHashMap<>();
+        for (Tuple t : cardQuery(now).where(product.id.in(productIds)).fetch()) {
+            ProductSummary summary = summaryOf(t);
+            cards.put(summary.id(), new ProductCard(summary, t.get(STATUS, ProductStatus.class)));
+        }
+        return cards;
+    }
+
+    /**
+     * 목록과 카드가 함께 쓰는 select 목록과 조인이다. 현재 판매가 CASE, 품절 스칼라 서브쿼리, 대표 이미지(index 0) 조인을 담는다.
+     * 컬럼 순서는 {@link #summaryOf}와 맞아야 한다.
+     */
+    private JPAQuery<Tuple> cardQuery(Instant now) {
+        // not exists는 플래너가 SKU 전체를 읽어 해시로 만드는 서브플랜이 되기 쉽다.
+        // 상품별 최대 재고 스칼라 서브쿼리는 sku (product_id, name) 인덱스 조회로 계산된다.
+        BooleanExpression noStock = Expressions.numberTemplate(Integer.class, "coalesce({0}, 0)",
+                JPAExpressions.select(sku.stock.max()).from(sku).where(sku.productId.eq(product.id))).loe(0);
+
+        return queryFactory
+                .select(product.id, product.name, brand.name, IMAGE, product.minPrice, currentPrice(now),
+                        new CaseBuilder().when(saleActive(now)).then(product.sale.rate)
+                                .otherwise(Expressions.nullExpression(Integer.class)),
+                        new CaseBuilder().when(noStock).then(true).otherwise(false),
+                        product.createdAt, product.status)
+                .from(product)
+                .join(brand).on(brand.id.eq(product.brandId))
+                .leftJoin(product.imageUrls, IMAGE)
+                .on(Expressions.numberTemplate(Integer.class, "index({0})", IMAGE).eq(0));
+    }
+
+    private static ProductSummary summaryOf(Tuple t) {
+        return new ProductSummary(t.get(0, Long.class), t.get(1, String.class), t.get(2, String.class),
+                t.get(3, String.class), t.get(4, Long.class), t.get(5, Long.class), t.get(6, Integer.class),
+                Boolean.TRUE.equals(t.get(7, Boolean.class)));
     }
 
     /**

@@ -267,6 +267,86 @@ include::{snippets}/address/delete/request-headers.adoc[]
 
 include::{snippets}/address/delete/http-response.adoc[]
 
+== 찜
+
+이 장의 API는 모두 로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+탈퇴한 회원의 토큰이면 `404 MEMBER_NOT_FOUND`다.
+찜은 상품 단위이고 (회원, 상품)은 하나뿐이다. 판매 중(`ON_SALE`)인 상품만 찜할 수 있다.
+
+=== 찜하기
+
+성공하면 `204 No Content`다. 이미 찜한 상품을 다시 찜해도 `204`이고 찜은 늘지 않는다(멱등).
+없거나 판매 중지·삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
+
+==== 요청
+
+include::{snippets}/wishlist/add/http-request.adoc[]
+
+include::{snippets}/wishlist/add/path-parameters.adoc[]
+
+include::{snippets}/wishlist/add/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/wishlist/add/http-response.adoc[]
+
+=== 찜 취소
+
+성공하면 `204 No Content`다. 찜하지 않았거나 없는 상품이어도 `204`다(멱등).
+
+==== 요청
+
+include::{snippets}/wishlist/remove/http-request.adoc[]
+
+include::{snippets}/wishlist/remove/path-parameters.adoc[]
+
+include::{snippets}/wishlist/remove/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/wishlist/remove/http-response.adoc[]
+
+=== 찜 목록
+
+최근에 찜한 순서로 내려준다. 찜한 뒤 판매가 중지된 상품은 `available`이 `false`인 채로 나오고, 삭제된 상품은 나오지 않는다.
+삭제된 상품이 빠지면 한 페이지가 `size`보다 짧을 수 있다. 그래도 `nextCursor`가 있으면 다음 페이지가 더 있다.
+
+**커서 페이지네이션**: 첫 페이지는 `cursor` 없이 요청한다. 응답에 `nextCursor`가 있으면 그 값을 그대로 `cursor`로 보내 다음 페이지를 읽는다.
+`nextCursor`가 `null`이면 마지막 페이지다. `size`는 기본 20, 1~50이다. 해석할 수 없는 커서나 범위를 벗어난 `size`는 `400 INVALID_INPUT`이다.
+
+==== 요청
+
+include::{snippets}/wishlist/list/http-request.adoc[]
+
+include::{snippets}/wishlist/list/request-headers.adoc[]
+
+include::{snippets}/wishlist/list/query-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/wishlist/list/http-response.adoc[]
+
+include::{snippets}/wishlist/list/response-fields.adoc[]
+
+=== 찜 여부 확인
+
+상품 목록 화면에서 하트를 한 번에 채우기 위한 API다. 요청한 상품 중 찜한 것의 ID만 요청한 순서대로 내려주고, 찜하지 않았거나 없는 상품은 빠진다.
+`productIds`는 1~100개이고 `productIds=1,2,3`처럼 콤마로 구분하거나 파라미터를 반복해서 보낸다. 비어 있거나 숫자가 아닌 값이 있거나 100개를 넘으면 `400 INVALID_INPUT`이다.
+
+==== 요청
+
+include::{snippets}/wishlist/ids/http-request.adoc[]
+
+include::{snippets}/wishlist/ids/request-headers.adoc[]
+
+include::{snippets}/wishlist/ids/query-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/wishlist/ids/http-response.adoc[]
+
+include::{snippets}/wishlist/ids/response-fields.adoc[]
+
 == 카탈로그
 
 카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.
