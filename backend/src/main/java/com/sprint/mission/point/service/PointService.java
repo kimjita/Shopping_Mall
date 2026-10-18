@@ -88,7 +88,7 @@ public class PointService {
         if (memberRepository.changePointBalance(memberId, delta, clock.instant()) == 0) {
             throw new BusinessException(ErrorCode.POINTS_NOT_ENOUGH);
         }
-        // 엔티티는 잔액을 읽기 전용으로만 매핑하고 벌크 UPDATE 뒤 비워지므로, 바뀐 잔액은 DB에서 다시 읽는다.
+        // 엔티티의 잔액은 읽기 전용 매핑이고 벌크 UPDATE 뒤에도 갱신되지 않으므로, 바뀐 잔액은 DB에서 다시 읽는다.
         long balanceAfter = memberRepository.findPointBalanceById(memberId);
         pointHistoryRepository.save(PointHistory.of(memberId, type, amount, balanceAfter, reason, orderId));
         return balanceAfter;

@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
+import com.sprint.mission.member.domain.Member;
+import com.sprint.mission.member.repository.MemberRepository;
 import com.sprint.mission.member.service.MemberService;
 import com.sprint.mission.point.domain.PointType;
 import com.sprint.mission.point.dto.PointHistoryItem;
@@ -15,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 class PointServiceTest extends IntegrationTest {
 
@@ -23,6 +27,12 @@ class PointServiceTest extends IntegrationTest {
 
     @Autowired
     MemberService memberService;
+
+    @Autowired
+    MemberRepository memberRepository;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -113,6 +123,21 @@ class PointServiceTest extends IntegrationTest {
         PointHistoryPage third = pointService.history(memberId, second.nextCursor(), 2);
         assertThat(third.items()).extracting(PointHistoryItem::reason).containsExactly("지급 1");
         assertThat(third.nextCursor()).isNull();
+    }
+
+    @Test
+    void 호출한_트랜잭션에서_읽은_엔티티의_변경이_유실되지_않는다() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Member member = memberRepository.findById(memberId).orElseThrow();
+            pointService.grant(memberId, 700, "지급");
+            pointService.use(memberId, 200, "사용", 1L);
+            // 적립금 변경이 영속성 컨텍스트를 비우면 이 변경은 커밋되지 않는다.
+            member.updateProfile("새이름", "01099998888");
+        });
+
+        assertThat(jdbcTemplate.queryForObject("select name from member where id = ?", String.class, memberId))
+                .isEqualTo("새이름");
+        assertThat(storedBalance()).isEqualTo(500);
     }
 
     @Test

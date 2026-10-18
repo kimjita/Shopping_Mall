@@ -57,6 +57,7 @@ public class Member extends BaseEntity {
     /**
      * 적립금 잔액이다. 읽기 전용 매핑이라 엔티티를 저장해도 잔액은 쓰이지 않는다.
      * 잔액은 {@code MemberRepository.changePointBalance}의 조건부 UPDATE로만 바뀐다.
+     * 적립금을 바꾼 트랜잭션 안에서는 메모리 값이 낡을 수 있으니 {@code PointService.balance}나 스칼라 쿼리로 읽는다.
      */
     @Column(name = "point_balance", insertable = false, updatable = false)
     private long pointBalance;

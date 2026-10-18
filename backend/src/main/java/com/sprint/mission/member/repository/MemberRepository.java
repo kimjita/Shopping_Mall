@@ -22,8 +22,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     /**
      * 적립금 잔액을 delta만큼 바꾸는 한 문장이다. 결과가 음수가 되면 바꾸지 않고 0을 돌려준다.
      * 읽기 전용 매핑 컬럼이라 JPQL로는 갱신할 수 없어 네이티브 쿼리를 쓴다.
+     * 호출한 트랜잭션이 읽어 둔 다른 엔티티가 떨어져 나가지 않도록 영속성 컨텍스트는 비우지 않는다.
+     * 그래서 이 트랜잭션 안의 {@code Member.pointBalance}는 낡은 값일 수 있다.
      */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query(value = "update member set point_balance = point_balance + :delta, updated_at = :now "
             + "where id = :id and point_balance + :delta >= 0", nativeQuery = true)
     int changePointBalance(@Param("id") Long id, @Param("delta") long delta, @Param("now") Instant now);

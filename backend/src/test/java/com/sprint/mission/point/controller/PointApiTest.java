@@ -180,6 +180,8 @@ class PointApiTest extends ApiTest {
     @Test
     void 사유가_비었거나_100자를_넘으면_400() throws Exception {
         grantAsAdmin("{\"amount\":100,\"reason\":\"  \"}").andExpect(status().isBadRequest());
+        grantAsAdmin("{\"amount\":100,\"reason\":\"\u3000\"}").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
         grantAsAdmin("{\"amount\":100}").andExpect(status().isBadRequest());
         grantAsAdmin("{\"amount\":100,\"reason\":\"" + "가".repeat(101) + "\"}").andExpect(status().isBadRequest());
         grantAsAdmin("{\"amount\":100,\"reason\":\"" + "가".repeat(100) + "\"}").andExpect(status().isOk());

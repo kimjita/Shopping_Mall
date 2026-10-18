@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -106,6 +107,8 @@ class PointConcurrencyTest extends IntegrationTest {
                     throw new IllegalStateException(e);
                 }
                 member.updateProfile("새이름", "01099998888");
+                // 읽기 전용 매핑이 아니면 이 값이 UPDATE에 실려 잔액을 덮어쓴다.
+                ReflectionTestUtils.setField(member, "pointBalance", 12_345L);
             });
         } finally {
             executor.shutdown();
@@ -114,5 +117,31 @@ class PointConcurrencyTest extends IntegrationTest {
         assertThat(storedBalance()).isEqualTo(500);
         assertThat(jdbcTemplate.queryForObject("select name from member where id = ?", String.class, memberId))
                 .isEqualTo("새이름");
+    }
+
+    @Test
+    void 영속성_컨텍스트의_회원이_낡아도_잔액과_balance_after가_맞다() throws Exception {
+        pointService.grant(memberId, 1_000, "처음 지급");
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        long[] balanceAfterUse = new long[1];
+        try {
+            new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                // 잔액 1,000인 회원이 1차 캐시에 올라간 뒤, 다른 스레드가 +500을 커밋한다.
+                memberRepository.findById(memberId).orElseThrow();
+                try {
+                    executor.submit(() -> pointService.grant(memberId, 500, "끼어든 지급")).get();
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+                balanceAfterUse[0] = pointService.use(memberId, 300, "주문 사용", 1L);
+            });
+        } finally {
+            executor.shutdown();
+        }
+
+        assertThat(balanceAfterUse[0]).isEqualTo(1_200);
+        assertThat(storedBalance()).isEqualTo(1_200);
+        assertThat(jdbcTemplate.queryForObject(
+                "select balance_after from point_history where type = 'USE'", Long.class)).isEqualTo(1_200);
     }
 }
