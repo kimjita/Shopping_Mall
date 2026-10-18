@@ -301,6 +301,55 @@ include::{snippets}/brand/list/http-response.adoc[]
 
 include::{snippets}/brand/list/response-fields.adoc[]
 
+=== 상품 목록
+
+판매 중(`ON_SALE`)인 상품만 나온다. 판매 중지·삭제된 상품은 나오지 않고, 품절 상품은 `soldOut`이 `true`인 채로 나온다.
+모든 쿼리 파라미터는 선택이고, 주면 모두 AND로 합쳐진다. 규칙에 맞지 않는 값이나 해석할 수 없는 값은 `400 INVALID_INPUT`이다.
+
+**검색어(`keyword`)**: 앞뒤 공백을 지운 1~50자이며 `브랜드명 상품명`에서 대소문자를 구분하지 않고 부분 일치로 찾는다.
+`%`, `_`, `\`는 특수 문자가 아니라 입력한 글자 그대로 찾는다.
+
+**카테고리(`categoryId`)**: 대분류·중분류·소분류 어느 단계든 받고, 그 아래 가장 아래 단계 카테고리 전체의 상품을 찾는다. 없는 ID면 `404 CATEGORY_NOT_FOUND`다.
+
+**브랜드(`brandIds`)**: 최대 20개이고 `brandIds=1,2`처럼 콤마로 구분하거나 `brandIds=1&brandIds=2`처럼 반복해서 보낸다.
+
+**현재 판매가**: 진행 중인 세일(`시작 시각 <= 지금 < 종료 시각`)이 있으면 `(정가 × (100 - 할인율) / 100) / 10 × 10`이고, 없으면 정가다. 모두 정수 나눗셈이라 10원 단위 미만은 내린다.
+정가는 옵션 가격(상품 정가 + 추가금액) 중 가장 싼 값이다. `salePrice`가 이 값이고, 상품 상세의 옵션 판매가 중 가장 싼 값과 같다.
+`minPrice`·`maxPrice`(0 이상, `minPrice <= maxPrice`)와 가격 정렬이 모두 현재 판매가 기준이다. `onSale=true`는 지금 세일이 진행 중인 상품만 거른다.
+
+**정렬(`sort`)과 동률 처리**: 동률은 항상 상품 ID로 끊으므로 순서가 요청마다 바뀌지 않는다.
+
+[cols="1,3"]
+|===
+|`sort` |순서
+
+|`NEWEST` (기본)
+|등록 시각 내림차순, 같으면 ID 내림차순
+
+|`PRICE_ASC`
+|현재 판매가 오름차순, 같으면 ID 오름차순
+
+|`PRICE_DESC`
+|현재 판매가 내림차순, 같으면 ID 내림차순
+|===
+
+**커서 페이지네이션**: 첫 페이지는 `cursor` 없이 요청한다. 응답에 `nextCursor`가 있으면 같은 조건과 같은 `sort`에 그 값을 `cursor`로 보내 다음 페이지를 읽는다.
+`nextCursor`가 `null`이면 마지막 페이지다. 커서는 내용을 해석하지 말고 그대로 돌려보내야 하는 불투명한 문자열이다.
+`size`는 기본 20, 1~50이다. 다른 `sort`로 만든 커서나 해석할 수 없는 커서는 `400 INVALID_INPUT`이다.
+전체 개수와 페이지 번호는 제공하지 않는다.
+
+==== 요청
+
+include::{snippets}/product/search/http-request.adoc[]
+
+include::{snippets}/product/search/query-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/product/search/http-response.adoc[]
+
+include::{snippets}/product/search/response-fields.adoc[]
+
 === 상품 상세
 
 판매 중(`ON_SALE`)인 상품만 보인다. 없거나 판매 중지·삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
