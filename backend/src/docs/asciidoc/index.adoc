@@ -266,3 +266,23 @@ include::{snippets}/address/delete/request-headers.adoc[]
 ==== 응답
 
 include::{snippets}/address/delete/http-response.adoc[]
+
+== 카탈로그
+
+카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.
+
+=== 카테고리 트리
+
+전체 카테고리를 한 번에 내려준다. 카테고리는 최대 3단계(대분류 > 중분류 > 소분류)이고 루트는 7개다.
+형제 카테고리는 정해진 노출 순서대로 정렬되며, 가장 아래 단계의 `children`은 빈 배열이다.
+카테고리는 시드 데이터라 등록·수정·삭제 API가 없다.
+
+==== 요청
+
+include::{snippets}/category/tree/http-request.adoc[]
+
+==== 응답
+
+include::{snippets}/category/tree/http-response.adoc[]
+
+include::{snippets}/category/tree/response-fields.adoc[]
