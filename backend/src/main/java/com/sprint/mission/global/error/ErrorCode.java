@@ -25,7 +25,10 @@ public enum ErrorCode {
     BRAND_NOT_FOUND(HttpStatus.NOT_FOUND, "브랜드를 찾을 수 없습니다."),
     DUPLICATE_BRAND(HttpStatus.CONFLICT, "이미 있는 브랜드 이름입니다."),
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
-    DUPLICATE_SKU_NAME(HttpStatus.CONFLICT, "같은 이름의 옵션이 이미 있습니다.");
+    DUPLICATE_SKU_NAME(HttpStatus.CONFLICT, "같은 이름의 옵션이 이미 있습니다."),
+    SKU_NOT_FOUND(HttpStatus.NOT_FOUND, "옵션을 찾을 수 없습니다."),
+    STOCK_NOT_ENOUGH(HttpStatus.CONFLICT, "재고가 부족합니다."),
+    SKU_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "옵션은 최대 20개까지 등록할 수 있습니다.");
 
     /**
      * {@link #from(HttpStatusCode)}가 고르는 공통 코드다. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않는다.

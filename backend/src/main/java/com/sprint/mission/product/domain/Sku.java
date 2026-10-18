@@ -41,6 +41,12 @@ public class Sku extends BaseEntity {
         return sku;
     }
 
+    /** 이름과 추가금액을 바꾼다. 재고는 {@code SkuRepository.adjustStock}으로만 바꾼다. */
+    public void update(String name, long additionalPrice) {
+        this.name = name;
+        this.additionalPrice = additionalPrice;
+    }
+
     /** 정가에 추가금액을 더한 옵션 가격이다. */
     public long price(long basePrice) {
         return basePrice + additionalPrice;
