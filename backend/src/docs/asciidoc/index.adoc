@@ -343,3 +343,49 @@ include::{snippets}/brand/update/request-fields.adoc[]
 include::{snippets}/brand/update/http-response.adoc[]
 
 include::{snippets}/brand/update/response-fields.adoc[]
+
+== 관리자 - 상품
+
+이 장의 API는 관리자 전용이다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`, 관리자가 아니면 `403 FORBIDDEN`이다.
+상품은 옵션(SKU)과 이미지와 함께 한 번에 등록하며, 등록하면 `ON_SALE` 상태가 된다.
+
+=== 상품 등록
+
+성공하면 `201 Created`이고 `Location` 헤더에 상세 조회 URL이 담긴다. 입력 규칙에 맞지 않으면 `400 INVALID_INPUT`이다.
+카테고리는 가장 아래 단계여야 하며, 아니면 `400 CATEGORY_NOT_LEAF`, 없으면 `404 CATEGORY_NOT_FOUND`다.
+없는 브랜드면 `404 BRAND_NOT_FOUND`, 한 요청 안에서 옵션 이름이 겹치면 `409 DUPLICATE_SKU_NAME`이다.
+
+==== 요청
+
+include::{snippets}/admin-product/create/http-request.adoc[]
+
+include::{snippets}/admin-product/create/request-headers.adoc[]
+
+include::{snippets}/admin-product/create/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-product/create/http-response.adoc[]
+
+include::{snippets}/admin-product/create/response-headers.adoc[]
+
+include::{snippets}/admin-product/create/response-fields.adoc[]
+
+=== 상품 상세(관리자)
+
+성공하면 `200 OK`다. 없는 상품이거나 삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다. 판매 중지(`STOPPED`) 상품은 관리자에게 보인다.
+관리자 응답에는 옵션의 재고 수량(`stock`)이 포함된다.
+
+==== 요청
+
+include::{snippets}/admin-product/get/http-request.adoc[]
+
+include::{snippets}/admin-product/get/path-parameters.adoc[]
+
+include::{snippets}/admin-product/get/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-product/get/http-response.adoc[]
+
+include::{snippets}/admin-product/get/response-fields.adoc[]
