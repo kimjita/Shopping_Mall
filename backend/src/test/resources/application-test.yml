@@ -7,6 +7,8 @@ spring:
         generate_statistics: true
 
 app:
+  scheduling:
+    enabled: false
   jwt:
     secret: test-only-jwt-secret-key-0123456789abcdef
   auth:
