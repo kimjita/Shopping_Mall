@@ -73,9 +73,9 @@ public class AdminSkuService {
                     ? ErrorCode.STOCK_NOT_ENOUGH
                     : ErrorCode.INVALID_INPUT);
         }
-        int stock = skuRepository.findById(skuId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.SKU_NOT_FOUND))
-                .getStock();
+        // 벌크 UPDATE는 영속성 컨텍스트를 갱신하지 않으므로 바뀐 재고를 스칼라 쿼리로 다시 읽는다.
+        int stock = skuRepository.findStockById(skuId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SKU_NOT_FOUND));
         return new StockResponse(skuId, stock);
     }
 
