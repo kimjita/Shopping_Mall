@@ -157,6 +157,34 @@ class PointServiceTest extends IntegrationTest {
     }
 
     @Test
+    void 적립_사용_복원_금액이_0이면_아무것도_바꾸지_않고_현재_잔액을_돌려준다() {
+        pointService.grant(memberId, 1_000, "지급");
+        int rowsBefore = historyRows();
+
+        assertThat(pointService.use(memberId, 0, "주문 사용", 1L)).isEqualTo(1_000);
+        assertThat(pointService.earn(memberId, 0, "구매 적립", 1L)).isEqualTo(1_000);
+        assertThat(pointService.restore(memberId, 0, "주문 취소 복원", 1L)).isEqualTo(1_000);
+
+        assertThat(storedBalance()).isEqualTo(1_000);
+        assertThat(historyRows()).isEqualTo(rowsBefore);
+    }
+
+    @Test
+    void 금액이_0이어도_없는_회원이면_MEMBER_NOT_FOUND이다() {
+        assertThatThrownBy(() -> pointService.use(999_999L, 0, "주문 사용", 1L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    @Test
+    void 적립_복원_금액이_음수면_IllegalArgumentException이다() {
+        assertThatThrownBy(() -> pointService.earn(memberId, -1, "적립", 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> pointService.restore(memberId, -1, "복원", 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void 없거나_탈퇴한_회원이면_MEMBER_NOT_FOUND이다() {
         assertThatThrownBy(() -> pointService.grant(999_999L, 100, "지급"))
                 .isInstanceOfSatisfying(BusinessException.class,

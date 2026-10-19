@@ -34,22 +34,32 @@ public class PointService {
     private final PointHistoryRepository pointHistoryRepository;
     private final Clock clock;
 
-    /** 구매 적립. 적립 후 잔액을 돌려준다. */
+    /**
+     * 구매 적립. 적립 후 잔액을 돌려준다. 금액이 0이면 아무것도 바꾸지 않고 현재 잔액을 돌려주며, 음수면
+     * {@link IllegalArgumentException}이다.
+     */
     @Transactional
     public long earn(Long memberId, long amount, String reason, Long orderId) {
-        return change(memberId, PointType.EARN, amount, reason, orderId);
+        return changeOrSkipZero(memberId, PointType.EARN, amount, reason, orderId);
     }
 
-    /** 주문 사용. 잔액이 모자라면 {@code POINTS_NOT_ENOUGH}이고 아무것도 바뀌지 않는다. 사용 후 잔액을 돌려준다. */
+    /**
+     * 주문 사용. 잔액이 모자라면 {@code POINTS_NOT_ENOUGH}이고 아무것도 바뀌지 않는다. 사용 후 잔액을 돌려준다.
+     * 적립금을 쓰지 않은 주문처럼 금액이 0이면 아무것도 바꾸지 않고 현재 잔액을 돌려주며, 음수면
+     * {@link IllegalArgumentException}이다.
+     */
     @Transactional
     public long use(Long memberId, long amount, String reason, Long orderId) {
-        return change(memberId, PointType.USE, amount, reason, orderId);
+        return changeOrSkipZero(memberId, PointType.USE, amount, reason, orderId);
     }
 
-    /** 주문 취소 등으로 사용한 적립금을 되돌린다. 복원 후 잔액을 돌려준다. */
+    /**
+     * 주문 취소 등으로 사용한 적립금을 되돌린다. 복원 후 잔액을 돌려준다. 금액이 0이면 아무것도 바꾸지 않고
+     * 현재 잔액을 돌려주며, 음수면 {@link IllegalArgumentException}이다.
+     */
     @Transactional
     public long restore(Long memberId, long amount, String reason, Long orderId) {
-        return change(memberId, PointType.RESTORE, amount, reason, orderId);
+        return changeOrSkipZero(memberId, PointType.RESTORE, amount, reason, orderId);
     }
 
     /** 관리자 지급. 금액 범위(1~1,000,000)는 API가 검증한다. 지급 후 잔액을 돌려준다. */
@@ -77,6 +87,15 @@ public class PointService {
         List<PointHistory> page = hasNext ? rows.subList(0, size) : rows;
         String nextCursor = hasNext ? String.valueOf(page.get(page.size() - 1).getId()) : null;
         return new PointHistoryPage(page.stream().map(PointHistoryItem::from).toList(), nextCursor);
+    }
+
+    /** 금액 0은 잔액도 원장도 건드리지 않는다. 회원 확인은 하므로 없는 회원이면 예외다. */
+    private long changeOrSkipZero(Long memberId, PointType type, long amount, String reason, Long orderId) {
+        if (amount == 0) {
+            memberService.getActive(memberId);
+            return memberRepository.findPointBalanceById(memberId);
+        }
+        return change(memberId, type, amount, reason, orderId);
     }
 
     private long change(Long memberId, PointType type, long amount, String reason, Long orderId) {

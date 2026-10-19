@@ -621,7 +621,7 @@ include::{snippets}/admin-point/grant/response-fields.adoc[]
 
 **기간**: 발급 기간 `[issueStartsAt, issueEndsAt)` 안에서만 받을 수 있고, 사용 기간 `[useStartsAt, useEndsAt)` 안에서만 쓸 수 있다. 시작 시각은 포함하고 종료 시각은 포함하지 않는다.
 
-**쿠폰 상태**: `AVAILABLE`은 쓸 수 있는 쿠폰, `USED`는 이미 쓴 쿠폰이다. `EXPIRED`는 쓰지 않은 채 사용 종료 시각이 지난 쿠폰으로, 저장된 값이 아니라 조회할 때 계산해서 내려준다.
+**쿠폰 상태**: `AVAILABLE`은 아직 쓰지 않았고 사용 종료 시각도 지나지 않은 쿠폰이다. 사용 기간이 아직 시작되지 않은 쿠폰도 `AVAILABLE`일 수 있으므로, 지금 쓸 수 있는지는 클라이언트가 `useStartsAt`을 확인해 판단한다. `USED`는 이미 쓴 쿠폰이다. `EXPIRED`는 쓰지 않은 채 사용 종료 시각이 지난 쿠폰으로, 저장된 값이 아니라 조회할 때 계산해서 내려준다.
 
 === 받을 수 있는 쿠폰
 
@@ -1104,7 +1104,7 @@ include::{snippets}/admin-product/end-sale/http-response.adoc[]
 * `minOrderAmount`는 0 이상, `totalQuantity`는 1~1,000,000이다.
 * `requiredGrade`는 `BABY`, `PINK`, `GREEN`, `BLACK`, `GOLD` 중 하나이고, `null`이면 누구나 받을 수 있다.
 * 발급 기간과 사용 기간은 각각 종료 시각이 시작 시각보다 늦어야 한다.
-* 사용 종료 시각은 발급 종료 시각보다 빠를 수 없다. 받은 즉시 쓸 수 없는 쿠폰을 막기 위해서다.
+* 사용 종료 시각은 발급 종료 시각보다 빠를 수 없다. 받는 시점에 이미 사용 기간이 끝나 있는 쿠폰을 막기 위해서다.
 
 ==== 요청
 
