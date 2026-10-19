@@ -70,12 +70,11 @@ class StockLockComparisonTest extends IntegrationTest {
         };
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"비관적", "낙관적", "조건부 UPDATE"})
-    void 재고_100에_200명이_1개씩_빼면_정확히_100명만_성공한다(String name) throws Exception {
-        Long skuId = registerSku(STOCK);
-        StockDeductor deductor = deductor(name);
+    /** 한 번의 경쟁 결과다. 시간은 출력만 하고 검증하지 않는다. */
+    private record Round(long elapsedMillis, int succeeded, int failed, int errors) {
+    }
 
+    private Round race(StockDeductor deductor, Long skuId) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(THREADS);
         CountDownLatch ready = new CountDownLatch(THREADS);
         CountDownLatch start = new CountDownLatch(1);
@@ -108,12 +107,28 @@ class StockLockComparisonTest extends IntegrationTest {
                 errors++;
             }
         }
-        long retries = deductor instanceof OptimisticStockDeductor optimistic ? optimistic.retries() : 0;
-        System.out.printf("| %s | %d | %d |%n", name, elapsedMillis, retries);
+        return new Round(elapsedMillis, succeeded, failed, errors);
+    }
 
-        assertThat(errors).as("차감 중 예외").isZero();
-        assertThat(succeeded).isEqualTo(STOCK);
-        assertThat(failed).isEqualTo(THREADS - STOCK);
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"비관적", "낙관적", "조건부 UPDATE"})
+    void 재고_100에_200명이_1개씩_빼면_정확히_100명만_성공한다(String name) throws Exception {
+        Long skuId = registerSku(STOCK);
+
+        // 첫 실행에 몰리는 JVM 워밍업, 커넥션 생성, 쿼리 계획 준비 비용이 방식 비교에 섞이지 않도록
+        // 같은 경쟁을 한 번 버리는 용도로 돌리고 재고를 되돌린다. 실행 순서의 영향을 줄이기 위한 것이다.
+        Round warmUp = race(deductor(name), skuId);
+        assertThat(warmUp.errors()).as("워밍업 중 예외").isZero();
+        jdbcTemplate.update("update sku set stock = ?, version = 0 where id = ?", STOCK, skuId);
+
+        StockDeductor deductor = deductor(name);
+        Round round = race(deductor, skuId);
+        long retries = deductor instanceof OptimisticStockDeductor optimistic ? optimistic.retries() : 0;
+        System.out.printf("| %s | %d | %d |%n", name, round.elapsedMillis(), retries);
+
+        assertThat(round.errors()).as("차감 중 예외").isZero();
+        assertThat(round.succeeded()).isEqualTo(STOCK);
+        assertThat(round.failed()).isEqualTo(THREADS - STOCK);
         assertThat(skuRepository.findStockById(skuId)).contains(0);
     }
 }
