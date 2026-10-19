@@ -112,6 +112,17 @@ class SkuRepositoryTest extends IntegrationTest {
     }
 
     @Test
+    void 복원으로_상한을_넘은_재고도_차감은_된다() {
+        Long skuId = registerSku(100_000);
+        inTransaction(() -> skuRepository.restoreStock(skuId, 2, Instant.now()));
+
+        int updated = inTransaction(() -> skuRepository.adjustStock(skuId, -1, Instant.now()));
+
+        assertThat(updated).isEqualTo(1);
+        assertThat(skuRepository.findStockById(skuId)).contains(100_001);
+    }
+
+    @Test
     void 없는_옵션의_재고는_비어_있다() {
         assertThat(skuRepository.findStockById(-1L)).isEmpty();
     }

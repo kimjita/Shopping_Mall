@@ -200,6 +200,22 @@ class OrderExpiryTest extends IntegrationTest {
     }
 
     @Test
+    void 만료_복원으로_재고가_상한을_넘어도_다음_주문은_성공한다() {
+        Long skuId = sku("독도 토너", 99_999);
+        Buyer first = buyer(0, skuId, 2);
+        order(first, null, 0);
+        // 결제 대기 중에 관리자가 상한까지 입고한다.
+        jdbcTemplate.update("update sku set stock = 100000 where id = ?", skuId);
+        clock.advance(Order.PAYMENT_WINDOW);
+        assertThat(orderExpiryScheduler.expireDue()).isEqualTo(1);
+        assertThat(stock(skuId)).isEqualTo(100_002);
+
+        order(buyer(1, skuId, 1), null, 0);
+
+        assertThat(stock(skuId)).isEqualTo(100_001);
+    }
+
+    @Test
     void 한_번에_100건을_넘는_만료도_모두_처리한다() {
         Long skuId = sku("독도 토너", 0);
         Long productId = jdbcTemplate.queryForObject("select product_id from sku where id = ?", Long.class, skuId);

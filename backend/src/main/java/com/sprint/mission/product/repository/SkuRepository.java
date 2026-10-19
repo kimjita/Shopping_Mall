@@ -23,15 +23,17 @@ public interface SkuRepository extends JpaRepository<Sku, Long> {
     boolean existsByProductIdAndNameAndIdNot(Long productId, String name, Long id);
 
     /**
-     * 결과 재고가 0 이상 100,000 이하일 때만 재고를 바꾼다. 읽고 계산해서 쓰는 대신 DB가 한 문장으로 계산하므로
-     * 동시에 호출해도 행 잠금 때문에 재고가 음수가 되거나 갱신이 사라지지 않는다. 바뀐 행이 없으면 0을 돌려준다.
+     * 결과 재고가 0 이상일 때만 재고를 바꾼다. 늘릴 때는 결과가 100,000 이하여야 한다. 줄일 때 상한을 보지 않는 것은
+     * 상한 없는 복원({@link #restoreStock})으로 100,000을 넘은 재고도 주문하거나 관리자가 줄일 수 있어야 하기 때문이다.
+     * 읽고 계산해서 쓰는 대신 DB가 한 문장으로 계산하므로 동시에 호출해도 행 잠금 때문에 재고가 음수가 되거나
+     * 갱신이 사라지지 않는다. 바뀐 행이 없으면 0을 돌려준다.
      * 호출한 트랜잭션이 읽어 둔 다른 엔티티가 떨어져 나가지 않도록 영속성 컨텍스트는 비우지 않는다.
      * 그래서 이 트랜잭션 안의 {@code Sku.stock}은 낡은 값일 수 있으며, 바뀐 재고는 {@link #findStockById}로 읽는다.
      */
     @Modifying(flushAutomatically = true)
     @Query("""
             update Sku s set s.stock = s.stock + :delta, s.updatedAt = :now
-            where s.id = :id and s.stock + :delta >= 0 and s.stock + :delta <= 100000
+            where s.id = :id and s.stock + :delta >= 0 and (:delta <= 0 or s.stock + :delta <= 100000)
             """)
     int adjustStock(@Param("id") Long id, @Param("delta") int delta, @Param("now") Instant now);
 

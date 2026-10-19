@@ -68,7 +68,7 @@ public class AdminSkuService {
         getSku(productId, skuId);
         int updated = skuRepository.adjustStock(skuId, request.delta(), Instant.now(clock));
         if (updated == 0) {
-            // 재고는 항상 0~100,000 안에 있고 옵션은 삭제되지 않으므로, 출고 실패는 부족이고 입고 실패는 상한 초과다.
+            // 재고는 0 이상이고 상한은 입고에만 보며 옵션은 삭제되지 않으므로, 출고 실패는 부족이고 입고 실패는 상한 초과다.
             throw new BusinessException(request.delta() < 0
                     ? ErrorCode.STOCK_NOT_ENOUGH
                     : ErrorCode.INVALID_INPUT);
