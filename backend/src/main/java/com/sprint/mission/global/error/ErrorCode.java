@@ -40,7 +40,8 @@ public enum ErrorCode {
     COUPON_ALREADY_ISSUED(HttpStatus.CONFLICT, "이미 받은 쿠폰입니다."),
     COUPON_NOT_ISSUABLE(HttpStatus.BAD_REQUEST, "지금은 받을 수 없는 쿠폰입니다."),
     COUPON_NOT_USABLE(HttpStatus.BAD_REQUEST, "사용할 수 없는 쿠폰입니다."),
-    COUPON_NOT_APPLICABLE(HttpStatus.BAD_REQUEST, "쿠폰 최소 주문금액을 채우지 못했습니다.");
+    COUPON_NOT_APPLICABLE(HttpStatus.BAD_REQUEST, "쿠폰 최소 주문금액을 채우지 못했습니다."),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다.");
 
     /**
      * {@link #from(HttpStatusCode)}가 고르는 공통 코드다. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않는다.

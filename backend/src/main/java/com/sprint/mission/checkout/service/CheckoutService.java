@@ -8,7 +8,6 @@ import com.sprint.mission.checkout.domain.PriceLine;
 import com.sprint.mission.checkout.dto.CheckoutLine;
 import com.sprint.mission.checkout.dto.CheckoutPreviewRequest;
 import com.sprint.mission.checkout.dto.CheckoutPreviewResponse;
-import com.sprint.mission.coupon.domain.CouponTerms;
 import com.sprint.mission.coupon.service.CouponService;
 import com.sprint.mission.coupon.service.UsableCoupon;
 import com.sprint.mission.global.error.BusinessException;
@@ -58,19 +57,15 @@ public class CheckoutService {
         if (lines.stream().anyMatch(line -> line.status() != CartItemStatus.AVAILABLE)) {
             throw new BusinessException(ErrorCode.CART_ITEM_UNAVAILABLE);
         }
-        CouponTerms terms = null;
-        if (memberCouponId != null) {
-            UsableCoupon coupon = couponService.getUsable(memberId, memberCouponId, now);
-            terms = coupon.terms();
-        }
+        UsableCoupon coupon = memberCouponId == null ? null : couponService.getUsable(memberId, memberCouponId, now);
         long balance = pointService.balance(memberId);
         if (points > balance) {
             throw new BusinessException(ErrorCode.POINTS_NOT_ENOUGH);
         }
         var breakdown = PriceCalculator.calculate(lines.stream()
                 .map(line -> new PriceLine(line.unitPrice(), line.unitSalePrice(), line.item().getQuantity()))
-                .toList(), terms, points);
-        return new Checkout(lines, memberCouponId, breakdown, balance);
+                .toList(), coupon == null ? null : coupon.terms(), points);
+        return new Checkout(lines, coupon, breakdown, balance);
     }
 
     private static CheckoutLine toLine(CartLine line) {

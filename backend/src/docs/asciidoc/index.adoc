@@ -745,6 +745,66 @@ include::{snippets}/checkout/preview/http-response.adoc[]
 
 include::{snippets}/checkout/preview/response-fields.adoc[]
 
+== 주문
+
+로그인이 필요하다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`다.
+탈퇴한 회원의 토큰이면 `404 MEMBER_NOT_FOUND`다.
+
+**결제 기한**: 주문은 결제 대기(`PENDING`) 상태로 만들어지고, 결제 기한(`expiresAt`)은 주문 시각 + 15분이다. 기한 시각부터 만료다.
+
+**이전 대기 주문 대체**: 회원당 결제 대기 주문은 하나다. 결제 대기 주문이 있는 회원이 새로 주문하면 이전 주문은 `CANCELED`(`cancelReason`은 `REPLACED`)가 되고, 이전 주문이 차감한 재고·쿠폰·적립금은 새 주문을 검증하기 전에 되돌아간다. 그래서 이전 주문에 쓴 쿠폰과 적립금을 새 주문에 다시 쓸 수 있다. 새 주문이 실패하면 이전 주문도 그대로 남는다.
+
+**장바구니는 결제 후 정리**: 주문한 장바구니 줄은 주문을 만들 때 지우지 않는다. 결제가 승인될 때 지운다.
+
+=== 주문 생성
+
+고른 장바구니 줄로 결제 대기 주문을 만든다. 금액은 같은 요청의 주문서 미리보기와 같은 계산이다.
+성공하면 `201 Created`이고 `Location` 헤더에 주문 상세 조회 URL(`/api/members/me/orders/{orderNumber}`)이 담긴다.
+재고·쿠폰·적립금은 주문을 만들 때 먼저 차감하고, 결제 기한이 지나면 되돌린다. 상품명·옵션명·가격·쿠폰 이름·배송지는 주문 시점의 값을 복사해 둔다.
+
+**처리 순서**: 한 트랜잭션에서 다음 순서로 처리한다. 어느 단계에서든 실패하면 모두 되돌아가며, 이전 대기 주문도 취소되지 않는다.
+
+. 회원을 확인하고 잠근다. 같은 회원의 주문 요청은 줄을 서서 하나씩 처리된다.
+. 결제 대기 주문이 있으면 취소하고 재고·쿠폰·적립금을 되돌린다.
+. 배송지를 확인하고 받는 사람·연락처·우편번호·주소를 복사한다.
+. 주문서를 검증하고 금액을 계산한다. 주문서 미리보기와 같은 검증이다.
+. 주문과 주문상품을 저장한다.
+. 재고를 차감한다. 그사이 다른 주문이 재고를 가져가 모자라면 `409 STOCK_NOT_ENOUGH`다.
+. 쿠폰을 사용 처리하고 적립금을 차감한다.
+
+**검증 순서와 오류**: 다음 순서로 확인하고 처음 걸린 오류를 돌려준다. 주문서 검증(줄 ID 중복부터 결제금액 하한까지)은 주문서 미리보기와 같은 순서다.
+
+* `400 INVALID_INPUT`: `cartItemIds`가 비었거나 50개를 넘거나 `null`이 있거나, `points`가 음수이거나, `addressId`가 없다.
+* `404 MEMBER_NOT_FOUND`: 없거나 탈퇴한 회원이다.
+* `404 ADDRESS_NOT_FOUND`: 내 배송지가 아니거나 없는 배송지다.
+* `400 INVALID_INPUT`: `cartItemIds`에 같은 ID가 두 번 있다.
+* `404 CART_ITEM_NOT_FOUND`: 내 장바구니 줄이 아니거나 없는 줄이 하나라도 있다.
+* `409 CART_ITEM_UNAVAILABLE`: 품절, 재고 부족, 판매 중지, 삭제된 상품이 있다. 해당 줄을 빼고 다시 요청한다.
+* `404 COUPON_NOT_FOUND`: 내 쿠폰이 아니거나 없는 쿠폰이다.
+* `400 COUPON_NOT_USABLE`: 이미 썼거나 사용 기간이 아닌 쿠폰이다. 이전 대기 주문에 쓴 쿠폰은 되돌린 뒤에 확인하므로 쓸 수 있다.
+* `409 POINTS_NOT_ENOUGH`: 적립금 잔액보다 많이 쓰려 한다. 잔액은 이전 대기 주문의 적립금을 되돌린 뒤의 값이다.
+* `400 COUPON_NOT_APPLICABLE`: 세일가 합계가 쿠폰의 최소 주문금액에 못 미친다.
+* `400 POINTS_EXCEED_LIMIT`: 결제금액이 100원 미만이 된다.
+* `409 STOCK_NOT_ENOUGH`: 검증 뒤 재고를 차감하는 사이에 재고가 모자라졌다.
+
+`items`는 요청한 `cartItemIds` 순서 그대로다.
+
+==== 요청
+
+include::{snippets}/order/create/http-request.adoc[]
+
+include::{snippets}/order/create/request-headers.adoc[]
+
+include::{snippets}/order/create/request-fields.adoc[]
+
+==== 응답
+
+include::{snippets}/order/create/http-response.adoc[]
+
+include::{snippets}/order/create/response-headers.adoc[]
+
+include::{snippets}/order/create/response-fields.adoc[]
+
 == 카탈로그
 
 카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.
