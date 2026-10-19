@@ -8,6 +8,7 @@ import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.member.domain.Member;
 import com.sprint.mission.member.repository.MemberRepository;
 import com.sprint.mission.member.service.MemberService;
+import com.sprint.mission.order.OrderFixtures;
 import com.sprint.mission.point.domain.PointType;
 import com.sprint.mission.point.dto.PointHistoryItem;
 import com.sprint.mission.point.dto.PointHistoryPage;
@@ -42,6 +43,7 @@ class PointServiceTest extends IntegrationTest {
     @BeforeEach
     void setUp() {
         memberId = memberService.signup("user@mall.com", "password1", "홍길동", "01012345678");
+        OrderFixtures.insertCanceledOrders(jdbcTemplate, memberId, 8);
     }
 
     private long storedBalance() {

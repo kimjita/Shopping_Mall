@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.sprint.mission.member.domain.Role;
 import com.sprint.mission.member.service.MemberService;
+import com.sprint.mission.order.OrderFixtures;
 import com.sprint.mission.point.service.PointService;
 import com.sprint.mission.support.ApiTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,7 @@ class PointApiTest extends ApiTest {
     @BeforeEach
     void setUp() {
         memberId = memberService.signup("user@mall.com", "password1", "홍길동", "01012345678");
+        OrderFixtures.insertCanceledOrders(jdbcTemplate, memberId, 8);
     }
 
     private ResultActions grant(String token, Long targetId, String body) throws Exception {

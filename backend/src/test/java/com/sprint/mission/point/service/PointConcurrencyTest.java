@@ -7,6 +7,7 @@ import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.member.domain.Member;
 import com.sprint.mission.member.repository.MemberRepository;
 import com.sprint.mission.member.service.MemberService;
+import com.sprint.mission.order.OrderFixtures;
 import com.sprint.mission.support.IntegrationTest;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,7 @@ class PointConcurrencyTest extends IntegrationTest {
     @BeforeEach
     void setUp() {
         memberId = memberService.signup("user@mall.com", "password1", "홍길동", "01012345678");
+        OrderFixtures.insertCanceledOrders(jdbcTemplate, memberId, 8);
     }
 
     private long storedBalance() {
