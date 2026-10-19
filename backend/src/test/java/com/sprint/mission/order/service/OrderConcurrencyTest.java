@@ -17,7 +17,9 @@ import com.sprint.mission.point.service.PointService;
 import com.sprint.mission.product.dto.BrandRequest;
 import com.sprint.mission.product.dto.ProductCreateRequest;
 import com.sprint.mission.product.dto.SkuRequest;
+import com.sprint.mission.product.dto.SkuUpdateRequest;
 import com.sprint.mission.product.service.AdminProductService;
+import com.sprint.mission.product.service.AdminSkuService;
 import com.sprint.mission.product.service.BrandService;
 import com.sprint.mission.support.IntegrationTest;
 import java.util.ArrayList;
@@ -53,6 +55,9 @@ class OrderConcurrencyTest extends IntegrationTest {
 
     @Autowired
     AdminProductService adminProductService;
+
+    @Autowired
+    AdminSkuService adminSkuService;
 
     @Autowired
     AdminCouponService adminCouponService;
@@ -253,6 +258,32 @@ class OrderConcurrencyTest extends IntegrationTest {
                 Integer.class)).isEqualTo(20);
         assertThat(jdbcTemplate.queryForObject("select count(*) from orders where status = 'PENDING'",
                 Integer.class)).isEqualTo(40);
+    }
+
+    @Test
+    void 대기_주문을_대체하는_주문과_같은_상품의_옵션_수정이_동시에_와도_데드락_없이_끝난다() throws Exception {
+        Long skuId = sku("독도 토너", 1_000);
+        Long productId = jdbcTemplate.queryForObject("select product_id from sku where id = ?", Long.class, skuId);
+        List<Callable<?>> tasks = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            Buyer buyer = buyer(i);
+            Long lineId = addToCart(buyer.memberId(), skuId).get(0);
+            OrderCreateRequest request = new OrderCreateRequest(List.of(lineId), null, 0, buyer.addressId());
+            orderService.create(buyer.memberId(), request);
+            // 대체 주문은 옵션을 먼저 잠그고 주문상품 insert에서 상품에 외래 키 잠금을 건다.
+            // 옵션 수정은 상품을 먼저 잠그고 옵션을 UPDATE한다.
+            tasks.add(() -> orderService.create(buyer.memberId(), request));
+            String name = "기본" + i;
+            tasks.add(() -> adminSkuService.update(productId, skuId, new SkuUpdateRequest(name, 0)));
+        }
+
+        List<Throwable> results = runConcurrently(tasks);
+
+        // 데드락(40P01)이면 BusinessException이 아닌 예외가 남는다.
+        assertThat(results).filteredOn(r -> r != null).allSatisfy(r -> assertThat(r).isInstanceOf(BusinessException.class));
+        assertThat(jdbcTemplate.queryForObject("select count(*) from orders where status = 'PENDING'",
+                Integer.class)).isEqualTo(20);
+        assertThat(stock(skuId)).isEqualTo(1_000 - 20);
     }
 
     @Test
