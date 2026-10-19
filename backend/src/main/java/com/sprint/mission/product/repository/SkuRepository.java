@@ -2,6 +2,7 @@ package com.sprint.mission.product.repository;
 
 import com.sprint.mission.product.domain.Sku;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,6 +34,13 @@ public interface SkuRepository extends JpaRepository<Sku, Long> {
             where s.id = :id and s.stock + :delta >= 0 and s.stock + :delta <= 100000
             """)
     int adjustStock(@Param("id") Long id, @Param("delta") int delta, @Param("now") Instant now);
+
+    /**
+     * 옵션 행들을 id 오름차순으로 한 문장에서 잠그고 잠근 id를 돌려준다. 재고 UPDATE와 같은 세기의 잠금
+     * ({@code for no key update})이라 주문상품 insert의 외래 키 잠금({@code key share})과는 부딪히지 않는다.
+     */
+    @Query(value = "select id from sku where id in (:ids) order by id for no key update", nativeQuery = true)
+    List<Long> lockAllForUpdate(@Param("ids") Collection<Long> ids);
 
     /** 영속성 컨텍스트를 거치지 않고 DB의 현재 재고를 읽는다. 옵션이 없으면 비어 있다. */
     @Query("select s.stock from Sku s where s.id = :id")

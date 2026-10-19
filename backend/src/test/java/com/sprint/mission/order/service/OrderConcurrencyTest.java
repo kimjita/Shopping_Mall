@@ -218,6 +218,44 @@ class OrderConcurrencyTest extends IntegrationTest {
     }
 
     @Test
+    void 대기_주문을_대체하는_주문과_두_SKU_주문이_동시에_와도_데드락_없이_끝난다() throws Exception {
+        List<Callable<?>> tasks = new ArrayList<>();
+        List<Long[]> skuPairs = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            Long low = sku("토너" + i, 10);
+            Long high = sku("로션" + i, 10);
+            skuPairs.add(new Long[] {low, high});
+            // X는 높은 id의 옵션으로 결제 대기 주문을 만들어 두고, 낮은 id의 옵션으로 다시 주문한다.
+            Buyer x = buyer(2 * i);
+            Long xHigh = addToCart(x.memberId(), high).get(0);
+            orderService.create(x.memberId(), new OrderCreateRequest(List.of(xHigh), null, 0, x.addressId()));
+            Long xLow = addToCart(x.memberId(), low).get(0);
+            tasks.add(() -> orderService.create(x.memberId(),
+                    new OrderCreateRequest(List.of(xLow), null, 0, x.addressId())));
+            // Y는 같은 두 옵션을 한 주문으로 산다.
+            Buyer y = buyer(2 * i + 1);
+            List<Long> yLines = addToCart(y.memberId(), low, high);
+            tasks.add(() -> orderService.create(y.memberId(),
+                    new OrderCreateRequest(yLines, null, 0, y.addressId())));
+        }
+
+        List<Throwable> results = runConcurrently(tasks);
+
+        // 데드락(40P01)이면 BusinessException이 아닌 예외가 남는다. 재고가 넉넉하므로 모두 성공해야 한다.
+        assertThat(results).containsOnlyNulls();
+        for (Long[] pair : skuPairs) {
+            assertThat(stock(pair[0])).isEqualTo(8);
+            // X의 이전 주문이 뺀 1개는 되돌아가고 Y가 1개를 뺐다.
+            assertThat(stock(pair[1])).isEqualTo(9);
+        }
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from orders where status = 'CANCELED' and cancel_reason = 'REPLACED'",
+                Integer.class)).isEqualTo(20);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from orders where status = 'PENDING'",
+                Integer.class)).isEqualTo(40);
+    }
+
+    @Test
     void 같은_회원이_동시에_두_번_주문해도_대기_주문은_하나다() throws Exception {
         Long skuId = sku("독도 토너", 10);
         Buyer buyer = buyer(0);

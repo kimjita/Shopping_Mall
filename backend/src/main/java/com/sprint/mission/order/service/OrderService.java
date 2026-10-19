@@ -1,6 +1,7 @@
 package com.sprint.mission.order.service;
 
 import com.sprint.mission.cart.domain.CartLine;
+import com.sprint.mission.cart.repository.CartItemRepository;
 import com.sprint.mission.checkout.service.Checkout;
 import com.sprint.mission.checkout.service.CheckoutService;
 import com.sprint.mission.coupon.repository.MemberCouponRepository;
@@ -26,6 +27,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +42,7 @@ public class OrderService {
     private final CheckoutService checkoutService;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final CartItemRepository cartItemRepository;
     private final OrderNumberGenerator orderNumberGenerator;
     private final OrderCanceler orderCanceler;
     private final SkuRepository skuRepository;
@@ -60,6 +64,7 @@ public class OrderService {
         // 새 주문을 넣기 전에 취소를 DB에 내려 부분 unique 인덱스를 비운다. 지금은 재고 복원 쿼리가 먼저 flush하지만
         // 그 동작에 기대지 않는다.
         orderRepository.findByMemberIdAndStatus(memberId, OrderStatus.PENDING).ifPresent(old -> {
+            lockSkus(memberId, old, request.cartItemIds());
             orderCanceler.cancel(old, CancelReason.REPLACED, now);
             orderRepository.flush();
         });
@@ -90,6 +95,17 @@ public class OrderService {
         }
         pointService.use(memberId, order.getPointsUsed(), "주문 사용", order.getId());
         return OrderDetailResponse.of(order, items);
+    }
+
+    /**
+     * 복원(이전 주문)과 차감(새 주문)이 따로 정렬되면 두 단계 사이에서 잠금 순서가 뒤집혀 데드락이 나므로,
+     * 두 주문의 옵션을 합쳐 한 번에 id 오름차순으로 잠근다. 남의 줄이나 없는 줄은 빠지고 주문서 검증이 걸러 낸다.
+     */
+    private void lockSkus(Long memberId, Order old, List<Long> cartItemIds) {
+        Set<Long> skuIds = new TreeSet<>();
+        orderItemRepository.findByOrderIdOrderByIdAsc(old.getId()).forEach(item -> skuIds.add(item.getSkuId()));
+        cartItemRepository.findAllByMemberIdAndIdIn(memberId, cartItemIds).forEach(item -> skuIds.add(item.getSkuId()));
+        skuRepository.lockAllForUpdate(skuIds);
     }
 
     private static OrderItem toItem(Long orderId, CartLine line) {
