@@ -171,6 +171,8 @@ include::{snippets}/member/change-password/http-response.adoc[]
 === 회원 탈퇴
 
 비밀번호를 확인한 뒤 탈퇴 처리하고, 성공하면 `204 No Content`다. 비밀번호가 틀리면 `400 PASSWORD_MISMATCH`다.
+결제 대기·결제 완료·상품 준비·배송 중·배송 완료 주문이 하나라도 있으면 탈퇴할 수 없고 `409 MEMBER_HAS_ACTIVE_ORDER`다. 비밀번호 확인이 먼저다.
+탈퇴하면 장바구니·찜·최근 본 상품을 지운다. 주문과 적립금 내역은 남긴다.
 탈퇴하면 모든 refresh token이 폐기되고 같은 이메일로 로그인할 수 없다(`401 INVALID_CREDENTIALS`). 탈퇴한 이메일로는 다시 가입할 수 없다(`409 DUPLICATE_EMAIL`).
 
 ==== 요청

@@ -5,6 +5,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
@@ -18,4 +21,9 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     List<CartItem> findAllByMemberIdAndIdIn(Long memberId, Collection<Long> ids);
 
     long countByMemberId(Long memberId);
+
+    /** 회원 탈퇴 때 이 회원의 장바구니를 모두 지운다. */
+    @Modifying(flushAutomatically = true)
+    @Query("delete from CartItem c where c.memberId = :memberId")
+    int deleteByMemberId(@Param("memberId") Long memberId);
 }

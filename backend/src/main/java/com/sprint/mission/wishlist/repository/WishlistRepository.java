@@ -27,6 +27,11 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     @Query("delete from Wishlist w where w.memberId = :memberId and w.productId = :productId")
     int deleteByMemberIdAndProductId(Long memberId, Long productId);
 
+    /** 회원 탈퇴 때 이 회원의 찜을 모두 지운다. */
+    @Modifying(flushAutomatically = true)
+    @Query("delete from Wishlist w where w.memberId = :memberId")
+    int deleteAllByMemberId(@Param("memberId") Long memberId);
+
     List<Wishlist> findByMemberIdOrderByIdDesc(Long memberId, Limit limit);
 
     List<Wishlist> findByMemberIdAndIdLessThanOrderByIdDesc(Long memberId, Long id, Limit limit);
