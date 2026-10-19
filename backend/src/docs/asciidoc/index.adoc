@@ -805,6 +805,59 @@ include::{snippets}/order/create/response-headers.adoc[]
 
 include::{snippets}/order/create/response-fields.adoc[]
 
+=== 내 주문 목록
+
+내 주문을 최근 주문부터 커서 방식으로 나눠 내려준다. 취소된 주문도 포함하고, 상태로 거르는 기능은 없다.
+`size`는 1~50이고 기본값은 20이다. 응답의 `nextCursor`를 다음 요청의 `cursor`로 보내면 이어서 읽고, 마지막 페이지면 `nextCursor`가 `null`이다.
+`firstProductName`과 `thumbnailUrl`은 첫 번째 주문상품의 주문 시점 값이고, `itemCount`는 주문상품 줄 수다.
+
+* `401 UNAUTHORIZED`: 토큰이 없거나 유효하지 않다.
+* `404 MEMBER_NOT_FOUND`: 탈퇴한 회원이다.
+* `400 INVALID_INPUT`: `cursor`가 올바르지 않거나(숫자가 아니거나 20자를 넘는다) `size`가 1~50이 아니다.
+
+==== 요청
+
+include::{snippets}/order/list/http-request.adoc[]
+
+include::{snippets}/order/list/request-headers.adoc[]
+
+include::{snippets}/order/list/query-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/order/list/http-response.adoc[]
+
+include::{snippets}/order/list/response-fields.adoc[]
+
+=== 주문 상세
+
+주문번호로 내 주문 하나를 읽는다. 본문은 주문 생성 응답과 같은 모양이다.
+다른 회원의 주문번호와 없는 주문번호는 똑같이 `404 ORDER_NOT_FOUND`라서, 남의 주문이 있는지는 알 수 없다.
+
+**취소된 주문**: 취소된 주문은 `status`가 `CANCELED`이고 `canceledAt`과 `cancelReason`이 채워진다.
+결제 기한이 지나 취소되면 `cancelReason`은 `EXPIRED`이고, 새 주문에 밀려 취소되면 `REPLACED`다.
+
+**만료 반영 시차**: 결제 기한이 지난 주문은 스케줄러가 1분마다 취소한다.
+그래서 `expiresAt`이 지나도 최대 1분 가까이 `PENDING`으로 보일 수 있다. 클라이언트는 `expiresAt`을 기준으로 결제 가능 여부를 판단한다.
+
+* `401 UNAUTHORIZED`: 토큰이 없거나 유효하지 않다.
+* `404 MEMBER_NOT_FOUND`: 탈퇴한 회원이다.
+* `404 ORDER_NOT_FOUND`: 내 주문이 아니거나 없는 주문번호다.
+
+==== 요청
+
+include::{snippets}/order/detail/http-request.adoc[]
+
+include::{snippets}/order/detail/request-headers.adoc[]
+
+include::{snippets}/order/detail/path-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/order/detail/http-response.adoc[]
+
+include::{snippets}/order/detail/response-fields.adoc[]
+
 == 카탈로그
 
 카탈로그 조회 API는 공개 API다. 로그인하지 않아도 호출할 수 있고, 토큰을 보내지 않아도 된다.

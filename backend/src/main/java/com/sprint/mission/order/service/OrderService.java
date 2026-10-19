@@ -18,6 +18,8 @@ import com.sprint.mission.order.domain.OrderStatus;
 import com.sprint.mission.order.domain.ShippingInfo;
 import com.sprint.mission.order.dto.OrderCreateRequest;
 import com.sprint.mission.order.dto.OrderDetailResponse;
+import com.sprint.mission.order.dto.OrderPage;
+import com.sprint.mission.order.dto.OrderSummary;
 import com.sprint.mission.order.repository.OrderItemRepository;
 import com.sprint.mission.order.repository.OrderRepository;
 import com.sprint.mission.point.service.PointService;
@@ -27,15 +29,21 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+
+    private static final Pattern CURSOR = Pattern.compile("[1-9][0-9]{0,18}");
 
     private final MemberService memberService;
     private final AddressRepository addressRepository;
@@ -95,6 +103,57 @@ public class OrderService {
         }
         pointService.use(memberId, order.getPointsUsed(), "주문 사용", order.getId());
         return OrderDetailResponse.of(order, items);
+    }
+
+    /** 내 주문을 최신순으로 한 페이지 읽는다. 커서는 마지막 주문의 id이고, 주문상품은 페이지 단위로 한 번에 읽는다. */
+    @Transactional(readOnly = true)
+    public OrderPage list(Long memberId, String cursor, int size) {
+        memberService.getActive(memberId);
+        Long cursorId = parseCursor(cursor);
+
+        // 다음 페이지가 있는지 알기 위해 한 개 더 읽는다.
+        Limit limit = Limit.of(size + 1);
+        List<Order> rows = cursorId == null
+                ? orderRepository.findByMemberIdOrderByIdDesc(memberId, limit)
+                : orderRepository.findByMemberIdAndIdLessThanOrderByIdDesc(memberId, cursorId, limit);
+        boolean hasNext = rows.size() > size;
+        List<Order> page = hasNext ? rows.subList(0, size) : rows;
+        String nextCursor = hasNext ? String.valueOf(page.get(page.size() - 1).getId()) : null;
+        if (page.isEmpty()) {
+            return new OrderPage(List.of(), null);
+        }
+
+        Map<Long, List<OrderItem>> itemsByOrder = orderItemRepository
+                .findByOrderIdInOrderByIdAsc(page.stream().map(Order::getId).toList()).stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderId));
+        List<OrderSummary> summaries = page.stream().map(order -> {
+            List<OrderItem> items = itemsByOrder.get(order.getId());
+            return OrderSummary.of(order, items.get(0), items.size());
+        }).toList();
+        return new OrderPage(summaries, nextCursor);
+    }
+
+    /** 내 주문 하나를 읽는다. 남의 주문번호도 없는 번호와 똑같이 ORDER_NOT_FOUND라 존재 여부를 드러내지 않는다. */
+    @Transactional(readOnly = true)
+    public OrderDetailResponse get(Long memberId, String orderNumber) {
+        memberService.getActive(memberId);
+        Order order = orderRepository.findByOrderNumberAndMemberId(orderNumber, memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        return OrderDetailResponse.of(order, orderItemRepository.findByOrderIdOrderByIdAsc(order.getId()));
+    }
+
+    private static Long parseCursor(String cursor) {
+        if (cursor == null || cursor.isEmpty()) {
+            return null;
+        }
+        if (!CURSOR.matcher(cursor).matches()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        try {
+            return Long.parseLong(cursor);
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
     }
 
     /**
