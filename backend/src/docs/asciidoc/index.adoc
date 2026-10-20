@@ -101,6 +101,20 @@ include::{snippets}/auth/logout/http-response.adoc[]
 로그인한 회원의 정보를 돌려준다. 피부 프로필을 아직 저장하지 않았다면 `skinType`, `skinTone`은 `null`이고 `skinConcerns`는 빈 배열이다.
 `grade`는 회원 등급(`BABY`, `PINK`, `GREEN`, `BLACK`, `GOLD`)이며 가입 직후에는 `BABY`다.
 
+등급은 매월 1일 00:00(KST) 배치가 다시 매긴다. 직전 3개 달력 월(서울 시각)에 구매확정된 주문의 금액(결제금액 − 배송비, 0 미만이면 0)을 합쳐 아래 기준으로 정하며, 예를 들어 11월 1일에는 8월 1일부터 10월 31일까지를 센다.
+구매확정이 없으면 `BABY`이고, 금액이 줄면 등급이 내려가기도 한다. 구매확정을 해도 등급은 다음 배치 때 바뀐다.
+
+[cols="1,2"]
+|===
+|등급 |3개월 구매확정 금액
+
+|`BABY` |0원 이상
+|`PINK` |100,000원 이상
+|`GREEN` |200,000원 이상
+|`BLACK` |400,000원 이상
+|`GOLD` |800,000원 이상
+|===
+
 ==== 요청
 
 include::{snippets}/member/me/http-request.adoc[]
