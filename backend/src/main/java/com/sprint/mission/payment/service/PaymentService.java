@@ -13,7 +13,6 @@ import com.sprint.mission.order.repository.OrderRepository;
 import com.sprint.mission.payment.client.PaymentGateway;
 import com.sprint.mission.payment.client.PaymentGatewayException;
 import com.sprint.mission.payment.client.PaymentResult;
-import com.sprint.mission.payment.client.PaymentTimeoutException;
 import com.sprint.mission.payment.domain.Payment;
 import com.sprint.mission.payment.dto.PaymentConfirmRequest;
 import com.sprint.mission.payment.repository.PaymentRepository;
@@ -33,6 +32,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class PaymentService {
 
     private static final String ALREADY_PROCESSED = "ALREADY_PROCESSED_PAYMENT";
+    private static final String UNKNOWN = "UNKNOWN";
 
     private final MemberService memberService;
     private final OrderRepository orderRepository;
@@ -102,22 +102,22 @@ public class PaymentService {
     }
 
     /**
-     * 토스 승인을 부른다. 시간 초과나 "이미 처리된 결제"면 이전 시도가 승인되었을 수 있으므로 주문번호로 조회해 같은 결제면 이어 간다.
+     * 토스 승인을 부른다. 4xx에 토스 코드가 있는 확실한 거절만 PAYMENT_REJECTED다. 그 밖의 실패(시간 초과, 5xx, 읽지 못한 응답,
+     * "이미 처리된 결제", 예상하지 못한 예외)는 승인되었을 수 있으므로 주문번호로 조회해 같은 결제면 이어 간다.
      */
     private PaymentResult approve(String paymentKey, String orderNumber, long amount) {
         try {
             return gateway.confirm(paymentKey, orderNumber, amount);
-        } catch (PaymentGatewayException e) {
-            if (!ALREADY_PROCESSED.equals(e.getCode())) {
+        } catch (RuntimeException e) {
+            if (isRejection(e)) {
                 throw new BusinessException(ErrorCode.PAYMENT_REJECTED);
             }
-        } catch (PaymentTimeoutException e) {
-            // 아래 조회로 넘어간다.
+            log.warn("승인 결과를 알 수 없어 조회한다: orderNumber={}, cause={}", orderNumber, e.toString());
         }
         Optional<PaymentResult> found;
         try {
             found = gateway.findByOrderId(orderNumber).filter(result -> paymentKey.equals(result.paymentKey()));
-        } catch (PaymentGatewayException | PaymentTimeoutException e) {
+        } catch (RuntimeException e) {
             found = Optional.empty();
         }
         if (found.isPresent()) {
@@ -128,9 +128,15 @@ public class PaymentService {
         try {
             gateway.cancel(paymentKey, "승인 응답 시간 초과");
         } catch (RuntimeException e) {
-            log.warn("승인 시간 초과 뒤 취소 실패: orderNumber={}, paymentKey={}", orderNumber, paymentKey);
+            log.warn("승인 확인 실패 뒤 취소 실패: orderNumber={}, paymentKey={}", orderNumber, paymentKey);
         }
         throw new BusinessException(ErrorCode.PAYMENT_GATEWAY_ERROR);
+    }
+
+    private static boolean isRejection(RuntimeException e) {
+        return e instanceof PaymentGatewayException gatewayError
+                && gatewayError.getStatus() >= 400 && gatewayError.getStatus() < 500
+                && !UNKNOWN.equals(gatewayError.getCode()) && !ALREADY_PROCESSED.equals(gatewayError.getCode());
     }
 
     private void compensate(String orderNumber, String paymentKey) {

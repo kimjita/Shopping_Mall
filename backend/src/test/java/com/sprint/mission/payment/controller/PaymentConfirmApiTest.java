@@ -41,6 +41,7 @@ import com.sprint.mission.product.service.BrandService;
 import com.sprint.mission.support.ApiTest;
 import com.sprint.mission.support.MutableClock;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -364,12 +365,14 @@ class PaymentConfirmApiTest extends ApiTest {
     @Test
     void 토스가_거절하면_400_PAYMENT_REJECTED이고_주문은_대기_그대로다() throws Exception {
         String orderNumber = placeOrder();
-        gateway.confirmThrows(new PaymentGatewayException("REJECT_CARD_COMPANY", "카드사에서 거절했습니다."));
+        gateway.confirmThrows(new PaymentGatewayException(400, "REJECT_CARD_COMPANY", "카드사에서 거절했습니다."));
 
         confirm(orderNumber, KEY, AMOUNT)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("PAYMENT_REJECTED"));
 
+        // 4xx에 토스 코드가 있으면 확실한 거절이라 조회하지 않는다.
+        assertThat(gateway.finds()).isEmpty();
         assertThat(orderStatus(orderNumber)).isEqualTo("PENDING");
         assertThat(paymentCount()).isZero();
         assertThat(gateway.cancels()).isEmpty();
@@ -496,7 +499,7 @@ class PaymentConfirmApiTest extends ApiTest {
     @Test
     void 이미_처리된_결제_응답이면_조회해서_결제_완료다() throws Exception {
         String orderNumber = placeOrder();
-        gateway.confirmThrows(new PaymentGatewayException("ALREADY_PROCESSED_PAYMENT", "이미 처리된 결제 입니다."));
+        gateway.confirmThrows(new PaymentGatewayException(400, "ALREADY_PROCESSED_PAYMENT", "이미 처리된 결제 입니다."));
         gateway.findReturns(FakePaymentGateway.done(KEY, orderNumber, AMOUNT));
 
         confirm(orderNumber, KEY, AMOUNT)
@@ -505,6 +508,51 @@ class PaymentConfirmApiTest extends ApiTest {
 
         assertThat(gateway.finds()).containsExactly(orderNumber);
         assertThat(paymentCount()).isEqualTo(1);
+    }
+
+    @Test
+    void 토스_5xx_응답이면_조회해서_완료면_결제_완료다() throws Exception {
+        String orderNumber = placeOrder();
+        // 토스가 요청을 받은 뒤 5xx를 줬다면 승인되었을 수 있다.
+        gateway.confirmThrows(new PaymentGatewayException(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", "내부 오류"));
+        gateway.findReturns(FakePaymentGateway.done(KEY, orderNumber, AMOUNT));
+
+        confirm(orderNumber, KEY, AMOUNT)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAID"));
+
+        assertThat(gateway.finds()).containsExactly(orderNumber);
+        assertThat(gateway.cancels()).isEmpty();
+        assertThat(paymentCount()).isEqualTo(1);
+    }
+
+    @Test
+    void 읽지_못한_응답이면_조회해서_완료면_결제_완료다() throws Exception {
+        String orderNumber = placeOrder();
+        // 2xx 본문을 읽지 못하면 UNKNOWN이다. 승인은 되었을 수 있다.
+        gateway.confirmThrows(new PaymentGatewayException(200, "UNKNOWN", "결제사 응답을 읽지 못했다."));
+        gateway.findReturns(FakePaymentGateway.done(KEY, orderNumber, AMOUNT));
+
+        confirm(orderNumber, KEY, AMOUNT)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAID"));
+
+        assertThat(gateway.finds()).containsExactly(orderNumber);
+    }
+
+    @Test
+    void 승인_중_예상하지_못한_예외면_조회하고_결제가_없으면_취소를_시도하고_502다() throws Exception {
+        String orderNumber = placeOrder();
+        gateway.confirmThrows(new DateTimeParseException("approvedAt을 읽지 못했다", "x", 0));
+
+        confirm(orderNumber, KEY, AMOUNT)
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("PAYMENT_GATEWAY_ERROR"));
+
+        assertThat(gateway.finds()).containsExactly(orderNumber);
+        assertThat(gateway.cancels()).containsExactly(new CancelCall(KEY, "승인 응답 시간 초과"));
+        assertThat(orderStatus(orderNumber)).isEqualTo("PENDING");
+        assertThat(paymentCount()).isZero();
     }
 
     @Test

@@ -89,7 +89,7 @@ class TossPaymentClientTest {
 
         assertThatThrownBy(() -> client.confirm("pk_1", "ORD-1", 15000))
                 .isInstanceOfSatisfying(PaymentGatewayException.class,
-                        e -> assertThat(e.getCode()).isEqualTo("REJECT_CARD_PAYMENT"));
+                        e -> assertThat(e).extracting("status", "code").containsExactly(400, "REJECT_CARD_PAYMENT"));
     }
 
     @Test
@@ -140,7 +140,7 @@ class TossPaymentClientTest {
 
         assertThatThrownBy(() -> client.cancel("pk_1", "고객 요청"))
                 .isInstanceOfSatisfying(PaymentGatewayException.class,
-                        e -> assertThat(e.getCode()).isEqualTo("NOT_CANCELABLE_PAYMENT"));
+                        e -> assertThat(e).extracting("status", "code").containsExactly(400, "NOT_CANCELABLE_PAYMENT"));
     }
 
     @Test
@@ -150,7 +150,7 @@ class TossPaymentClientTest {
 
         assertThatThrownBy(() -> client.confirm("pk_1", "ORD-1", 15000))
                 .isInstanceOfSatisfying(PaymentGatewayException.class,
-                        e -> assertThat(e.getCode()).isEqualTo("UNKNOWN"));
+                        e -> assertThat(e).extracting("status", "code").containsExactly(500, "UNKNOWN"));
     }
 
     @Test
@@ -161,7 +161,8 @@ class TossPaymentClientTest {
 
         assertThatThrownBy(() -> client.confirm("pk_1", "ORD-1", 15000))
                 .isInstanceOfSatisfying(PaymentGatewayException.class,
-                        e -> assertThat(e.getCode()).isEqualTo("FAILED_INTERNAL_SYSTEM_PROCESSING"));
+                        e -> assertThat(e).extracting("status", "code")
+                                .containsExactly(500, "FAILED_INTERNAL_SYSTEM_PROCESSING"));
     }
 
     @Test

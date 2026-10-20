@@ -109,11 +109,11 @@ public class TossPaymentClient implements PaymentGateway {
                 JsonNode node = parse(body);
                 String message = node != null && node.hasNonNull("message") ? node.get("message").asText()
                         : "HTTP " + status;
-                throw new PaymentGatewayException(errorCode(), message);
+                throw new PaymentGatewayException(status, errorCode(), message);
             }
             JsonNode node = parse(body);
             if (node == null) {
-                throw new PaymentGatewayException("UNKNOWN", "결제사 응답을 읽지 못했다.");
+                throw new PaymentGatewayException(status, "UNKNOWN", "결제사 응답을 읽지 못했다.");
             }
             return new PaymentResult(node.path("paymentKey").asText(null), node.path("orderId").asText(null),
                     node.path("status").asText(null), node.path("totalAmount").asLong(),
