@@ -4,6 +4,7 @@ import com.sprint.mission.global.security.CurrentMemberId;
 import com.sprint.mission.order.dto.OrderCreateRequest;
 import com.sprint.mission.order.dto.OrderDetailResponse;
 import com.sprint.mission.order.dto.OrderPage;
+import com.sprint.mission.order.service.OrderConfirmService;
 import com.sprint.mission.order.service.OrderService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderConfirmService orderConfirmService;
 
     @PostMapping
     public ResponseEntity<OrderDetailResponse> create(@CurrentMemberId Long memberId,
@@ -46,5 +48,10 @@ public class OrderController {
     @GetMapping("/{orderNumber}")
     public OrderDetailResponse get(@CurrentMemberId Long memberId, @PathVariable String orderNumber) {
         return orderService.get(memberId, orderNumber);
+    }
+
+    @PostMapping("/{orderNumber}/confirm")
+    public OrderDetailResponse confirm(@CurrentMemberId Long memberId, @PathVariable String orderNumber) {
+        return orderConfirmService.confirmByMember(memberId, orderNumber);
     }
 }

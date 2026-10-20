@@ -49,7 +49,8 @@ public enum ErrorCode {
     PAYMENT_METHOD_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "지원하지 않는 결제수단입니다."),
     PAYMENT_GATEWAY_ERROR(HttpStatus.BAD_GATEWAY, "결제사와 통신하지 못했습니다. 잠시 후 다시 시도해 주세요."),
     ORDER_NOT_CANCELABLE(HttpStatus.CONFLICT, "취소할 수 없는 주문입니다."),
-    INVALID_ORDER_STATUS_TRANSITION(HttpStatus.CONFLICT, "주문 상태를 바꿀 수 없습니다.");
+    INVALID_ORDER_STATUS_TRANSITION(HttpStatus.CONFLICT, "주문 상태를 바꿀 수 없습니다."),
+    ORDER_NOT_CONFIRMABLE(HttpStatus.CONFLICT, "구매확정할 수 없는 주문입니다.");
 
     /**
      * {@link #from(HttpStatusCode)}가 고르는 공통 코드다. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않는다.

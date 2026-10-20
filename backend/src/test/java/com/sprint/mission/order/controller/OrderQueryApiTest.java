@@ -46,6 +46,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.restdocs.headers.HeaderDescriptor;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -262,69 +263,75 @@ class OrderQueryApiTest extends ApiTest {
                 .andDo(document("order/detail",
                         requestHeaders(AUTHORIZATION),
                         pathParameters(parameterWithName("orderNumber").description("주문번호")),
-                        responseFields(
-                                fieldWithPath("orderNumber").type(JsonFieldType.STRING).description("주문번호"),
-                                fieldWithPath("status").type(JsonFieldType.STRING)
-                                        .description("주문 상태 (`PENDING` 결제 대기, `CANCELED` 취소 등)"),
-                                fieldWithPath("orderedAt").type(JsonFieldType.STRING).description("주문 시각"),
-                                fieldWithPath("expiresAt").type(JsonFieldType.STRING)
-                                        .description("결제 기한. 주문 시각 + 15분이며 이 시각부터 만료다"),
-                                fieldWithPath("items").type(JsonFieldType.ARRAY).description("주문상품. 주문한 순서 그대로다"),
-                                fieldWithPath("items[].productId").type(JsonFieldType.NUMBER).description("상품 ID"),
-                                fieldWithPath("items[].skuId").type(JsonFieldType.NUMBER).description("옵션(SKU) ID"),
-                                fieldWithPath("items[].productName").type(JsonFieldType.STRING)
-                                        .description("주문 시점의 상품명"),
-                                fieldWithPath("items[].skuName").type(JsonFieldType.STRING)
-                                        .description("주문 시점의 옵션 이름"),
-                                fieldWithPath("items[].thumbnailUrl").type(JsonFieldType.STRING).optional()
-                                        .description("주문 시점의 대표 이미지 URL. 이미지가 없었으면 null이다"),
-                                fieldWithPath("items[].unitPrice").type(JsonFieldType.NUMBER)
-                                        .description("옵션 정가 (원)"),
-                                fieldWithPath("items[].unitSalePrice").type(JsonFieldType.NUMBER)
-                                        .description("주문 시점의 옵션 판매가 (원)"),
-                                fieldWithPath("items[].quantity").type(JsonFieldType.NUMBER).description("수량"),
-                                fieldWithPath("items[].lineTotal").type(JsonFieldType.NUMBER)
-                                        .description("줄 합계 (원). `unitSalePrice` × `quantity`다"),
-                                fieldWithPath("price").type(JsonFieldType.OBJECT).description("금액"),
-                                fieldWithPath("price.itemsPrice").type(JsonFieldType.NUMBER)
-                                        .description("정가 합계 (원)"),
-                                fieldWithPath("price.saleDiscount").type(JsonFieldType.NUMBER)
-                                        .description("세일 할인 금액 (원)"),
-                                fieldWithPath("price.itemsSalePrice").type(JsonFieldType.NUMBER)
-                                        .description("세일가 합계 (원)"),
-                                fieldWithPath("price.couponDiscount").type(JsonFieldType.NUMBER)
-                                        .description("쿠폰 할인 금액 (원). 쿠폰을 쓰지 않았으면 0이다"),
-                                fieldWithPath("price.shippingFee").type(JsonFieldType.NUMBER)
-                                        .description("배송비 (원)"),
-                                fieldWithPath("price.pointsUsed").type(JsonFieldType.NUMBER)
-                                        .description("사용한 적립금 (원)"),
-                                fieldWithPath("price.paymentAmount").type(JsonFieldType.NUMBER)
-                                        .description("결제할 금액 (원)"),
-                                fieldWithPath("couponName").type(JsonFieldType.STRING).optional()
-                                        .description("주문 시점의 쿠폰 이름. 쿠폰을 쓰지 않았으면 null이다"),
-                                fieldWithPath("shipping").type(JsonFieldType.OBJECT)
-                                        .description("주문 시점에 주소록에서 복사한 배송지"),
-                                fieldWithPath("shipping.recipient").type(JsonFieldType.STRING)
-                                        .description("받는 사람"),
-                                fieldWithPath("shipping.phone").type(JsonFieldType.STRING).description("연락처"),
-                                fieldWithPath("shipping.zipCode").type(JsonFieldType.STRING).description("우편번호"),
-                                fieldWithPath("shipping.address1").type(JsonFieldType.STRING).description("주소"),
-                                fieldWithPath("shipping.address2").type(JsonFieldType.STRING).optional()
-                                        .description("상세 주소. 없으면 null이다"),
-                                fieldWithPath("canceledAt").type(JsonFieldType.STRING).optional()
-                                        .description("취소 시각. 취소되지 않았으면 null이다"),
-                                fieldWithPath("cancelReason").type(JsonFieldType.STRING).optional()
-                                        .description("취소 이유(`EXPIRED`: 결제 기한 지남, `REPLACED`: 새 주문으로 대체). "
-                                                + "취소되지 않았으면 null이다"),
-                                fieldWithPath("deliveredAt").type(JsonFieldType.STRING).optional()
-                                        .description("배송 완료 시각. 배송 완료 전이면 null이다"),
-                                fieldWithPath("confirmedAt").type(JsonFieldType.STRING).optional()
-                                        .description("구매확정 시각. 구매확정 전이면 null이다"))))
+                        responseFields(detailFields())))
                 .andReturn().getResponse().getContentAsString());
 
         assertThat(detail).isEqualTo(created);
         assertThat(detail.get("items").get(0).get("productName").asText()).isEqualTo("토너");
         assertThat(detail.get("items").get(1).get("productName").asText()).isEqualTo("에센스");
+    }
+
+    /** 회원용 주문 상세 응답 필드다. 상세·구매확정이 같은 모양을 돌려준다. */
+    static FieldDescriptor[] detailFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("orderNumber").type(JsonFieldType.STRING).description("주문번호"),
+                fieldWithPath("status").type(JsonFieldType.STRING)
+                        .description("주문 상태 (`PENDING` 결제 대기, `CANCELED` 취소 등)"),
+                fieldWithPath("orderedAt").type(JsonFieldType.STRING).description("주문 시각"),
+                fieldWithPath("expiresAt").type(JsonFieldType.STRING)
+                        .description("결제 기한. 주문 시각 + 15분이며 이 시각부터 만료다"),
+                fieldWithPath("items").type(JsonFieldType.ARRAY).description("주문상품. 주문한 순서 그대로다"),
+                fieldWithPath("items[].productId").type(JsonFieldType.NUMBER).description("상품 ID"),
+                fieldWithPath("items[].skuId").type(JsonFieldType.NUMBER).description("옵션(SKU) ID"),
+                fieldWithPath("items[].productName").type(JsonFieldType.STRING)
+                        .description("주문 시점의 상품명"),
+                fieldWithPath("items[].skuName").type(JsonFieldType.STRING)
+                        .description("주문 시점의 옵션 이름"),
+                fieldWithPath("items[].thumbnailUrl").type(JsonFieldType.STRING).optional()
+                        .description("주문 시점의 대표 이미지 URL. 이미지가 없었으면 null이다"),
+                fieldWithPath("items[].unitPrice").type(JsonFieldType.NUMBER)
+                        .description("옵션 정가 (원)"),
+                fieldWithPath("items[].unitSalePrice").type(JsonFieldType.NUMBER)
+                        .description("주문 시점의 옵션 판매가 (원)"),
+                fieldWithPath("items[].quantity").type(JsonFieldType.NUMBER).description("수량"),
+                fieldWithPath("items[].lineTotal").type(JsonFieldType.NUMBER)
+                        .description("줄 합계 (원). `unitSalePrice` × `quantity`다"),
+                fieldWithPath("price").type(JsonFieldType.OBJECT).description("금액"),
+                fieldWithPath("price.itemsPrice").type(JsonFieldType.NUMBER)
+                        .description("정가 합계 (원)"),
+                fieldWithPath("price.saleDiscount").type(JsonFieldType.NUMBER)
+                        .description("세일 할인 금액 (원)"),
+                fieldWithPath("price.itemsSalePrice").type(JsonFieldType.NUMBER)
+                        .description("세일가 합계 (원)"),
+                fieldWithPath("price.couponDiscount").type(JsonFieldType.NUMBER)
+                        .description("쿠폰 할인 금액 (원). 쿠폰을 쓰지 않았으면 0이다"),
+                fieldWithPath("price.shippingFee").type(JsonFieldType.NUMBER)
+                        .description("배송비 (원)"),
+                fieldWithPath("price.pointsUsed").type(JsonFieldType.NUMBER)
+                        .description("사용한 적립금 (원)"),
+                fieldWithPath("price.paymentAmount").type(JsonFieldType.NUMBER)
+                        .description("결제할 금액 (원)"),
+                fieldWithPath("couponName").type(JsonFieldType.STRING).optional()
+                        .description("주문 시점의 쿠폰 이름. 쿠폰을 쓰지 않았으면 null이다"),
+                fieldWithPath("shipping").type(JsonFieldType.OBJECT)
+                        .description("주문 시점에 주소록에서 복사한 배송지"),
+                fieldWithPath("shipping.recipient").type(JsonFieldType.STRING)
+                        .description("받는 사람"),
+                fieldWithPath("shipping.phone").type(JsonFieldType.STRING).description("연락처"),
+                fieldWithPath("shipping.zipCode").type(JsonFieldType.STRING).description("우편번호"),
+                fieldWithPath("shipping.address1").type(JsonFieldType.STRING).description("주소"),
+                fieldWithPath("shipping.address2").type(JsonFieldType.STRING).optional()
+                        .description("상세 주소. 없으면 null이다"),
+                fieldWithPath("canceledAt").type(JsonFieldType.STRING).optional()
+                        .description("취소 시각. 취소되지 않았으면 null이다"),
+                fieldWithPath("cancelReason").type(JsonFieldType.STRING).optional()
+                        .description("취소 이유(`EXPIRED`: 결제 기한 지남, `REPLACED`: 새 주문으로 대체). "
+                                + "취소되지 않았으면 null이다"),
+                fieldWithPath("deliveredAt").type(JsonFieldType.STRING).optional()
+                        .description("배송 완료 시각. 배송 완료 전이면 null이다"),
+                fieldWithPath("confirmedAt").type(JsonFieldType.STRING).optional()
+                        .description("구매확정 시각. 구매확정 전이면 null이다")
+        };
     }
 
     private JsonNode parse(String body) {
