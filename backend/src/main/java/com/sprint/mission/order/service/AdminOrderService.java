@@ -15,6 +15,8 @@ import com.sprint.mission.order.dto.OrderDetailResponse;
 import com.sprint.mission.order.repository.OrderItemRepository;
 import com.sprint.mission.order.repository.OrderRepository;
 import com.sprint.mission.payment.repository.PaymentRepository;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -34,6 +36,7 @@ public class AdminOrderService {
     private final OrderItemRepository orderItemRepository;
     private final MemberRepository memberRepository;
     private final PaymentRepository paymentRepository;
+    private final Clock clock;
 
     /**
      * 전체 주문을 최신순으로 한 페이지 읽는다. status가 null이면 모든 상태다. 커서는 마지막 주문의 id이고,
@@ -78,8 +81,39 @@ public class AdminOrderService {
     /** 주문 하나를 주문자와 결제 정보까지 읽는다. 결제 전 주문이면 payment가 null이다. */
     @Transactional(readOnly = true)
     public AdminOrderDetailResponse get(String orderNumber) {
-        Order order = orderRepository.findByOrderNumber(orderNumber)
+        return detail(orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND)));
+    }
+
+    /**
+     * 주문을 PAID → PREPARING → SHIPPING → DELIVERED로 한 단계씩 바꾼다. 대상 상태를 먼저 검사하고(400),
+     * 주문을 잠가 읽은 뒤(404) 지금 상태에서 갈 수 없으면 409다.
+     */
+    @Transactional
+    public AdminOrderDetailResponse changeStatus(String orderNumber, OrderStatus status) {
+        if (!OrderStatus.ADMIN_TARGETS.contains(status)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        Order order = lockOrder(orderNumber);
+        if (!order.getStatus().canTransitionTo(status)) {
+            throw new BusinessException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
+        }
+        order.advance(status, Instant.now(clock));
+        return detail(order);
+    }
+
+    /**
+     * 주문자 회원 행을 잠근 뒤 주문을 읽는다. 사용자 취소·결제 승인·만료와 같은 순서(회원 → 주문)로 줄을 선다.
+     * 쓰기 트랜잭션 안에서 불러야 한다. 회원은 탈퇴했어도 잠근다.
+     */
+    public Order lockOrder(String orderNumber) {
+        Long memberId = orderRepository.findMemberIdByOrderNumber(orderNumber)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        memberRepository.findWithLockById(memberId);
+        return orderRepository.findByOrderNumber(orderNumber).orElseThrow();
+    }
+
+    private AdminOrderDetailResponse detail(Order order) {
         String email = memberRepository.findById(order.getMemberId()).map(Member::getEmail).orElse(null);
         AdminPayment payment = paymentRepository.findByOrderId(order.getId()).map(AdminPayment::from).orElse(null);
         return new AdminOrderDetailResponse(

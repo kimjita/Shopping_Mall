@@ -128,7 +128,7 @@ public class Order extends BaseEntity {
 
     /** 관리자가 PREPARING·SHIPPING·DELIVERED로 한 단계씩 바꾼다. DELIVERED가 되면 배송 완료 시각을 남긴다. */
     public void advance(OrderStatus next, Instant now) {
-        if (next != OrderStatus.PREPARING && next != OrderStatus.SHIPPING && next != OrderStatus.DELIVERED) {
+        if (!OrderStatus.ADMIN_TARGETS.contains(next)) {
             throw new IllegalArgumentException("관리자가 바꿀 수 없는 대상 상태이다: " + next);
         }
         if (!status.canTransitionTo(next)) {

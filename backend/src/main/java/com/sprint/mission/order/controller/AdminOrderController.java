@@ -3,13 +3,19 @@ package com.sprint.mission.order.controller;
 import com.sprint.mission.order.domain.OrderStatus;
 import com.sprint.mission.order.dto.AdminOrderDetailResponse;
 import com.sprint.mission.order.dto.AdminOrderPage;
+import com.sprint.mission.order.dto.AdminOrderStatusRequest;
 import com.sprint.mission.order.service.AdminOrderService;
+import com.sprint.mission.payment.service.PaymentService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminOrderController {
 
     private final AdminOrderService adminOrderService;
+    private final PaymentService paymentService;
 
     @GetMapping
     public AdminOrderPage list(@RequestParam(required = false) OrderStatus status,
@@ -32,6 +39,18 @@ public class AdminOrderController {
 
     @GetMapping("/{orderNumber}")
     public AdminOrderDetailResponse get(@PathVariable String orderNumber) {
+        return adminOrderService.get(orderNumber);
+    }
+
+    @PatchMapping("/{orderNumber}/status")
+    public AdminOrderDetailResponse changeStatus(@PathVariable String orderNumber,
+            @Valid @RequestBody AdminOrderStatusRequest request) {
+        return adminOrderService.changeStatus(orderNumber, request.status());
+    }
+
+    @PostMapping("/{orderNumber}/cancel")
+    public AdminOrderDetailResponse cancel(@PathVariable String orderNumber) {
+        paymentService.adminCancel(orderNumber);
         return adminOrderService.get(orderNumber);
     }
 }

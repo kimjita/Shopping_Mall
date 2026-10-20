@@ -44,17 +44,12 @@ public class FakePaymentGateway implements PaymentGateway {
     private volatile Optional<PaymentResult> findResult = Optional.empty();
     private volatile RuntimeException findError;
     private volatile RuntimeException cancelError;
+    private volatile Duration cancelDelay = Duration.ZERO;
 
     @Override
     public PaymentResult confirm(String paymentKey, String orderId, long amount) {
         confirms.add(new ConfirmCall(paymentKey, orderId, amount));
-        if (!confirmDelay.isZero()) {
-            try {
-                Thread.sleep(confirmDelay);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
+        sleep(confirmDelay);
         if (confirmError != null) {
             throw confirmError;
         }
@@ -73,8 +68,20 @@ public class FakePaymentGateway implements PaymentGateway {
     @Override
     public void cancel(String paymentKey, String cancelReason) {
         cancels.add(new CancelCall(paymentKey, cancelReason));
+        sleep(cancelDelay);
         if (cancelError != null) {
             throw cancelError;
+        }
+    }
+
+    private static void sleep(Duration delay) {
+        if (delay.isZero()) {
+            return;
+        }
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -106,6 +113,10 @@ public class FakePaymentGateway implements PaymentGateway {
         this.cancelError = error;
     }
 
+    public void delayCancel(Duration delay) {
+        this.cancelDelay = delay;
+    }
+
     public List<ConfirmCall> confirms() {
         return List.copyOf(confirms);
     }
@@ -128,5 +139,6 @@ public class FakePaymentGateway implements PaymentGateway {
         findResult = Optional.empty();
         findError = null;
         cancelError = null;
+        cancelDelay = Duration.ZERO;
     }
 }

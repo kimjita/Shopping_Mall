@@ -9,6 +9,9 @@ public enum OrderStatus {
     /** 아직 끝나지 않은 주문의 상태다. 이 상태의 주문이 있으면 회원은 탈퇴할 수 없다. */
     public static final Set<OrderStatus> IN_PROGRESS = Set.of(PENDING, PAID, PREPARING, SHIPPING, DELIVERED);
 
+    /** 관리자가 한 단계씩 바꿀 수 있는 대상 상태다. */
+    public static final Set<OrderStatus> ADMIN_TARGETS = Set.of(PREPARING, SHIPPING, DELIVERED);
+
     public boolean canTransitionTo(OrderStatus next) {
         return switch (this) {
             case PENDING -> next == PAID || next == CANCELED;

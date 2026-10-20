@@ -11,6 +11,7 @@ import com.sprint.mission.order.domain.OrderStatus;
 import com.sprint.mission.order.dto.OrderDetailResponse;
 import com.sprint.mission.order.repository.OrderItemRepository;
 import com.sprint.mission.order.repository.OrderRepository;
+import com.sprint.mission.order.service.AdminOrderService;
 import com.sprint.mission.order.service.OrderCanceler;
 import com.sprint.mission.payment.client.PaymentGateway;
 import com.sprint.mission.payment.client.PaymentGatewayException;
@@ -43,6 +44,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderCanceler orderCanceler;
+    private final AdminOrderService adminOrderService;
     private final PaymentGateway gateway;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
@@ -149,7 +151,6 @@ public class PaymentService {
      * 토스 취소가 성공한 뒤 DB가 실패해도 다시 요청하면 토스가 "이미 취소됨"을 알려 주므로(클라이언트가 성공으로 처리한다) 나머지가 마무리된다.
      */
     @Transactional
-    // shortcut: 회원 행 잠금과 DB 커넥션을 토스 호출(취소, 호출당 연결 3초 + 읽기 10초) 동안 쥔다. 토스가 느리면 Hikari 풀(기본 10)이 바닥날 수 있다, Phase 12에서 잠금·검사 트랜잭션 → 토스 호출 → 마무리 트랜잭션으로 나누거나 전용 풀을 둔다.
     public OrderDetailResponse cancel(Long memberId, String orderNumber) {
         memberService.getActiveForUpdate(memberId);
         Instant now = Instant.now(clock);
@@ -162,18 +163,40 @@ public class PaymentService {
             if (order.getStatus() != OrderStatus.PAID) {
                 throw new BusinessException(ErrorCode.ORDER_NOT_CANCELABLE);
             }
-            Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow();
-            try {
-                gateway.cancel(payment.getPaymentKey(), "고객 요청");
-            } catch (RuntimeException e) {
-                log.warn("결제 취소 실패: orderNumber={}, cause={}", orderNumber, e.toString());
-                throw new BusinessException(ErrorCode.PAYMENT_GATEWAY_ERROR);
-            }
-            payment.cancel(now);
-            orderCanceler.cancel(order, CancelReason.USER, now);
-            orderRepository.flush();
+            cancelPaid(order, CancelReason.USER, "고객 요청", now);
         }
         return OrderDetailResponse.of(order, orderItemRepository.findByOrderIdOrderByIdAsc(order.getId()));
+    }
+
+    /**
+     * 관리자가 결제 완료·상품 준비 중 주문을 전부 취소한다. 주문자 회원 행을 잠가 사용자 취소·승인·만료와 줄을 세운다.
+     * 이미 관리자가 취소한 주문이면 토스를 부르지 않고 그대로 끝난다.
+     */
+    @Transactional
+    public void adminCancel(String orderNumber) {
+        Order order = adminOrderService.lockOrder(orderNumber);
+        if (order.getStatus() == OrderStatus.CANCELED && order.getCancelReason() == CancelReason.ADMIN) {
+            return;
+        }
+        if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.PREPARING) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_CANCELABLE);
+        }
+        cancelPaid(order, CancelReason.ADMIN, "판매자 취소", Instant.now(clock));
+    }
+
+    /** 토스 취소를 부르고 결제 기록과 주문을 취소로 바꾼다. 토스가 실패하면 DB를 바꾸지 않고 502다. */
+    // shortcut: 회원 행 잠금과 DB 커넥션을 토스 호출(취소, 호출당 연결 3초 + 읽기 10초) 동안 쥔다. 토스가 느리면 Hikari 풀(기본 10)이 바닥날 수 있다, Phase 12에서 잠금·검사 트랜잭션 → 토스 호출 → 마무리 트랜잭션으로 나누거나 전용 풀을 둔다.
+    private void cancelPaid(Order order, CancelReason reason, String tossReason, Instant now) {
+        Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow();
+        try {
+            gateway.cancel(payment.getPaymentKey(), tossReason);
+        } catch (RuntimeException e) {
+            log.warn("결제 취소 실패: orderNumber={}, cause={}", order.getOrderNumber(), e.toString());
+            throw new BusinessException(ErrorCode.PAYMENT_GATEWAY_ERROR);
+        }
+        payment.cancel(now);
+        orderCanceler.cancel(order, reason, now);
+        orderRepository.flush();
     }
 
     private void compensate(String orderNumber, String paymentKey) {
