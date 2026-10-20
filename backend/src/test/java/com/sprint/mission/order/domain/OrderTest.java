@@ -49,6 +49,31 @@ class OrderTest {
     }
 
     @Test
+    void 대기_주문은_결제_완료가_된다() {
+        Order order = order();
+
+        order.markPaid();
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    void 취소된_주문은_결제_완료가_될_수_없다() {
+        Order order = order();
+        order.cancel(CancelReason.EXPIRED, NOW);
+
+        assertThatThrownBy(order::markPaid).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void 취소_사유_없이_취소할_수_없다() {
+        Order order = order();
+
+        assertThatThrownBy(() -> order.cancel(null, NOW)).isInstanceOf(NullPointerException.class);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
+    }
+
+    @Test
     void 가격_스냅샷을_그대로_돌려준다() {
         assertThat(order().price()).isEqualTo(PRICE);
     }

@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -114,7 +115,15 @@ public class Order extends BaseEntity {
         return !now.isBefore(expiresAt);
     }
 
+    public void markPaid() {
+        if (!status.canTransitionTo(OrderStatus.PAID)) {
+            throw new IllegalStateException("결제 완료로 바꿀 수 없는 주문 상태이다: " + status);
+        }
+        this.status = OrderStatus.PAID;
+    }
+
     public void cancel(CancelReason reason, Instant now) {
+        Objects.requireNonNull(reason, "취소 사유는 필수이다");
         if (!status.canTransitionTo(OrderStatus.CANCELED)) {
             throw new IllegalStateException("취소할 수 없는 주문 상태이다: " + status);
         }

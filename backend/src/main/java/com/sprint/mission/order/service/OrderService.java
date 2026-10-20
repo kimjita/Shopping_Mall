@@ -62,6 +62,8 @@ public class OrderService {
      * 결제 대기 주문을 만들고 재고·쿠폰·적립금을 먼저 차감한다. 한 트랜잭션이라 어느 단계에서 실패해도 전부 되돌아간다.
      * 회원 행을 먼저 잠가 같은 회원의 주문·취소·만료를 줄 세우고, 재고는 sku id 오름차순으로 차감해 데드락을 피한다.
      * 장바구니 줄은 지우지 않는다(결제 승인 때 지운다).
+     * <p>불변식: 비대체 경로는 order_item INSERT(product·sku FK의 KEY SHARE)가 SKU 재고 차감 잠금보다 먼저다.
+     * 복원과 차감을 함께 하는 흐름은 {@code lockSkus}를 재사용해야 한다.
      */
     @Transactional
     public OrderDetailResponse create(Long memberId, OrderCreateRequest request) {

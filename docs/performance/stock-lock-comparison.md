@@ -1,6 +1,6 @@
 # 재고 차감 락 3종 비교
 
-주문 생성에서 재고를 차감하는 방식 세 가지를 같은 경쟁 조건에서 돌려 보고, 운영 코드에 조건부 UPDATE를 채택한 이유를 기록한다. 이 문서의 숫자는 모두 `StockLockComparisonTest`를 3번 실행해 직접 얻은 값이다. 비교용 구현 세 개는 테스트 소스(`com.sprint.mission.product.stock`)에만 있고, 운영 코드는 조건부 UPDATE(`SkuRepository.adjustStock`)만 쓴다.
+주문 생성에서 재고를 차감하는 방식 세 가지를 같은 경쟁 조건에서 돌려 보고, 운영 코드에 조건부 UPDATE를 채택한 이유를 기록한다. 이 문서의 숫자는 모두 `StockLockComparisonTest`를 5번 실행해 직접 얻은 값이다. 비교용 구현 세 개는 테스트 소스(`com.sprint.mission.product.stock`)에만 있고, 운영 코드는 조건부 UPDATE(`SkuRepository.adjustStock`)만 쓴다.
 
 ## 1. 실험 환경
 
