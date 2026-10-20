@@ -325,8 +325,8 @@ class OrderQueryApiTest extends ApiTest {
                 fieldWithPath("canceledAt").type(JsonFieldType.STRING).optional()
                         .description("취소 시각. 취소되지 않았으면 null이다"),
                 fieldWithPath("cancelReason").type(JsonFieldType.STRING).optional()
-                        .description("취소 이유(`EXPIRED`: 결제 기한 지남, `REPLACED`: 새 주문으로 대체). "
-                                + "취소되지 않았으면 null이다"),
+                        .description("취소 이유(`EXPIRED`: 결제 기한 지남, `REPLACED`: 새 주문으로 대체, "
+                                + "`USER`: 고객 취소, `ADMIN`: 판매자 취소). 취소되지 않았으면 null이다"),
                 fieldWithPath("deliveredAt").type(JsonFieldType.STRING).optional()
                         .description("배송 완료 시각. 배송 완료 전이면 null이다"),
                 fieldWithPath("confirmedAt").type(JsonFieldType.STRING).optional()

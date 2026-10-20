@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -104,8 +105,9 @@ public class AdminOrderService {
 
     /**
      * 주문자 회원 행을 잠근 뒤 주문을 읽는다. 사용자 취소·결제 승인·만료와 같은 순서(회원 → 주문)로 줄을 선다.
-     * 쓰기 트랜잭션 안에서 불러야 한다. 회원은 탈퇴했어도 잠근다.
+     * 쓰기 트랜잭션 안에서 불러야 한다(없으면 회원 잠금이 곧바로 풀리므로 MANDATORY). 회원은 탈퇴했어도 잠근다.
      */
+    @Transactional(propagation = Propagation.MANDATORY)
     public Order lockOrder(String orderNumber) {
         Long memberId = orderRepository.findMemberIdByOrderNumber(orderNumber)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
