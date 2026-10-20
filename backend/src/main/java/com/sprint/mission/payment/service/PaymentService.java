@@ -4,12 +4,14 @@ import com.sprint.mission.cart.repository.CartItemRepository;
 import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.member.service.MemberService;
+import com.sprint.mission.order.domain.CancelReason;
 import com.sprint.mission.order.domain.Order;
 import com.sprint.mission.order.domain.OrderItem;
 import com.sprint.mission.order.domain.OrderStatus;
 import com.sprint.mission.order.dto.OrderDetailResponse;
 import com.sprint.mission.order.repository.OrderItemRepository;
 import com.sprint.mission.order.repository.OrderRepository;
+import com.sprint.mission.order.service.OrderCanceler;
 import com.sprint.mission.payment.client.PaymentGateway;
 import com.sprint.mission.payment.client.PaymentGatewayException;
 import com.sprint.mission.payment.client.PaymentResult;
@@ -24,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
@@ -39,6 +42,7 @@ public class PaymentService {
     private final OrderItemRepository orderItemRepository;
     private final PaymentRepository paymentRepository;
     private final CartItemRepository cartItemRepository;
+    private final OrderCanceler orderCanceler;
     private final PaymentGateway gateway;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
@@ -137,6 +141,37 @@ public class PaymentService {
         return e instanceof PaymentGatewayException gatewayError
                 && gatewayError.getStatus() >= 400 && gatewayError.getStatus() < 500
                 && !UNKNOWN.equals(gatewayError.getCode()) && !ALREADY_PROCESSED.equals(gatewayError.getCode());
+    }
+
+    /**
+     * 결제 완료 주문을 전부 취소한다. 회원 행을 잠근 채 토스 취소를 부른 뒤 결제 기록과 주문, 재고·쿠폰·적립금을 되돌린다.
+     * 토스 취소가 성공한 뒤 DB가 실패해도 다시 요청하면 토스가 "이미 취소됨"을 알려 주므로(클라이언트가 성공으로 처리한다) 나머지가 마무리된다.
+     */
+    @Transactional
+    public OrderDetailResponse cancel(Long memberId, String orderNumber) {
+        memberService.getActiveForUpdate(memberId);
+        Instant now = Instant.now(clock);
+        Order order = orderRepository.findByOrderNumberAndMemberId(orderNumber, memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        boolean canceledByUser = order.getStatus() == OrderStatus.CANCELED
+                && order.getCancelReason() == CancelReason.USER;
+        if (!canceledByUser) {
+            if (order.getStatus() != OrderStatus.PAID) {
+                throw new BusinessException(ErrorCode.ORDER_NOT_CANCELABLE);
+            }
+            Payment payment = paymentRepository.findByOrderId(order.getId()).orElseThrow();
+            try {
+                gateway.cancel(payment.getPaymentKey(), "고객 요청");
+            } catch (RuntimeException e) {
+                log.warn("결제 취소 실패: orderNumber={}, cause={}", orderNumber, e.toString());
+                throw new BusinessException(ErrorCode.PAYMENT_GATEWAY_ERROR);
+            }
+            payment.cancel(now);
+            orderCanceler.cancel(order, CancelReason.USER, now);
+            orderRepository.flush();
+        }
+        return OrderDetailResponse.of(order, orderItemRepository.findByOrderIdOrderByIdAsc(order.getId()));
     }
 
     private void compensate(String orderNumber, String paymentKey) {

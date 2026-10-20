@@ -837,7 +837,7 @@ include::{snippets}/order/list/response-fields.adoc[]
 다른 회원의 주문번호와 없는 주문번호는 똑같이 `404 ORDER_NOT_FOUND`라서, 남의 주문이 있는지는 알 수 없다.
 
 **취소된 주문**: 취소된 주문은 `status`가 `CANCELED`이고 `canceledAt`과 `cancelReason`이 채워진다.
-결제 기한이 지나 취소되면 `cancelReason`은 `EXPIRED`이고, 새 주문에 밀려 취소되면 `REPLACED`다.
+결제 기한이 지나 취소되면 `cancelReason`은 `EXPIRED`이고, 새 주문에 밀려 취소되면 `REPLACED`, 고객이 결제 완료 주문을 취소하면 `USER`다.
 
 **만료 반영 시차**: 결제 기한이 지난 주문은 스케줄러가 1분마다 취소한다.
 그래서 `expiresAt`이 지나도 최대 1분 가까이 `PENDING`으로 보일 수 있다. 클라이언트는 `expiresAt`을 기준으로 결제 가능 여부를 판단한다.
@@ -929,6 +929,38 @@ include::{snippets}/payment/confirm/request-fields.adoc[]
 include::{snippets}/payment/confirm/http-response.adoc[]
 
 include::{snippets}/payment/confirm/response-fields.adoc[]
+
+=== 주문 취소
+
+결제 완료(`PAID`) 주문을 전부 취소한다. 부분 취소는 없다. 성공하면 `200 OK`이고 본문은 주문 상세와 같은 모양이며 `status`는 `CANCELED`, `cancelReason`은 `USER`다.
+상품 준비 중 이후의 주문은 취소할 수 없다.
+
+**처리 순서**: 한 트랜잭션에서 다음 순서로 처리하고 처음 걸린 오류를 돌려준다.
+
+. 회원을 확인하고 잠근다(`404 MEMBER_NOT_FOUND`). 같은 회원의 승인·만료 처리·새 주문·다른 취소 요청은 줄을 서서 하나씩 처리된다.
+. 내 주문을 찾는다(`404 ORDER_NOT_FOUND`: 내 주문이 아니거나 없는 주문번호다).
+. 이미 고객이 취소한 주문(`CANCELED`이고 `cancelReason`이 `USER`)이면 토스를 부르지 않고 `200 OK`로 주문 상세를 돌려준다.
+. 결제 완료가 아니면 거절한다(`409 ORDER_NOT_CANCELABLE`). 결제 대기, 만료·대체로 취소된 주문, 상품 준비 중 이후의 주문이 여기에 해당한다.
+. 토스에 결제 취소를 요청한다. 취소 사유는 `고객 요청`으로 고정이다. 실패하면 `502 PAYMENT_GATEWAY_ERROR`이고 주문과 결제는 결제 완료 그대로다.
+. 결제 기록을 취소로 바꾸고, 주문을 취소로 바꾸면서 주문이 차감한 재고·쿠폰·적립금을 되돌린다. 쿠폰은 다시 사용할 수 있게 되고, 사용한 적립금은 `RESTORE` 내역으로 돌려받는다.
+
+**다시 요청해도 안전하다**: 같은 요청을 다시 보내면 이미 취소된 주문이므로 토스를 부르지 않고 `200 OK`다.
+토스 취소 응답이 시간 초과로 끊겼거나 토스 취소 뒤 우리 쪽 저장이 실패했을 때도 주문은 결제 완료 그대로이므로 같은 요청을 다시 보내면 된다.
+토스는 이미 취소된 결제에 "이미 취소됨"으로 응답하고 서버는 이를 성공으로 처리하므로, 나머지 되돌리기를 끝까지 처리한다.
+
+==== 요청
+
+include::{snippets}/payment/cancel/http-request.adoc[]
+
+include::{snippets}/payment/cancel/request-headers.adoc[]
+
+include::{snippets}/payment/cancel/path-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/payment/cancel/http-response.adoc[]
+
+include::{snippets}/payment/cancel/response-fields.adoc[]
 
 == 카탈로그
 

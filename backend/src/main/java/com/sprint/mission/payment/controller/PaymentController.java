@@ -13,15 +13,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/members/me/orders/{orderNumber}/payment")
+@RequestMapping("/api/members/me/orders/{orderNumber}")
 @RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping
+    @PostMapping("/payment")
     public OrderDetailResponse confirm(@CurrentMemberId Long memberId, @PathVariable String orderNumber,
             @Valid @RequestBody PaymentConfirmRequest request) {
         return paymentService.confirm(memberId, orderNumber, request);
+    }
+
+    @PostMapping("/cancel")
+    public OrderDetailResponse cancel(@CurrentMemberId Long memberId, @PathVariable String orderNumber) {
+        return paymentService.cancel(memberId, orderNumber);
     }
 }
