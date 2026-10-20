@@ -36,3 +36,8 @@ app:
       cookie-name: refresh_token
       cookie-secure: true
       cookie-same-site: Lax
+  toss:
+    secret-key: ${TOSS_SECRET_KEY:}
+    base-url: https://api.tosspayments.com
+    connect-timeout: 3s
+    read-timeout: 10s

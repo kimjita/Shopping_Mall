@@ -17,3 +17,5 @@ app:
   admin:
     email: ""
     password: ""
+  toss:
+    secret-key: test_sk_dummy
