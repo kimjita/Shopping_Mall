@@ -51,6 +51,7 @@ public class PaymentService {
      * 결제를 승인하고 주문을 결제 완료로 바꾼다. 회원 행을 잠근 채 토스를 부르므로 같은 회원의 승인·만료·새 주문은 줄을 선다.
      * 토스가 승인한 뒤 우리 쪽에서 실패하면(커밋 실패 포함) 트랜잭션 밖에서 토스 취소로 보상하고 원래 예외를 던진다.
      */
+    // shortcut: 회원 행 잠금과 DB 커넥션을 토스 호출(승인·조회·취소, 호출당 연결 3초 + 읽기 10초) 최대 세 번 동안 쥔다. 토스가 느리면 Hikari 풀(기본 10)이 바닥날 수 있다, Phase 12에서 잠금·검사 트랜잭션 → 토스 호출 → 마무리 트랜잭션으로 나누거나 전용 풀을 둔다.
     public OrderDetailResponse confirm(Long memberId, String orderNumber, PaymentConfirmRequest request) {
         AtomicBoolean approved = new AtomicBoolean();
         try {
@@ -128,11 +129,11 @@ public class PaymentService {
             return found.get();
         }
         // 승인이 늦게 도착해 돈만 빠져나가는 일을 줄이려고 취소를 한 번 시도한다.
-        // shortcut: 이 취소 뒤에 승인이 도착하면 결제만 남는다, 정산 대사 배치가 생기면 그 배치가 찾아 취소한다.
+        // shortcut: 이 취소 뒤에 승인이 도착하면 결제만 남고, 같은 orderId로 다른 paymentKey에 DONE 결제가 있어도 채택하거나 취소하지 않는다(돈은 남고 주문은 만료된다), 정산 대사 배치가 생기면 그 배치가 찾아 처리한다.
         try {
             gateway.cancel(paymentKey, "승인 응답 시간 초과");
         } catch (RuntimeException e) {
-            log.warn("승인 확인 실패 뒤 취소 실패: orderNumber={}, paymentKey={}", orderNumber, paymentKey);
+            log.warn("승인 확인 실패 뒤 취소 실패: orderNumber={}, paymentKey={}, cause={}", orderNumber, paymentKey, e.toString());
         }
         throw new BusinessException(ErrorCode.PAYMENT_GATEWAY_ERROR);
     }
@@ -148,6 +149,7 @@ public class PaymentService {
      * 토스 취소가 성공한 뒤 DB가 실패해도 다시 요청하면 토스가 "이미 취소됨"을 알려 주므로(클라이언트가 성공으로 처리한다) 나머지가 마무리된다.
      */
     @Transactional
+    // shortcut: 회원 행 잠금과 DB 커넥션을 토스 호출(취소, 호출당 연결 3초 + 읽기 10초) 동안 쥔다. 토스가 느리면 Hikari 풀(기본 10)이 바닥날 수 있다, Phase 12에서 잠금·검사 트랜잭션 → 토스 호출 → 마무리 트랜잭션으로 나누거나 전용 풀을 둔다.
     public OrderDetailResponse cancel(Long memberId, String orderNumber) {
         memberService.getActiveForUpdate(memberId);
         Instant now = Instant.now(clock);
@@ -178,7 +180,7 @@ public class PaymentService {
         try {
             gateway.cancel(paymentKey, "주문 처리 실패");
         } catch (RuntimeException e) {
-            log.error("보상 취소 실패: orderNumber={}, paymentKey={}", orderNumber, paymentKey);
+            log.error("보상 취소 실패: orderNumber={}, paymentKey={}, cause={}", orderNumber, paymentKey, e.toString());
         }
     }
 }
