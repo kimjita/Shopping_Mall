@@ -39,7 +39,7 @@
   - 인증 헤더는 `Authorization: Basic base64(secretKey + ":")`다.
   - 승인: `POST /v1/payments/confirm`, 본문 `{paymentKey, orderId, amount}`. `orderId`에는 우리 `orderNumber`를 넣는다.
   - 조회: `GET /v1/payments/orders/{orderId}`
-  - 취소: `POST /v1/payments/{paymentKey}/cancel`, 본문 `{cancelReason}`. `Idempotency-Key` 헤더에 `cancel-{paymentKey}`를 넣는다.
+  - 취소: `POST /v1/payments/{paymentKey}/cancel`, 본문 `{cancelReason}`. `Idempotency-Key` 헤더는 보내지 않는다(고정 키를 쓰면 토스가 첫 응답을 15일간 재생해 이른 4xx가 이후 취소를 막는다. 전체 취소는 `ALREADY_CANCELED_PAYMENT`를 성공으로 처리해 이미 멱등하다).
   - 응답에서 쓰는 필드: `paymentKey`, `orderId`, `status`, `totalAmount`, `method`, `approvedAt`. `approvedAt`은 오프셋이 붙은 ISO 시각이다.
   - 오류 응답은 `{code, message}`다. 취소의 `ALREADY_CANCELED_PAYMENT`는 성공으로 처리한다.
 - **설정 (`app.toss`):**
@@ -110,7 +110,7 @@
   - `승인_거절은_토스_코드를_담은_PaymentGatewayException이다`: 400 `{code: "REJECT_CARD_PAYMENT", message: ...}`
   - `응답이_읽기_타임아웃보다_늦으면_PaymentTimeoutException이다`: `withFixedDelay`가 read-timeout보다 길다. 테스트에서는 read-timeout을 500ms로 만든다.
   - `주문번호_조회는_없으면_empty다`: 404 `NOT_FOUND_PAYMENT`
-  - `취소는_멱등_키를_보내고_이미_취소됐으면_성공이다`: 헤더 `Idempotency-Key: cancel-{paymentKey}`. 400 `ALREADY_CANCELED_PAYMENT` → 예외 없음
+  - `취소는_멱등_키를_보내지_않고_이미_취소됐으면_성공이다`: `Idempotency-Key` 헤더가 없다(고정 키는 이른 4xx를 재생시킨다). 400 `ALREADY_CANCELED_PAYMENT` → 예외 없음
   - `5xx는_PaymentGatewayException이다`
   - `비밀_키를_예외_메시지에_넣지_않는다`: 위 오류들의 `getMessage()`에 `test_sk_dummy`가 없다.
 - [ ] **Step 2: 실패 확인 → Step 3: 구현 → Step 4: 통과 확인.** 전체 `./gradlew :backend:test`

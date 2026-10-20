@@ -33,30 +33,34 @@ public class TossPaymentClient implements PaymentGateway {
 
     @Override
     public PaymentResult confirm(String paymentKey, String orderId, long amount) {
-        Response response = send(HttpMethod.POST, "/v1/payments/confirm", null,
+        Response response = send(HttpMethod.POST, "/v1/payments/confirm",
                 Map.of("paymentKey", paymentKey, "orderId", orderId, "amount", amount));
         return response.okOrThrow();
     }
 
     @Override
     public Optional<PaymentResult> findByOrderId(String orderId) {
-        Response response = send(HttpMethod.GET, "/v1/payments/orders/{orderId}", null, null, orderId);
+        Response response = send(HttpMethod.GET, "/v1/payments/orders/{orderId}", null, orderId);
         if (response.status == 404) {
             return Optional.empty();
         }
         return Optional.of(response.okOrThrow());
     }
 
+    /**
+     * 전체 취소는 "이미 취소됨"을 성공으로 보므로 그 자체로 멱등하다. 토스는 같은 Idempotency-Key의 첫 응답을 15일간 재생하는데,
+     * 승인 직후 시점의 4xx가 저장되면 이후 고객 취소가 계속 실패하므로 고정 키를 보내지 않는다.
+     */
     @Override
     public void cancel(String paymentKey, String cancelReason) {
-        Response response = send(HttpMethod.POST, "/v1/payments/{paymentKey}/cancel", "cancel-" + paymentKey,
+        Response response = send(HttpMethod.POST, "/v1/payments/{paymentKey}/cancel",
                 Map.of("cancelReason", cancelReason), paymentKey);
         if (!ALREADY_CANCELED.equals(response.errorCode())) {
             response.okOrThrow();
         }
     }
 
-    private Response send(HttpMethod method, String uri, String idempotencyKey, Object body, Object... uriVars) {
+    private Response send(HttpMethod method, String uri, Object body, Object... uriVars) {
         if (secretKey == null || secretKey.isBlank()) {
             throw new IllegalStateException("app.toss.secret-key 설정이 필요하다.");
         }
@@ -65,9 +69,6 @@ public class TossPaymentClient implements PaymentGateway {
             RestClient.RequestBodySpec spec = restClient.method(method).uri(uri, uriVars)
                     .header("Authorization", "Basic " + basic)
                     .accept(MediaType.APPLICATION_JSON);
-            if (idempotencyKey != null) {
-                spec.header("Idempotency-Key", idempotencyKey);
-            }
             if (body != null) {
                 spec.contentType(MediaType.APPLICATION_JSON).body(body);
             }

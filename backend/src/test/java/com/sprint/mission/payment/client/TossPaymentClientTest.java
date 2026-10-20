@@ -120,14 +120,14 @@ class TossPaymentClientTest {
     }
 
     @Test
-    void 취소는_멱등_키를_보내고_이미_취소됐으면_성공이다() {
+    void 취소는_멱등_키를_보내지_않고_이미_취소됐으면_성공이다() {
         wireMock.stubFor(post(urlEqualTo("/v1/payments/pk_1/cancel")).willReturn(aResponse()
                 .withStatus(400).withHeader("Content-Type", "application/json")
                 .withBody(error("ALREADY_CANCELED_PAYMENT"))));
 
         assertThatCode(() -> client.cancel("pk_1", "고객 요청")).doesNotThrowAnyException();
         wireMock.verify(postRequestedFor(urlEqualTo("/v1/payments/pk_1/cancel"))
-                .withHeader("Idempotency-Key", equalTo("cancel-pk_1"))
+                .withoutHeader("Idempotency-Key")
                 .withHeader("Authorization", equalTo("Basic dGVzdF9za19kdW1teTo="))
                 .withRequestBody(equalToJson("{\"cancelReason\":\"고객 요청\"}")));
     }
