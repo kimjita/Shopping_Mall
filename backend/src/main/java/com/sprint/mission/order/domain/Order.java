@@ -84,6 +84,10 @@ public class Order extends BaseEntity {
     @Column(length = 20)
     private CancelReason cancelReason;
 
+    private Instant deliveredAt;
+
+    private Instant confirmedAt;
+
     public static Order place(Long memberId, String orderNumber, PriceBreakdown price, Long memberCouponId,
             String couponName, ShippingInfo shipping, Instant now) {
         Order order = new Order();
@@ -120,6 +124,34 @@ public class Order extends BaseEntity {
             throw new IllegalStateException("결제 완료로 바꿀 수 없는 주문 상태이다: " + status);
         }
         this.status = OrderStatus.PAID;
+    }
+
+    /** 관리자가 PREPARING·SHIPPING·DELIVERED로 한 단계씩 바꾼다. DELIVERED가 되면 배송 완료 시각을 남긴다. */
+    public void advance(OrderStatus next, Instant now) {
+        if (next != OrderStatus.PREPARING && next != OrderStatus.SHIPPING && next != OrderStatus.DELIVERED) {
+            throw new IllegalArgumentException("관리자가 바꿀 수 없는 대상 상태이다: " + next);
+        }
+        if (!status.canTransitionTo(next)) {
+            throw new IllegalStateException("주문 상태를 바꿀 수 없다: " + status + " -> " + next);
+        }
+        this.status = next;
+        if (next == OrderStatus.DELIVERED) {
+            this.deliveredAt = now;
+        }
+    }
+
+    /** 배송 완료 주문을 구매확정한다. */
+    public void confirm(Instant now) {
+        if (!status.canTransitionTo(OrderStatus.CONFIRMED)) {
+            throw new IllegalStateException("구매확정할 수 없는 주문 상태이다: " + status);
+        }
+        this.status = OrderStatus.CONFIRMED;
+        this.confirmedAt = now;
+    }
+
+    /** 적립 기준 금액이다. 배송비는 뺀다. 적립금을 많이 써서 결제금액이 배송비보다 작으면 0이다. */
+    public long earnBase() {
+        return Math.max(0, paymentAmount - shippingFee);
     }
 
     public void cancel(CancelReason reason, Instant now) {

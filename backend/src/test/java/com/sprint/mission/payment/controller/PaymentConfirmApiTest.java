@@ -275,7 +275,11 @@ class PaymentConfirmApiTest extends ApiTest {
                                 fieldWithPath("canceledAt").type(JsonFieldType.STRING).optional()
                                         .description("취소 시각. 결제 완료 주문이면 null이다"),
                                 fieldWithPath("cancelReason").type(JsonFieldType.STRING).optional()
-                                        .description("취소 이유. 결제 완료 주문이면 null이다"))));
+                                        .description("취소 이유. 결제 완료 주문이면 null이다"),
+                                fieldWithPath("deliveredAt").type(JsonFieldType.STRING).optional()
+                                        .description("배송 완료 시각. 배송 완료 전이면 null이다"),
+                                fieldWithPath("confirmedAt").type(JsonFieldType.STRING).optional()
+                                        .description("구매확정 시각. 구매확정 전이면 null이다"))));
 
         assertThat(orderStatus(orderNumber)).isEqualTo("PAID");
         Long orderId = jdbcTemplate.queryForObject("select id from orders where order_number = ?", Long.class,

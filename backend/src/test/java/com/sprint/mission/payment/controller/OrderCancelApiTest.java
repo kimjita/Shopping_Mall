@@ -232,7 +232,11 @@ class OrderCancelApiTest extends ApiTest {
                                         .description("상세 주소. 없으면 null이다"),
                                 fieldWithPath("canceledAt").type(JsonFieldType.STRING).description("취소 시각"),
                                 fieldWithPath("cancelReason").type(JsonFieldType.STRING)
-                                        .description("취소 이유. 고객이 취소하면 `USER`다"))));
+                                        .description("취소 이유. 고객이 취소하면 `USER`다"),
+                                fieldWithPath("deliveredAt").type(JsonFieldType.STRING).optional()
+                                        .description("배송 완료 시각. 배송 완료 전이면 null이다"),
+                                fieldWithPath("confirmedAt").type(JsonFieldType.STRING).optional()
+                                        .description("구매확정 시각. 구매확정 전이면 null이다"))));
 
         assertThat(orderStatus(orderNumber)).isEqualTo("CANCELED");
         assertThat(paymentStatus()).isEqualTo("CANCELED");

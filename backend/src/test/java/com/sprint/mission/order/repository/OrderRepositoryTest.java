@@ -197,6 +197,47 @@ class OrderRepositoryTest extends IntegrationTest {
                 .extracting(Order::getId).containsExactly(first.getId());
     }
 
+    @Test
+    void 자동_확정_대상은_배송_완료_후_기준_시각_이하이고_id_오름차순이다() {
+        Instant deliveredAt = Instant.parse("2026-10-10T03:00:00Z");
+        Instant deadline = deliveredAt.plus(Duration.ofDays(7));
+        Long a = member("a@test.com");
+        Long b = member("b@test.com");
+        Long c = member("c@test.com");
+        Long d = member("d@test.com");
+        Order exact = delivered(a, "20261019-AAAAAAA1", "DELIVERED", deliveredAt);
+        Order later = delivered(b, "20261019-BBBBBBB1", "DELIVERED", deliveredAt.plusMillis(1));
+        delivered(c, "20261019-CCCCCCC1", "SHIPPING", null);
+        delivered(d, "20261019-DDDDDDD1", "CONFIRMED", deliveredAt);
+
+        assertThat(orderRepository.findConfirmDueIds(deadline.minus(Duration.ofDays(7)), 0L, Limit.of(10)))
+                .containsExactly(exact.getId());
+        assertThat(orderRepository.findConfirmDueIds(deliveredAt.minusMillis(1), 0L, Limit.of(10))).isEmpty();
+        assertThat(orderRepository.findConfirmDueIds(deliveredAt.plusMillis(1), 0L, Limit.of(10)))
+                .containsExactly(exact.getId(), later.getId());
+        assertThat(orderRepository.findConfirmDueIds(deliveredAt.plusMillis(1), exact.getId(), Limit.of(10)))
+                .containsExactly(later.getId());
+    }
+
+    @Test
+    void 주문번호로_회원_id와_주문을_찾는다() {
+        Long a = member("a@test.com");
+        Order order = place(a, "20261019-AAAAAAA1", NOW);
+
+        assertThat(orderRepository.findMemberIdByOrderNumber("20261019-AAAAAAA1")).contains(a);
+        assertThat(orderRepository.findMemberIdByOrderNumber("20261019-ZZZZZZZ1")).isEmpty();
+        assertThat(orderRepository.findByOrderNumber("20261019-AAAAAAA1")).get()
+                .extracting(Order::getId).isEqualTo(order.getId());
+        assertThat(orderRepository.findByOrderNumber("20261019-ZZZZZZZ1")).isEmpty();
+    }
+
+    private Order delivered(Long memberId, String number, String status, Instant deliveredAt) {
+        insertOrderRow(memberId, number, status, 30_000);
+        jdbcTemplate.update("update orders set delivered_at = ? where order_number = ?",
+                deliveredAt == null ? null : java.sql.Timestamp.from(deliveredAt), number);
+        return orderRepository.findByOrderNumber(number).orElseThrow();
+    }
+
     private Long productAndSku() {
         Long brandId = jdbcTemplate.queryForObject(
                 "insert into brand (name, created_at, updated_at) values ('브랜드', now(), now()) returning id", Long.class);

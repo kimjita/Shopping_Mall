@@ -73,6 +73,72 @@ class OrderTest {
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
     }
 
+    private Order paid() {
+        Order order = order();
+        order.markPaid();
+        return order;
+    }
+
+    @Test
+    void 관리자는_결제_완료부터_배송_완료까지_한_단계씩_바꾼다() {
+        Order order = paid();
+
+        order.advance(OrderStatus.PREPARING, NOW);
+        order.advance(OrderStatus.SHIPPING, NOW);
+        assertThat(order.getDeliveredAt()).isNull();
+        order.advance(OrderStatus.DELIVERED, NOW.plusSeconds(60));
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
+        assertThat(order.getDeliveredAt()).isEqualTo(NOW.plusSeconds(60));
+    }
+
+    @Test
+    void 건너뛰거나_되돌리는_변경은_IllegalStateException() {
+        Order order = paid();
+        assertThatThrownBy(() -> order.advance(OrderStatus.SHIPPING, NOW)).isInstanceOf(IllegalStateException.class);
+        order.advance(OrderStatus.PREPARING, NOW);
+        assertThatThrownBy(() -> order.advance(OrderStatus.PREPARING, NOW)).isInstanceOf(IllegalStateException.class);
+        order.advance(OrderStatus.SHIPPING, NOW);
+        assertThatThrownBy(() -> order.advance(OrderStatus.PREPARING, NOW)).isInstanceOf(IllegalStateException.class);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPING);
+    }
+
+    @Test
+    void 허용하지_않는_대상_상태는_IllegalArgumentException() {
+        Order order = paid();
+
+        for (OrderStatus target : new OrderStatus[] {OrderStatus.CANCELED, OrderStatus.CONFIRMED, OrderStatus.PAID}) {
+            assertThatThrownBy(() -> order.advance(target, NOW)).isInstanceOf(IllegalArgumentException.class);
+        }
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    void 배송_완료만_구매확정된다() {
+        Order order = paid();
+        assertThatThrownBy(() -> order.confirm(NOW)).isInstanceOf(IllegalStateException.class);
+        order.advance(OrderStatus.PREPARING, NOW);
+        order.advance(OrderStatus.SHIPPING, NOW);
+        order.advance(OrderStatus.DELIVERED, NOW);
+
+        order.confirm(NOW.plusSeconds(10));
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(order.getConfirmedAt()).isEqualTo(NOW.plusSeconds(10));
+        assertThatThrownBy(() -> order.confirm(NOW)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void 적립_기준은_결제금액에서_배송비를_뺀_값이고_음수면_0이다() {
+        Order normal = Order.place(1L, "20261019-AAAAAAA1", new PriceBreakdown(22_500, 0, 22_500, 0, 2_500, 0, 22_500),
+                null, null, SHIPPING, NOW);
+        Order small = Order.place(1L, "20261019-AAAAAAA2", new PriceBreakdown(2_600, 0, 2_600, 0, 2_500, 2_500, 100),
+                null, null, SHIPPING, NOW);
+
+        assertThat(normal.earnBase()).isEqualTo(20_000);
+        assertThat(small.earnBase()).isZero();
+    }
+
     @Test
     void 가격_스냅샷을_그대로_돌려준다() {
         assertThat(order().price()).isEqualTo(PRICE);

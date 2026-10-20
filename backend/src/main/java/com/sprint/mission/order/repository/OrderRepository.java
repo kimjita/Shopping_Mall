@@ -29,6 +29,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             + "and o.expiresAt <= :now and o.id > :afterId order by o.id")
     List<Long> findDueIds(@Param("now") Instant now, @Param("afterId") Long afterId, Limit limit);
 
+    /** 배송 완료 시각이 기준 이전(포함)인 DELIVERED 주문의 id를 id 오름차순으로 읽는다. 자동 구매확정 대상이다. */
+    @Query("select o.id from Order o where o.status = com.sprint.mission.order.domain.OrderStatus.DELIVERED "
+            + "and o.deliveredAt <= :deliveredBefore and o.id > :afterId order by o.id")
+    List<Long> findConfirmDueIds(@Param("deliveredBefore") Instant deliveredBefore, @Param("afterId") Long afterId,
+            Limit limit);
+
+    Optional<Order> findByOrderNumber(String orderNumber);
+
+    /** 잠그기 전에 주문번호로 주문의 회원을 알아내는 데 쓴다. */
+    @Query("select o.memberId from Order o where o.orderNumber = :orderNumber")
+    Optional<Long> findMemberIdByOrderNumber(@Param("orderNumber") String orderNumber);
+
     /** 잠그기 전에 주문의 회원을 알아내는 데 쓴다. */
     @Query("select o.memberId from Order o where o.id = :id")
     Optional<Long> findMemberIdById(@Param("id") Long id);

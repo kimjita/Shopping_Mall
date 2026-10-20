@@ -9,7 +9,7 @@ import com.sprint.mission.order.domain.ShippingInfo;
 import java.time.Instant;
 import java.util.List;
 
-/** 주문 상세다. 취소되지 않은 주문이면 canceledAt과 cancelReason이 null이다. */
+/** 주문 상세다. 취소되지 않은 주문이면 canceledAt과 cancelReason이, 배송 완료·구매확정 전이면 deliveredAt·confirmedAt이 null이다. */
 public record OrderDetailResponse(
         String orderNumber,
         OrderStatus status,
@@ -20,11 +20,14 @@ public record OrderDetailResponse(
         String couponName,
         ShippingInfo shipping,
         Instant canceledAt,
-        CancelReason cancelReason) {
+        CancelReason cancelReason,
+        Instant deliveredAt,
+        Instant confirmedAt) {
 
     public static OrderDetailResponse of(Order order, List<OrderItem> items) {
         return new OrderDetailResponse(order.getOrderNumber(), order.getStatus(), order.getCreatedAt(),
                 order.getExpiresAt(), items.stream().map(OrderItemResponse::from).toList(), order.price(),
-                order.getCouponName(), order.getShipping(), order.getCanceledAt(), order.getCancelReason());
+                order.getCouponName(), order.getShipping(), order.getCanceledAt(), order.getCancelReason(),
+                order.getDeliveredAt(), order.getConfirmedAt());
     }
 }

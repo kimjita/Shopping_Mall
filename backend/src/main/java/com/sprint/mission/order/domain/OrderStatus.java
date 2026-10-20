@@ -13,7 +13,7 @@ public enum OrderStatus {
         return switch (this) {
             case PENDING -> next == PAID || next == CANCELED;
             case PAID -> next == PREPARING || next == CANCELED;
-            case PREPARING -> next == SHIPPING;
+            case PREPARING -> next == SHIPPING || next == CANCELED;
             case SHIPPING -> next == DELIVERED;
             case DELIVERED -> next == CONFIRMED;
             case CONFIRMED, CANCELED -> false;

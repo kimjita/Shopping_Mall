@@ -837,7 +837,9 @@ include::{snippets}/order/list/response-fields.adoc[]
 다른 회원의 주문번호와 없는 주문번호는 똑같이 `404 ORDER_NOT_FOUND`라서, 남의 주문이 있는지는 알 수 없다.
 
 **취소된 주문**: 취소된 주문은 `status`가 `CANCELED`이고 `canceledAt`과 `cancelReason`이 채워진다.
-결제 기한이 지나 취소되면 `cancelReason`은 `EXPIRED`이고, 새 주문에 밀려 취소되면 `REPLACED`, 고객이 결제 완료 주문을 취소하면 `USER`다.
+결제 기한이 지나 취소되면 `cancelReason`은 `EXPIRED`이고, 새 주문에 밀려 취소되면 `REPLACED`, 고객이 결제 완료 주문을 취소하면 `USER`, 판매자가 결제 완료·상품 준비 중 주문을 취소하면 `ADMIN`이다.
+
+**배송 완료·구매확정 시각**: `deliveredAt`은 배송 완료(`DELIVERED`)가 된 시각이고, `confirmedAt`은 구매확정(`CONFIRMED`)이 된 시각이다. 해당 상태가 되기 전에는 둘 다 null이다.
 
 **만료 반영 시차**: 결제 기한이 지난 주문은 스케줄러가 1분마다 취소한다.
 그래서 `expiresAt`이 지나도 최대 1분 가까이 `PENDING`으로 보일 수 있다. 클라이언트는 `expiresAt`을 기준으로 결제 가능 여부를 판단한다.
