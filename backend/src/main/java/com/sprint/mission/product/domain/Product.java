@@ -87,6 +87,10 @@ public class Product extends BaseEntity {
     @Column(insertable = false, updatable = false, precision = 3, scale = 2)
     private BigDecimal ratingAvg;
 
+    /** 최근 7일(168시간) 판매량이다. 매시간 배치가 벌크 SQL로만 바꾼다. */
+    @Column(name = "sales_7d", insertable = false, updatable = false)
+    private int sales7d;
+
     /** 걸린 세일이다. 컬럼이 모두 NULL이면 Hibernate가 null로 읽으므로 null을 "세일 없음"으로 본다. */
     @Embedded
     private Sale sale;
