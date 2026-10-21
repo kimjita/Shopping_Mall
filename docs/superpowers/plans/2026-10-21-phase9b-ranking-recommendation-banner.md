@@ -90,7 +90,7 @@
   - 필드:
     - `title` 1~50자(strip)
     - `imageUrl`은 `^https?://.+`, 500자 이하
-    - `linkUrl`은 `^(https?://|/(?![/\\])).+`, 500자 이하
+    - `linkUrl`은 `^(https?://\S+|/(?![/\\])\S*)$`, 500자 이하. 공백 문자를 포함할 수 없고, `/` 하나만 있는 홈 경로는 받는다
     - `startsAt` < `endsAt`(아니면 400 `INVALID_INPUT`), 두 시각의 연도는 2000~9999(아니면 400)
     - `sortOrder` 0~1,000
   - 공개 목록은 `startsAt <= now < endsAt`인 배너를 `sortOrder asc, id asc`로 돌려준다.
@@ -250,7 +250,7 @@
 **Interfaces:**
 - Consumes: Task 1 `banner` 테이블
 - Produces:
-  - `record BannerRequest(@NotBlank @Size(max = 50) String title, @NotBlank @Size(max = 500) @Pattern(regexp = "^https?://.+") String imageUrl, @NotBlank @Size(max = 500) @Pattern(regexp = "^(https?://|/(?![/\\\\])).+") String linkUrl, @NotNull Instant startsAt, @NotNull Instant endsAt, @Min(0) @Max(1000) int sortOrder)`. title strip 뒤 빈 값, 기간 역전, 연도 범위는 서비스가 `INVALID_INPUT`으로 막는다.
+  - `record BannerRequest(@NotBlank @Size(max = 50) String title, @NotBlank @Size(max = 500) @Pattern(regexp = "^https?://.+") String imageUrl, @NotBlank @Size(max = 500) @Pattern(regexp = "^(https?://\\S+|/(?![/\\\\])\\S*)$") String linkUrl, @NotNull Instant startsAt, @NotNull Instant endsAt, @Min(0) @Max(1000) int sortOrder)`. title strip 뒤 빈 값, 기간 역전, 연도 범위는 서비스가 `INVALID_INPUT`으로 막는다.
   - `record BannerResponse(Long id, String title, String imageUrl, String linkUrl, Instant startsAt, Instant endsAt, int sortOrder)`
   - `BannerService`:
     - `create`, `update(id, request)`(없으면 `BANNER_NOT_FOUND`), `delete(id)`(없으면 404)

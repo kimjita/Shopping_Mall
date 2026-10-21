@@ -1,5 +1,6 @@
 package com.sprint.mission.ranking.service;
 
+import com.sprint.mission.product.domain.ProductStatus;
 import com.sprint.mission.product.dto.ProductCard;
 import com.sprint.mission.product.repository.ProductSearchRepository;
 import com.sprint.mission.product.service.CategoryService;
@@ -34,8 +35,8 @@ public class RankingService {
         List<RankingItem> items = new ArrayList<>();
         for (Long id : ids) {
             ProductCard card = cards.get(id);
-            // 두 쿼리 사이에 지워진 상품은 건너뛴다.
-            if (card != null) {
+            // 두 쿼리 사이에 판매 중지·삭제된 상품은 건너뛰고, 순위는 남은 항목 기준으로 잇는다.
+            if (card != null && card.status() == ProductStatus.ON_SALE) {
                 items.add(new RankingItem(items.size() + 1, card.summary()));
             }
         }

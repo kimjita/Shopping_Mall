@@ -203,6 +203,20 @@ class AdminBannerApiTest extends ApiTest {
     }
 
     @Test
+    void 링크에_공백_문자가_있으면_400이고_홈_경로는_통과한다() throws Exception {
+        String img = "https://img.example.com/a.jpg";
+        // 브라우저는 탭·개행을 지우므로 "/\t/evil.com"은 "//evil.com"이 된다.
+        register(admin(), body("배너", img, "/\\t/evil.com", STARTS, ENDS, 0)).andExpect(status().isBadRequest());
+        register(admin(), body("배너", img, "/\\t\\\\evil.com", STARTS, ENDS, 0)).andExpect(status().isBadRequest());
+        register(admin(), body("배너", img, "/ /x", STARTS, ENDS, 0)).andExpect(status().isBadRequest());
+        assertThat(bannerCount()).isZero();
+        register(admin(), body("배너", img, "/", STARTS, ENDS, 0)).andExpect(status().isCreated());
+        register(admin(), body("배너", img, "/events/1", STARTS, ENDS, 0)).andExpect(status().isCreated());
+        register(admin(), body("배너", img, "https://example.com/a?b=1", STARTS, ENDS, 0))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void 없는_배너는_404() throws Exception {
         mockMvc.perform(put("/api/admin/banners/{bannerId}", 999)
                         .header(HttpHeaders.AUTHORIZATION, admin())

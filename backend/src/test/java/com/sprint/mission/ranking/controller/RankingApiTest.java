@@ -3,6 +3,8 @@ package com.sprint.mission.ranking.controller;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -14,18 +16,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.sprint.mission.product.domain.ProductStatus;
 import com.sprint.mission.product.dto.BrandRequest;
+import com.sprint.mission.product.dto.ProductCard;
 import com.sprint.mission.product.dto.ProductCreateRequest;
 import com.sprint.mission.product.dto.SkuRequest;
+import com.sprint.mission.product.repository.ProductSearchRepository;
 import com.sprint.mission.product.service.AdminProductService;
 import com.sprint.mission.product.service.BrandService;
 import com.sprint.mission.support.ApiTest;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class RankingApiTest extends ApiTest {
 
@@ -37,6 +44,9 @@ class RankingApiTest extends ApiTest {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    @MockitoSpyBean
+    ProductSearchRepository productSearchRepository;
 
     Long brandId;
     Long tonerId;
@@ -120,6 +130,26 @@ class RankingApiTest extends ApiTest {
         mockMvc.perform(get("/api/rankings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].product.id").value(contains(selling.intValue())));
+    }
+
+    @Test
+    void 순위_쿼리_뒤에_판매_중지된_상품은_카드_조회에서_걸러_순위가_이어진다() throws Exception {
+        Long first = register(tonerId, "1등", 9);
+        Long second = register(tonerId, "2등", 8);
+        Long third = register(tonerId, "3등", 7);
+        // id 쿼리와 카드 쿼리 사이에 2등이 판매 중지된 경우를 흉내 낸다.
+        doAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            Map<Long, ProductCard> real = (Map<Long, ProductCard>) invocation.callRealMethod();
+            Map<Long, ProductCard> cards = new LinkedHashMap<>(real);
+            cards.put(second, new ProductCard(real.get(second).summary(), ProductStatus.STOPPED));
+            return cards;
+        }).when(productSearchRepository).findCards(any(), any());
+
+        mockMvc.perform(get("/api/rankings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].product.id").value(contains(first.intValue(), third.intValue())))
+                .andExpect(jsonPath("$.items[*].rank").value(contains(1, 2)));
     }
 
     @Test
