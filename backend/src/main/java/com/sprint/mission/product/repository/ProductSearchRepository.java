@@ -44,11 +44,12 @@ public class ProductSearchRepository {
     /** {@link #cardQuery}의 select 목록에서 요약 뒤에 오는 컬럼의 위치다. */
     private static final int CREATED_AT = 10;
     private static final int STATUS = 11;
+    private static final int SALES_7D = 12;
 
     private final JPAQueryFactory queryFactory;
 
-    /** 목록 한 줄이다. 응답 DTO에 없는 커서용 정렬값(등록 시각)을 따로 들고 있다. 평균 평점·리뷰 수는 요약에 있다. */
-    public record Row(ProductSummary summary, Instant createdAt) {
+    /** 목록 한 줄이다. 응답 DTO에 없는 커서용 정렬값(등록 시각, 최근 7일 판매량)을 따로 들고 있다. 평균 평점·리뷰 수는 요약에 있다. */
+    public record Row(ProductSummary summary, Instant createdAt, int sales7d) {
     }
 
     /**
@@ -65,7 +66,7 @@ public class ProductSearchRepository {
                 .limit(limit)
                 .fetch();
 
-        return tuples.stream().map(t -> new Row(summaryOf(t), t.get(CREATED_AT, Instant.class))).toList();
+        return tuples.stream().map(t -> new Row(summaryOf(t), t.get(CREATED_AT, Instant.class), t.get(SALES_7D, Integer.class))).toList();
     }
 
     /**
@@ -85,6 +86,19 @@ public class ProductSearchRepository {
     }
 
     /**
+     * 판매 중이고 최근 7일 판매량이 있는 상품 id를 판매량 내림차순(동률이면 id 내림차순)으로 limit개 읽는다.
+     * leafIds가 null이면 카테고리를 거르지 않는다.
+     */
+    public List<Long> topSellingIds(List<Long> leafIds, int limit) {
+        return queryFactory.select(product.id).from(product)
+                .where(product.status.eq(ProductStatus.ON_SALE).and(product.sales7d.gt(0)),
+                        leafIds == null ? null : product.categoryId.in(leafIds))
+                .orderBy(product.sales7d.desc(), product.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    /**
      * 목록과 카드가 함께 쓰는 select 목록과 조인이다. 현재 판매가 CASE, 품절 스칼라 서브쿼리, 대표 이미지(index 0) 조인을 담는다.
      * 컬럼 순서는 {@link #summaryOf}와 맞아야 한다.
      */
@@ -99,7 +113,7 @@ public class ProductSearchRepository {
                         new CaseBuilder().when(saleActive(now)).then(product.sale.rate)
                                 .otherwise(Expressions.nullExpression(Integer.class)),
                         new CaseBuilder().when(noStock).then(true).otherwise(false),
-                        product.ratingAvg, product.reviewCount, product.createdAt, product.status)
+                        product.ratingAvg, product.reviewCount, product.createdAt, product.status, product.sales7d)
                 .from(product)
                 .join(brand).on(brand.id.eq(product.brandId))
                 .leftJoin(product.imageUrls, IMAGE)
@@ -177,6 +191,8 @@ public class ProductSearchRepository {
                             .or(product.ratingAvg.isNull());
             case REVIEW_COUNT -> product.reviewCount.lt(cursor.intValue())
                     .or(product.reviewCount.eq(cursor.intValue()).and(product.id.lt(cursor.id())));
+            case SALES -> product.sales7d.lt(cursor.intValue())
+                    .or(product.sales7d.eq(cursor.intValue()).and(product.id.lt(cursor.id())));
         };
     }
 
@@ -190,6 +206,7 @@ public class ProductSearchRepository {
                     new OrderSpecifier<>(Order.DESC, currentPrice), new OrderSpecifier<>(Order.DESC, product.id)};
             case RATING -> new OrderSpecifier<?>[] {product.ratingAvg.desc().nullsLast(), product.id.desc()};
             case REVIEW_COUNT -> new OrderSpecifier<?>[] {product.reviewCount.desc(), product.id.desc()};
+            case SALES -> new OrderSpecifier<?>[] {product.sales7d.desc(), product.id.desc()};
         };
     }
 

@@ -11,5 +11,7 @@ public enum ProductSort {
     /** 평균 평점 내림차순, 동률이면 id 내림차순이다. 리뷰가 없는 상품은 맨 뒤에 id 내림차순으로 온다. */
     RATING,
     /** 리뷰 수 내림차순, 동률이면 id 내림차순이다. */
-    REVIEW_COUNT
+    REVIEW_COUNT,
+    /** 최근 7일 판매량 내림차순, 동률이면 id 내림차순이다. */
+    SALES
 }

@@ -489,6 +489,57 @@ class ProductSearchApiTest extends ApiTest {
         }
     }
 
+    private void sales(Long productId, int sales7d) {
+        jdbcTemplate.update("update product set sales_7d = ? where id = ?", sales7d, productId);
+    }
+
+    @Test
+    void 판매순으로_정렬한다() throws Exception {
+        Long none = register("판매 0", 10_000);
+        Long best = register("판매 9", 10_000);
+        Long tieOld = register("판매 3 먼저", 10_000);
+        Long tieNew = register("판매 3 나중", 10_000);
+        sales(best, 9);
+        sales(tieOld, 3);
+        sales(tieNew, 3);
+
+        mockMvc.perform(list("sort", "SALES"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(best.intValue(), tieNew.intValue(),
+                        tieOld.intValue(), none.intValue())));
+    }
+
+    @Test
+    void 판매순_커서가_동률_경계를_넘어도_빠지거나_겹치지_않는다() throws Exception {
+        List<Long> ids = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            ids.add(register("상품 " + i, 10_000));
+        }
+        int[] sold = {4, 0, 4, 7, 4, 0, 7, 1};
+        for (int i = 0; i < sold.length; i++) {
+            sales(ids.get(i), sold[i]);
+        }
+        List<Long> expected = ids.stream()
+                .sorted(Comparator.comparingInt((Long id) -> sold[ids.indexOf(id)]).reversed()
+                        .thenComparing(Comparator.reverseOrder()))
+                .toList();
+
+        assertThat(readAll("SALES", 1)).containsExactlyElementsOf(expected);
+        assertThat(readAll("SALES", 2)).containsExactlyElementsOf(expected);
+        assertThat(readAll("SALES", 3)).containsExactlyElementsOf(expected);
+        assertThat(readAll("SALES", 5)).containsExactlyElementsOf(expected);
+    }
+
+    @Test
+    void 위조된_판매순_커서는_400() throws Exception {
+        for (String raw : new String[] {"SALES|-1|1", "SALES|1.5|1", "SALES|abc|1", "SALES||1", "SALES|-|1",
+                "SALES|99999999999|1", "SALES|1|0"}) {
+            mockMvc.perform(list("sort", "SALES", "cursor", encodeCursor(raw)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+    }
+
     @Test
     void 판매중지_삭제_상품은_목록에_없다() throws Exception {
         Long visible = register("판매 중", 10_000);

@@ -12,7 +12,7 @@ import java.util.Base64;
 /**
  * 상품 목록의 커서다. 정렬 종류, 마지막 항목의 정렬값, id를 {@code SORT|값|id}로 이어 Base64url(패딩 없음)로 인코딩한다.
  * 정렬값은 NEWEST면 등록 시각(ISO-8601), 가격 정렬이면 현재 판매가, RATING이면 소수 둘째 자리까지의 평균 평점(리뷰가 없으면 {@code -}),
- * REVIEW_COUNT면 리뷰 수다. 해석할 수 없거나 정렬이 다르면 INVALID_INPUT이다.
+ * REVIEW_COUNT면 리뷰 수, SALES면 최근 7일 판매량이다. 해석할 수 없거나 정렬이 다르면 INVALID_INPUT이다.
  */
 public final class ProductCursor {
 
@@ -27,7 +27,7 @@ public final class ProductCursor {
 
     /**
      * sortValue는 NEWEST면 {@link Instant}, 가격 정렬이면 {@link Long}, RATING이면 {@link BigDecimal}(리뷰가 없으면 null),
-     * REVIEW_COUNT면 {@link Integer}다.
+     * REVIEW_COUNT·SALES면 {@link Integer}다.
      */
     public static String encode(ProductSort sort, Object sortValue, Long id) {
         String value = switch (sort) {
@@ -35,7 +35,7 @@ public final class ProductCursor {
             case PRICE_ASC, PRICE_DESC -> String.valueOf((long) (Long) sortValue);
             // 4.5와 4.50이 같은 커서가 되도록 스케일을 맞춘다.
             case RATING -> sortValue == null ? NO_RATING : ((BigDecimal) sortValue).setScale(2).toPlainString();
-            case REVIEW_COUNT -> String.valueOf((int) (Integer) sortValue);
+            case REVIEW_COUNT, SALES -> String.valueOf((int) (Integer) sortValue);
         };
         String raw = sort.name() + DELIMITER + value + DELIMITER + id;
         return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
@@ -52,7 +52,7 @@ public final class ProductCursor {
                 case NEWEST -> Instant.parse(parts[1]);
                 case PRICE_ASC, PRICE_DESC -> Long.valueOf(parts[1]);
                 case RATING -> parseRating(parts[1]);
-                case REVIEW_COUNT -> Integer.valueOf(parts[1]);
+                case REVIEW_COUNT, SALES -> Integer.valueOf(parts[1]);
             };
             long id = Long.parseLong(parts[2]);
             if (id < 1 || !isInRange(value)) {
@@ -76,7 +76,7 @@ public final class ProductCursor {
     }
 
     /**
-     * 위조된 값이 DB 범위를 넘어 500이 되지 않도록 시각은 0001~9999년, 가격과 리뷰 수는 0 이상, 평균 평점은 0.00~5.00만 받는다.
+     * 위조된 값이 DB 범위를 넘어 500이 되지 않도록 시각은 0001~9999년, 가격·리뷰 수·판매량은 0 이상, 평균 평점은 0.00~5.00만 받는다.
      * 평균 평점의 null은 리뷰가 없다는 뜻이라 받는다.
      */
     private static boolean isInRange(Object value) {
@@ -93,7 +93,7 @@ public final class ProductCursor {
         return new BusinessException(ErrorCode.INVALID_INPUT);
     }
 
-    /** value는 NEWEST면 {@link Instant}, 가격 정렬이면 {@link Long}, RATING이면 {@link BigDecimal}(리뷰가 없으면 null), REVIEW_COUNT면 {@link Integer}다. */
+    /** value는 NEWEST면 {@link Instant}, 가격 정렬이면 {@link Long}, RATING이면 {@link BigDecimal}(리뷰가 없으면 null), REVIEW_COUNT·SALES면 {@link Integer}다. */
     public record Decoded(Object value, Long id) {
 
         public Instant instantValue() {

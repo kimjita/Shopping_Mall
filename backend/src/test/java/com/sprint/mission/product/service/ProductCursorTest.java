@@ -75,6 +75,27 @@ class ProductCursorTest {
     }
 
     @Test
+    void 판매순_커서를_되돌린다() {
+        String cursor = ProductCursor.encode(ProductSort.SALES, 128, 9L);
+
+        ProductCursor.Decoded decoded = ProductCursor.decode(cursor, ProductSort.SALES);
+        assertThat(decoded.intValue()).isEqualTo(128);
+        assertThat(decoded.id()).isEqualTo(9L);
+        assertThat(ProductCursor.decode(encodeRaw("SALES|0|1"), ProductSort.SALES).intValue()).isZero();
+    }
+
+    @Test
+    void 판매순_커서의_음수와_숫자_아님은_INVALID_INPUT() {
+        for (String raw : new String[] {"SALES|-1|1", "SALES|1.5|1", "SALES|abc|1", "SALES||1", "SALES|-|1",
+                "SALES|99999999999|1"}) {
+            assertThatThrownBy(() -> ProductCursor.decode(encodeRaw(raw), ProductSort.SALES))
+                    .as(raw)
+                    .isInstanceOfSatisfying(BusinessException.class,
+                            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        }
+    }
+
+    @Test
     void 정렬이_다른_커서는_INVALID_INPUT() {
         String cursor = ProductCursor.encode(ProductSort.PRICE_ASC, 12_660L, 7L);
 

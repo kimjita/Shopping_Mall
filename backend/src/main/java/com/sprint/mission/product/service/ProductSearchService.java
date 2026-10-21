@@ -44,6 +44,7 @@ public class ProductSearchService {
             case PRICE_ASC, PRICE_DESC -> ProductCursor.encode(condition.sort(), summary.salePrice(), summary.id());
             case RATING -> ProductCursor.encode(condition.sort(), summary.ratingAvg(), summary.id());
             case REVIEW_COUNT -> ProductCursor.encode(condition.sort(), summary.reviewCount(), summary.id());
+            case SALES -> ProductCursor.encode(condition.sort(), last.sales7d(), summary.id());
         };
     }
 }

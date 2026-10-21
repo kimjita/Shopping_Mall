@@ -1275,10 +1275,14 @@ include::{snippets}/brand/list/response-fields.adoc[]
 
 |`REVIEW_COUNT`
 |리뷰 수 내림차순, 같으면 ID 내림차순
+
+|`SALES`
+|최근 7일 판매량 내림차순, 같으면 ID 내림차순. 판매량이 0인 상품도 맨 뒤에 나온다
 |===
 
 가격 정렬의 커서에는 요청 시점의 판매가가 담기므로, 페이지를 넘기는 사이에 세일이 시작되거나 끝나면 상품의 위치가 바뀌어 일부 상품이 중복되거나 빠질 수 있다.
 평점·리뷰 수 정렬도 마찬가지로, 페이지를 넘기는 사이에 리뷰가 쓰이거나 지워지면 상품의 위치가 바뀔 수 있다.
+판매순도 마찬가지로, 페이지를 넘기는 사이에 판매량 집계가 갱신되면(매시간 정각) 상품의 위치가 바뀔 수 있다.
 
 **평점**: 상품 카드의 `ratingAvg`는 소수 둘째 자리까지 반올림한 평균 평점이고, 리뷰가 없으면 `null`이다. `reviewCount`는 리뷰 수다.
 찜·최근 본 상품의 상품 카드와 상품 상세에도 같은 값이 나온다.
@@ -1320,6 +1324,35 @@ include::{snippets}/product/get/path-parameters.adoc[]
 include::{snippets}/product/get/http-response.adoc[]
 
 include::{snippets}/product/get/response-fields.adoc[]
+
+== 랭킹
+
+로그인 없이 읽을 수 있다. 최근 7일 판매량이 많은 상품 최대 20개를 순위와 함께 내려준다.
+
+**집계 규칙**
+
+* 결제 승인 시각이 지금부터 168시간 이내인 주문의 상품 수량을 더한다. 결제 승인이 정확히 168시간 전이면 빠진다.
+* 주문 상태가 결제 완료(`PAID`)부터 구매 확정(`CONFIRMED`)까지인 주문만 세고, 결제 대기·취소 주문은 세지 않는다.
+* 매시간 정각에 다시 집계하므로 실제 판매보다 최대 1시간 늦을 수 있다.
+* 판매 중(`ON_SALE`)이고 판매량이 0보다 큰 상품만 나온다. 판매 중지·삭제 상품은 나오지 않는다.
+* 판매량이 같으면 상품 ID가 큰 상품이 먼저다. `rank`는 1부터 시작하는 위치다.
+
+`categoryId`를 주면 그 아래 가장 아래 단계 카테고리 전체의 상품으로 순위를 매긴다. 어느 단계든 받고, 없는 ID면 `404 CATEGORY_NOT_FOUND`다.
+조건에 맞는 상품이 없으면 `items`는 빈 배열이다. `product`는 상품 목록의 항목과 같은 필드다.
+
+=== 랭킹 조회
+
+==== 요청
+
+include::{snippets}/ranking/list/http-request.adoc[]
+
+include::{snippets}/ranking/list/query-parameters.adoc[]
+
+==== 응답
+
+include::{snippets}/ranking/list/http-response.adoc[]
+
+include::{snippets}/ranking/list/response-fields.adoc[]
 
 == 관리자 - 브랜드
 
