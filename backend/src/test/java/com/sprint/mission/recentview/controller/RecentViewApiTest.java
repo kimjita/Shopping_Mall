@@ -169,6 +169,10 @@ class RecentViewApiTest extends ApiTest {
                                         .description("진행 중인 세일의 할인율 (%). 진행 중인 세일이 없으면 `null`"),
                                 fieldWithPath("[].product.soldOut").type(JsonFieldType.BOOLEAN)
                                         .description("품절 여부. 모든 옵션이 품절이면 `true`다"),
+                                fieldWithPath("[].product.ratingAvg").type(JsonFieldType.NUMBER).optional()
+                                        .description("평균 평점. 소수 둘째 자리까지 반올림한 값이다. 리뷰가 없으면 `null`"),
+                                fieldWithPath("[].product.reviewCount").type(JsonFieldType.NUMBER)
+                                        .description("리뷰 수"),
                                 fieldWithPath("[].available").type(JsonFieldType.BOOLEAN)
                                         .description("지금 구매할 수 있는 상품인지 여부. 판매 중지된 상품은 `false`다"),
                                 fieldWithPath("[].viewedAt").type(JsonFieldType.STRING)

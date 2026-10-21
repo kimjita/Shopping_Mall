@@ -42,6 +42,8 @@ public class ProductSearchService {
         return switch (condition.sort()) {
             case NEWEST -> ProductCursor.encode(condition.sort(), last.createdAt(), summary.id());
             case PRICE_ASC, PRICE_DESC -> ProductCursor.encode(condition.sort(), summary.salePrice(), summary.id());
+            case RATING -> ProductCursor.encode(condition.sort(), summary.ratingAvg(), summary.id());
+            case REVIEW_COUNT -> ProductCursor.encode(condition.sort(), summary.reviewCount(), summary.id());
         };
     }
 }

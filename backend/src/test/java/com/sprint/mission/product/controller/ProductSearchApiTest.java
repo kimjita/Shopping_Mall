@@ -152,7 +152,7 @@ class ProductSearchApiTest extends ApiTest {
                                 parameterWithName("onSale").optional()
                                         .description("`true`면 진행 중인 세일 상품만 보인다. 없거나 `false`면 거르지 않는다"),
                                 parameterWithName("sort").optional()
-                                        .description("정렬. `NEWEST`(기본), `PRICE_ASC`, `PRICE_DESC`"),
+                                        .description("정렬. `NEWEST`(기본), `PRICE_ASC`, `PRICE_DESC`, `RATING`, `REVIEW_COUNT`"),
                                 parameterWithName("cursor").optional()
                                         .description("이전 응답의 `nextCursor`. 같은 `sort`로만 쓸 수 있다"),
                                 parameterWithName("size").optional()
@@ -173,6 +173,10 @@ class ProductSearchApiTest extends ApiTest {
                                         .description("진행 중인 세일의 할인율 (%). 진행 중인 세일이 없으면 `null`"),
                                 fieldWithPath("items[].soldOut").type(JsonFieldType.BOOLEAN)
                                         .description("품절 여부. 모든 옵션이 품절이면 `true`다"),
+                                fieldWithPath("items[].ratingAvg").type(JsonFieldType.NUMBER).optional()
+                                        .description("평균 평점. 소수 둘째 자리까지 반올림한 값이다. 리뷰가 없으면 `null`"),
+                                fieldWithPath("items[].reviewCount").type(JsonFieldType.NUMBER)
+                                        .description("리뷰 수"),
                                 fieldWithPath("nextCursor").type(JsonFieldType.STRING).optional()
                                         .description("다음 페이지를 읽는 커서. 마지막 페이지면 `null`"))));
     }
@@ -384,6 +388,105 @@ class ProductSearchApiTest extends ApiTest {
             cursor = body.get("nextCursor").asText();
         }
         throw new AssertionError("커서가 끝나지 않는다.");
+    }
+
+    /** 리뷰 count개, 별점 합 sum으로 집계 컬럼을 맞춘다. 평균은 평점 갱신 SQL과 같이 소수 둘째 자리로 반올림한다. */
+    private void rate(Long productId, int count, int sum) {
+        jdbcTemplate.update("update product set review_count = ?, rating_sum = ?, "
+                + "rating_avg = case when ? = 0 then null else round(?::numeric / ?, 2) end where id = ?",
+                count, sum, count, sum, count == 0 ? 1 : count, productId);
+    }
+
+    @Test
+    void 평점순은_평균_내림차순이고_리뷰_없는_상품은_맨_뒤다() throws Exception {
+        Long noReviewOld = register("리뷰 없음 1", 10_000);
+        Long tieOld = register("평균 4.5 먼저", 10_000);
+        Long top = register("평균 5", 10_000);
+        Long tieNew = register("평균 4.5 나중", 10_000);
+        Long low = register("평균 1", 10_000);
+        Long noReviewNew = register("리뷰 없음 2", 10_000);
+        rate(tieOld, 2, 9);
+        rate(top, 1, 5);
+        rate(tieNew, 4, 18);
+        rate(low, 3, 3);
+
+        mockMvc.perform(list("sort", "RATING"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(top.intValue(), tieNew.intValue(),
+                        tieOld.intValue(), low.intValue(), noReviewNew.intValue(), noReviewOld.intValue())))
+                .andExpect(jsonPath("$.items[1].ratingAvg").value(4.5))
+                .andExpect(jsonPath("$.items[4].ratingAvg").value(nullValue()));
+    }
+
+    @Test
+    void 평점순_커서가_평균과_NULL_경계를_넘어도_빠지거나_겹치지_않는다() throws Exception {
+        List<Long> ids = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            ids.add(register("상품 " + i, 10_000));
+        }
+        rate(ids.get(0), 2, 8); // 4.00
+        rate(ids.get(1), 1, 5); // 5.00
+        rate(ids.get(2), 1, 4); // 4.00 동률
+        rate(ids.get(3), 3, 7); // 2.33
+        List<Long> expected = List.of(ids.get(1), ids.get(2), ids.get(0), ids.get(3),
+                ids.get(6), ids.get(5), ids.get(4));
+
+        assertThat(readAll("RATING", 3)).containsExactlyElementsOf(expected);
+        assertThat(readAll("RATING", 4)).containsExactlyElementsOf(expected);
+        assertThat(readAll("RATING", 1)).containsExactlyElementsOf(expected);
+    }
+
+    @Test
+    void 리뷰_많은_순으로_정렬한다() throws Exception {
+        Long none = register("리뷰 0", 10_000);
+        Long many = register("리뷰 5", 10_000);
+        Long tieOld = register("리뷰 2 먼저", 10_000);
+        Long tieNew = register("리뷰 2 나중", 10_000);
+        rate(many, 5, 10);
+        rate(tieOld, 2, 10);
+        rate(tieNew, 2, 4);
+        List<Long> expected = List.of(many, tieNew, tieOld, none);
+
+        mockMvc.perform(list("sort", "REVIEW_COUNT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(many.intValue(), tieNew.intValue(),
+                        tieOld.intValue(), none.intValue())))
+                .andExpect(jsonPath("$.items[0].reviewCount").value(5));
+        assertThat(readAll("REVIEW_COUNT", 1)).containsExactlyElementsOf(expected);
+        assertThat(readAll("REVIEW_COUNT", 3)).containsExactlyElementsOf(expected);
+    }
+
+    @Test
+    void 상품_카드와_상세에_평균_평점과_리뷰_수가_나온다() throws Exception {
+        Long rated = register("리뷰 있음", 10_000);
+        Long unrated = register("리뷰 없음", 10_000);
+        rate(rated, 3, 13);
+
+        mockMvc.perform(list())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[?(@.id == " + rated + ")].ratingAvg").value(contains(4.33)))
+                .andExpect(jsonPath("$.items[?(@.id == " + rated + ")].reviewCount").value(contains(3)))
+                .andExpect(jsonPath("$.items[?(@.id == " + unrated + ")].ratingAvg").value(contains(nullValue())))
+                .andExpect(jsonPath("$.items[?(@.id == " + unrated + ")].reviewCount").value(contains(0)));
+        mockMvc.perform(get("/api/products/{id}", rated))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ratingAvg").value(4.33))
+                .andExpect(jsonPath("$.reviewCount").value(3));
+        mockMvc.perform(get("/api/products/{id}", unrated))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ratingAvg").value(nullValue()))
+                .andExpect(jsonPath("$.reviewCount").value(0));
+    }
+
+    @Test
+    void 위조된_평점_커서는_400() throws Exception {
+        for (String raw : new String[] {"RATING|abc|1", "RATING|5.01|1", "RATING|-1|1", "RATING|4.555|1",
+                "RATING||1", "REVIEW_COUNT|-1|1", "REVIEW_COUNT|1.5|1"}) {
+            String sort = raw.substring(0, raw.indexOf('|'));
+            mockMvc.perform(list("sort", sort, "cursor", encodeCursor(raw)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
     }
 
     @Test

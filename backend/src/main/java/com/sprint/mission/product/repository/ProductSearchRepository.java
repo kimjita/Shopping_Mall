@@ -22,6 +22,7 @@ import com.sprint.mission.product.dto.ProductSearchCondition;
 import com.sprint.mission.product.dto.ProductSort;
 import com.sprint.mission.product.dto.ProductSummary;
 import com.sprint.mission.product.service.ProductCursor;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,12 +42,12 @@ public class ProductSearchRepository {
     private static final StringPath IMAGE = Expressions.stringPath("img");
 
     /** {@link #cardQuery}의 select 목록에서 요약 뒤에 오는 컬럼의 위치다. */
-    private static final int CREATED_AT = 8;
-    private static final int STATUS = 9;
+    private static final int CREATED_AT = 10;
+    private static final int STATUS = 11;
 
     private final JPAQueryFactory queryFactory;
 
-    /** 목록 한 줄이다. 커서의 정렬값으로 쓰는 등록 시각을 응답 DTO와 따로 들고 있다. */
+    /** 목록 한 줄이다. 응답 DTO에 없는 커서용 정렬값(등록 시각)을 따로 들고 있다. 평균 평점·리뷰 수는 요약에 있다. */
     public record Row(ProductSummary summary, Instant createdAt) {
     }
 
@@ -98,7 +99,7 @@ public class ProductSearchRepository {
                         new CaseBuilder().when(saleActive(now)).then(product.sale.rate)
                                 .otherwise(Expressions.nullExpression(Integer.class)),
                         new CaseBuilder().when(noStock).then(true).otherwise(false),
-                        product.createdAt, product.status)
+                        product.ratingAvg, product.reviewCount, product.createdAt, product.status)
                 .from(product)
                 .join(brand).on(brand.id.eq(product.brandId))
                 .leftJoin(product.imageUrls, IMAGE)
@@ -108,7 +109,8 @@ public class ProductSearchRepository {
     private static ProductSummary summaryOf(Tuple t) {
         return new ProductSummary(t.get(0, Long.class), t.get(1, String.class), t.get(2, String.class),
                 t.get(3, String.class), t.get(4, Long.class), t.get(5, Long.class), t.get(6, Integer.class),
-                Boolean.TRUE.equals(t.get(7, Boolean.class)));
+                Boolean.TRUE.equals(t.get(7, Boolean.class)), t.get(8, BigDecimal.class),
+                t.get(9, Integer.class));
     }
 
     /**
@@ -167,6 +169,14 @@ public class ProductSearchRepository {
                     .or(currentPrice.eq(cursor.longValue()).and(product.id.gt(cursor.id())));
             case PRICE_DESC -> currentPrice.lt(cursor.longValue())
                     .or(currentPrice.eq(cursor.longValue()).and(product.id.lt(cursor.id())));
+            // 리뷰가 없는(NULL) 상품은 평균이 있는 상품 뒤에 오므로, 커서가 평균이면 NULL 상품을 모두 남긴다.
+            case RATING -> cursor.bigDecimalValue() == null
+                    ? product.ratingAvg.isNull().and(product.id.lt(cursor.id()))
+                    : product.ratingAvg.lt(cursor.bigDecimalValue())
+                            .or(product.ratingAvg.eq(cursor.bigDecimalValue()).and(product.id.lt(cursor.id())))
+                            .or(product.ratingAvg.isNull());
+            case REVIEW_COUNT -> product.reviewCount.lt(cursor.intValue())
+                    .or(product.reviewCount.eq(cursor.intValue()).and(product.id.lt(cursor.id())));
         };
     }
 
@@ -178,6 +188,8 @@ public class ProductSearchRepository {
                     new OrderSpecifier<>(Order.ASC, currentPrice), new OrderSpecifier<>(Order.ASC, product.id)};
             case PRICE_DESC -> new OrderSpecifier<?>[] {
                     new OrderSpecifier<>(Order.DESC, currentPrice), new OrderSpecifier<>(Order.DESC, product.id)};
+            case RATING -> new OrderSpecifier<?>[] {product.ratingAvg.desc().nullsLast(), product.id.desc()};
+            case REVIEW_COUNT -> new OrderSpecifier<?>[] {product.reviewCount.desc(), product.id.desc()};
         };
     }
 

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.product.dto.ProductSort;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
@@ -28,6 +29,49 @@ class ProductCursorTest {
         assertThat(decodedPrice.id()).isEqualTo(7L);
         assertThat(newest).matches("[A-Za-z0-9_-]+");
         assertThat(price).matches("[A-Za-z0-9_-]+");
+    }
+
+    @Test
+    void 평점_커서와_리뷰_수_커서를_되돌린다() {
+        String rating = ProductCursor.encode(ProductSort.RATING, new BigDecimal("4.5"), 3L);
+        String sameRating = ProductCursor.encode(ProductSort.RATING, new BigDecimal("4.50"), 3L);
+        String noRating = ProductCursor.encode(ProductSort.RATING, null, 2L);
+        String reviewCount = ProductCursor.encode(ProductSort.REVIEW_COUNT, 12, 9L);
+
+        assertThat(rating).isEqualTo(sameRating);
+        ProductCursor.Decoded decodedRating = ProductCursor.decode(rating, ProductSort.RATING);
+        assertThat(decodedRating.bigDecimalValue()).isEqualByComparingTo("4.50");
+        assertThat(decodedRating.id()).isEqualTo(3L);
+        ProductCursor.Decoded decodedNoRating = ProductCursor.decode(noRating, ProductSort.RATING);
+        assertThat(decodedNoRating.bigDecimalValue()).isNull();
+        assertThat(decodedNoRating.id()).isEqualTo(2L);
+        ProductCursor.Decoded decodedCount = ProductCursor.decode(reviewCount, ProductSort.REVIEW_COUNT);
+        assertThat(decodedCount.intValue()).isEqualTo(12);
+        assertThat(decodedCount.id()).isEqualTo(9L);
+        assertThat(new String(Base64.getUrlDecoder().decode(rating), StandardCharsets.UTF_8)).isEqualTo("RATING|4.50|3");
+        assertThat(new String(Base64.getUrlDecoder().decode(noRating), StandardCharsets.UTF_8)).isEqualTo("RATING|-|2");
+    }
+
+    @Test
+    void 깨진_평점_커서와_리뷰_수_커서는_INVALID_INPUT() {
+        for (String raw : new String[] {"RATING|abc|1", "RATING|5.01|1", "RATING|-1|1", "RATING|-0.01|1",
+                "RATING|4.555|1", "RATING||1", "RATING|1e1|1", "RATING|-|0", "RATING|4.5|1|x"}) {
+            assertThatThrownBy(() -> ProductCursor.decode(encodeRaw(raw), ProductSort.RATING))
+                    .as(raw)
+                    .isInstanceOfSatisfying(BusinessException.class,
+                            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        }
+        for (String raw : new String[] {"REVIEW_COUNT|-1|1", "REVIEW_COUNT|1.5|1", "REVIEW_COUNT|-|1",
+                "REVIEW_COUNT|99999999999|1"}) {
+            assertThatThrownBy(() -> ProductCursor.decode(encodeRaw(raw), ProductSort.REVIEW_COUNT))
+                    .as(raw)
+                    .isInstanceOfSatisfying(BusinessException.class,
+                            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        }
+        for (String raw : new String[] {"RATING|0.00|1", "RATING|5|1", "RATING|0|1", "REVIEW_COUNT|0|1"}) {
+            ProductSort sort = ProductSort.valueOf(raw.substring(0, raw.indexOf('|')));
+            assertThat(ProductCursor.decode(encodeRaw(raw), sort).id()).as(raw).isEqualTo(1L);
+        }
     }
 
     @Test

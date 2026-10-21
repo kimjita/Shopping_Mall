@@ -108,6 +108,10 @@ class ProductApiTest extends ApiTest {
                                         .description("진행 중인 세일의 할인율 (%). 진행 중인 세일이 없으면 `null`"),
                                 fieldWithPath("soldOut").type(JsonFieldType.BOOLEAN)
                                         .description("품절 여부. 모든 옵션이 품절이면 `true`다"),
+                                fieldWithPath("ratingAvg").type(JsonFieldType.NUMBER).optional()
+                                        .description("평균 평점. 소수 둘째 자리까지 반올림한 값이다. 리뷰가 없으면 `null`"),
+                                fieldWithPath("reviewCount").type(JsonFieldType.NUMBER)
+                                        .description("리뷰 수"),
                                 fieldWithPath("skus").type(JsonFieldType.ARRAY).description("옵션(SKU) 목록"),
                                 fieldWithPath("skus[].id").type(JsonFieldType.NUMBER).description("SKU ID"),
                                 fieldWithPath("skus[].name").type(JsonFieldType.STRING).description("옵션 이름"),
