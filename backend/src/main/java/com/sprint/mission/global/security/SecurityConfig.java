@@ -40,7 +40,7 @@ public class SecurityConfig {
                                 "/api/auth/refresh", "/api/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/brands",
                                 "/api/products", "/api/products/*", "/api/products/*/reviews", "/api/rankings",
-                                "/api/recommendations").permitAll()
+                                "/api/recommendations", "/api/banners").permitAll()
                         .requestMatchers("/api/admin/**").hasRole(Role.ADMIN.name())
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

@@ -54,7 +54,8 @@ public enum ErrorCode {
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
     ORDER_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "주문 상품을 찾을 수 없습니다."),
     REVIEW_NOT_WRITABLE(HttpStatus.CONFLICT, "구매확정된 상품만 리뷰를 쓸 수 있습니다."),
-    REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성한 상품입니다.");
+    REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 리뷰를 작성한 상품입니다."),
+    BANNER_NOT_FOUND(HttpStatus.NOT_FOUND, "배너를 찾을 수 없습니다.");
 
     /**
      * {@link #from(HttpStatusCode)}가 고르는 공통 코드다. 도메인 코드(예: 409 DUPLICATE_EMAIL)는 넣지 않는다.
