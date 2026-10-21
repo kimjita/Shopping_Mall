@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewService {
 
     private static final int MIN_CONTENT_LENGTH = 10;
+    private static final int MAX_CONTENT_LENGTH = 1_000;
 
     private final MemberService memberService;
     private final ReviewRepository reviewRepository;
@@ -36,14 +37,14 @@ public class ReviewService {
     private final ProductRepository productRepository;
 
     /**
-     * 오류는 다음 순서로 처음 걸린 것을 돌려준다: 회원(404 MEMBER_NOT_FOUND) → 본문 길이(400 INVALID_INPUT)
-     * → 내 주문상품(404 ORDER_ITEM_NOT_FOUND, 없는 것과 남의 것이 같다) → 구매확정(409 REVIEW_NOT_WRITABLE)
+     * 오류는 다음 순서로 처음 걸린 것을 돌려준다: 입력 규칙(400 INVALID_INPUT, 본문 길이 포함)
+     * → 회원(404 MEMBER_NOT_FOUND) → 내 주문상품(404 ORDER_ITEM_NOT_FOUND, 없는 것과 남의 것이 같다) → 구매확정(409 REVIEW_NOT_WRITABLE)
      * → 중복(409 REVIEW_ALREADY_EXISTS).
      */
     @Transactional
     public MyReviewResponse write(Long memberId, ReviewWriteRequest request) {
-        Member member = memberService.getActiveForUpdate(memberId);
         checkContentLength(request.content());
+        Member member = memberService.getActiveForUpdate(memberId);
         OrderItem item = orderItemRepository.findById(request.orderItemId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_ITEM_NOT_FOUND));
         Order order = orderRepository.findById(item.getOrderId())
@@ -62,17 +63,18 @@ public class ReviewService {
         return MyReviewResponse.of(review, item);
     }
 
-    /** 오류 순서: 회원 → 본문 길이(400) → 내 리뷰(404 REVIEW_NOT_FOUND, 없는 것과 남의 것이 같다). 피부 스냅샷은 바꾸지 않는다. */
+    /** 오류 순서: 입력 규칙(400, 본문 길이 포함) → 회원 → 내 리뷰(404 REVIEW_NOT_FOUND, 없는 것과 남의 것이 같다). 피부 스냅샷은 바꾸지 않는다. */
     @Transactional
     public MyReviewResponse edit(Long memberId, Long reviewId, ReviewEditRequest request) {
-        memberService.getActiveForUpdate(memberId);
         checkContentLength(request.content());
+        memberService.getActiveForUpdate(memberId);
         Review review = reviewRepository.findByIdAndMemberId(reviewId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
         int diff = review.edit(request.rating(), request.content(), request.imageUrls());
         if (diff != 0) {
             productRepository.changeRating(review.getProductId(), 0, diff);
         }
+        reviewRepository.flush(); // 별점이 같으면 쓰기 쿼리가 없어서, 응답에 담을 updatedAt을 여기서 확정한다.
         return MyReviewResponse.of(review, orderItemRepository.findById(review.getOrderItemId()).orElseThrow());
     }
 
@@ -85,9 +87,10 @@ public class ReviewService {
         productRepository.changeRating(review.getProductId(), -1, -review.getRating());
     }
 
-    /** 공백만 있는 본문은 DTO가 막고, 공백을 뗀 길이가 모자란 경우는 여기서 막는다. 상한은 DTO가 본다. */
+    /** 공백만 있는 본문과 지나치게 큰 본문은 DTO가 막고, 공백을 뗀 길이 10~1,000자는 여기서 확인한다. */
     private static void checkContentLength(String content) {
-        if (content.strip().length() < MIN_CONTENT_LENGTH) {
+        int length = content.strip().length();
+        if (length < MIN_CONTENT_LENGTH || length > MAX_CONTENT_LENGTH) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "리뷰 내용은 10~1,000자여야 합니다.");
         }
     }

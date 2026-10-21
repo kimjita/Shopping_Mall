@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
-/** 본문은 앞뒤 공백을 뗀 길이가 10자 이상이어야 하는데, 이 조건은 서비스가 확인한다. */
+/** 본문은 앞뒤 공백을 뗀 길이가 10~1,000자여야 하는데, 이 조건은 서비스가 확인한다. 여기서는 요청 크기만 느슨하게 제한한다. */
 public record ReviewWriteRequest(
         @NotNull(message = "주문 상품을 선택해 주세요.")
         Long orderItemId,
@@ -18,7 +18,7 @@ public record ReviewWriteRequest(
         int rating,
 
         @NotBlank(message = "리뷰 내용은 10~1,000자여야 합니다.")
-        @Size(max = 1000, message = "리뷰 내용은 10~1,000자여야 합니다.")
+        @Size(max = 2000, message = "리뷰 내용은 2,000자 이하여야 합니다.")
         String content,
 
         @Size(max = 5, message = "사진은 5개 이하여야 합니다.")

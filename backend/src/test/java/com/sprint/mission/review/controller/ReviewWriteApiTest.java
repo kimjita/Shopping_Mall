@@ -24,13 +24,21 @@ import com.sprint.mission.member.domain.SkinType;
 import com.sprint.mission.member.service.MemberService;
 import com.sprint.mission.review.ReviewFixtures;
 import com.sprint.mission.support.ApiTest;
+import com.sprint.mission.support.MutableClock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,6 +54,20 @@ class ReviewWriteApiTest extends ApiTest {
     private static final HeaderDescriptor AUTHORIZATION = headerWithName(HttpHeaders.AUTHORIZATION)
             .description("access token (`Bearer <token>`)");
     private static final String CONTENT = "촉촉하고 순해서 매일 쓰기 좋아요.";
+
+    /** 수정 응답의 updatedAt을 확인하려고 시간을 흘려보낸다. */
+    @TestConfiguration
+    static class ClockConfig {
+
+        @Bean
+        @Primary
+        MutableClock mutableClock() {
+            return new MutableClock();
+        }
+    }
+
+    @Autowired
+    MutableClock clock;
 
     @Autowired
     ReviewFixtures fixtures;
@@ -204,6 +226,43 @@ class ReviewWriteApiTest extends ApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.imageUrls.length()").value(0));
         assertThat(aggregate()).isEqualTo("2/7/3.50");
+    }
+
+    @Test
+    void 같은_별점으로_본문만_고쳐도_응답의_수정_시각이_저장된_값이다() throws Exception {
+        clock.set(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        Long reviewId = write(memberId, fixtures.orderItem(memberId, productId, "CONFIRMED"), 4);
+        clock.advance(Duration.ofMinutes(5));
+
+        String response = send(put("/api/members/me/reviews/{reviewId}", reviewId), token(memberId),
+                editBody(4, CONTENT + " 수정", List.of()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        Instant createdAt = Instant.parse(objectMapper.readTree(response).get("createdAt").asText());
+        Instant updatedAt = Instant.parse(objectMapper.readTree(response).get("updatedAt").asText());
+        Instant stored = jdbcTemplate.queryForObject("select updated_at from review where id = ?",
+                OffsetDateTime.class, reviewId).toInstant();
+        assertThat(updatedAt).isEqualTo(stored).isAfter(createdAt);
+    }
+
+    @Test
+    void 본문_상한은_앞뒤_공백을_뗀_길이로_본다() throws Exception {
+        Long orderItemId = fixtures.orderItem(memberId, productId, "CONFIRMED");
+        String max = "가".repeat(1_000);
+
+        send(post("/api/members/me/reviews"), token(memberId), body(orderItemId, 5, max + "\n", List.of()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.content").value(max));
+        Long reviewId = jdbcTemplate.queryForObject("select id from review", Long.class);
+        send(put("/api/members/me/reviews/{reviewId}", reviewId), token(memberId),
+                editBody(5, "  " + max + "\n", List.of()))
+                .andExpect(status().isOk());
+
+        for (String tooLong : List.of(max + "가", "\n" + max + "가\n", "가".repeat(2_001))) {
+            send(put("/api/members/me/reviews/{reviewId}", reviewId), token(memberId), editBody(5, tooLong, List.of()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
     }
 
     @Test

@@ -103,7 +103,7 @@ public class MemberService {
 
     /**
      * 진행 중인 주문이 있으면 거부한다. 회원 행을 먼저 잠가 같은 회원의 주문 생성과 줄을 세운다.
-     * 탈퇴하면 장바구니·찜·최근 본 상품을 지운다. 주문과 적립금 기록은 남긴다.
+     * 탈퇴하면 장바구니·찜·최근 본 상품을 지운다. 주문·적립금 기록과 작성한 리뷰는 남긴다.
      */
     @Transactional
     public void withdraw(Long memberId, String password) {

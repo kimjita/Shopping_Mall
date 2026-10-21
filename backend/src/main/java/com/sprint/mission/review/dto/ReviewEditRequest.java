@@ -14,7 +14,7 @@ public record ReviewEditRequest(
         int rating,
 
         @NotBlank(message = "리뷰 내용은 10~1,000자여야 합니다.")
-        @Size(max = 1000, message = "리뷰 내용은 10~1,000자여야 합니다.")
+        @Size(max = 2000, message = "리뷰 내용은 2,000자 이하여야 합니다.")
         String content,
 
         @Size(max = 5, message = "사진은 5개 이하여야 합니다.")
