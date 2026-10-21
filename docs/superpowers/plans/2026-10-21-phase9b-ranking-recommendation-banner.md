@@ -17,7 +17,7 @@
   - 매일 배치가 `skin_recommendation`을 한 트랜잭션에서 지우고 다시 채운다(SQL 한 문장의 window 함수).
   - 조회는 그 테이블과 상품 카드만 읽는다.
 - **카드:** 랭킹과 추천은 상품 id 목록을 정한 뒤 기존 `ProductSearchRepository.findCards`로 카드를 만든다(가격·세일·품절·평점 계산을 다시 짜지 않는다).
-- **메인:** 새 API는 배너·랭킹·추천뿐이다. 오늘의 특가는 검색 `onlyOnSale=true`, 신상품은 검색 `sort=NEWEST`를 쓴다.
+- **메인:** 새 API는 배너·랭킹·추천뿐이다. 오늘의 특가는 검색 `onSale=true`, 신상품은 검색 `sort=NEWEST`를 쓴다.
 
 **Tech Stack:** Phase 9a와 같다. Flyway V19를 쓴다. 새 의존성은 없다.
 
@@ -90,7 +90,7 @@
   - 필드:
     - `title` 1~50자(strip)
     - `imageUrl`은 `^https?://.+`, 500자 이하
-    - `linkUrl`은 `^(https?://|/).+`, 500자 이하
+    - `linkUrl`은 `^(https?://|/(?![/\\])).+`, 500자 이하
     - `startsAt` < `endsAt`(아니면 400 `INVALID_INPUT`), 두 시각의 연도는 2000~9999(아니면 400)
     - `sortOrder` 0~1,000
   - 공개 목록은 `startsAt <= now < endsAt`인 배너를 `sortOrder asc, id asc`로 돌려준다.
@@ -250,7 +250,7 @@
 **Interfaces:**
 - Consumes: Task 1 `banner` 테이블
 - Produces:
-  - `record BannerRequest(@NotBlank @Size(max = 50) String title, @NotBlank @Size(max = 500) @Pattern(regexp = "^https?://.+") String imageUrl, @NotBlank @Size(max = 500) @Pattern(regexp = "^(https?://|/).+") String linkUrl, @NotNull Instant startsAt, @NotNull Instant endsAt, @Min(0) @Max(1000) int sortOrder)`. title strip 뒤 빈 값, 기간 역전, 연도 범위는 서비스가 `INVALID_INPUT`으로 막는다.
+  - `record BannerRequest(@NotBlank @Size(max = 50) String title, @NotBlank @Size(max = 500) @Pattern(regexp = "^https?://.+") String imageUrl, @NotBlank @Size(max = 500) @Pattern(regexp = "^(https?://|/(?![/\\\\])).+") String linkUrl, @NotNull Instant startsAt, @NotNull Instant endsAt, @Min(0) @Max(1000) int sortOrder)`. title strip 뒤 빈 값, 기간 역전, 연도 범위는 서비스가 `INVALID_INPUT`으로 막는다.
   - `record BannerResponse(Long id, String title, String imageUrl, String linkUrl, Instant startsAt, Instant endsAt, int sortOrder)`
   - `BannerService`:
     - `create`, `update(id, request)`(없으면 `BANNER_NOT_FOUND`), `delete(id)`(없으면 404)
@@ -266,7 +266,7 @@
     | 섹션 | 호출할 API |
     |---|---|
     | 배너 | `GET /api/banners` |
-    | 오늘의 특가 | `GET /api/products?onlyOnSale=true&size=…` |
+    | 오늘의 특가 | `GET /api/products?onSale=true&size=…` |
     | 신상품 | `GET /api/products?sort=NEWEST&size=…` |
     | 랭킹 | `GET /api/rankings` |
     | 피부타입 추천 | `GET /api/recommendations?skinType=` |

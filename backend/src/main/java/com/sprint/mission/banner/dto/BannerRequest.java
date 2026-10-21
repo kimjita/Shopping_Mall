@@ -22,7 +22,8 @@ public record BannerRequest(
         String imageUrl,
         @NotBlank(message = "링크 URL을 입력해 주세요.")
         @Size(max = 500, message = "링크 URL은 500자 이하여야 합니다.")
-        @Pattern(regexp = "^(https?://|/).+", message = "링크 URL은 http://, https://, / 중 하나로 시작해야 합니다.")
+        @Pattern(regexp = "^(https?://|/(?![/\\\\])).+",
+                message = "링크 URL은 http://, https://로 시작하거나 /로 시작하는 서비스 안 경로여야 합니다.")
         String linkUrl,
         @NotNull(message = "노출 시작 시각을 입력해 주세요.")
         Instant startsAt,

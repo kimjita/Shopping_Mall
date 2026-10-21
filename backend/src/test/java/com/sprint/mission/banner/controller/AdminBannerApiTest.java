@@ -193,6 +193,16 @@ class AdminBannerApiTest extends ApiTest {
     }
 
     @Test
+    void 프로토콜_상대_링크와_역슬래시_링크는_400이고_서비스_경로와_절대_주소는_통과한다() throws Exception {
+        String img = "https://img.example.com/a.jpg";
+        register(admin(), body("배너", img, "//evil.com/x", STARTS, ENDS, 0)).andExpect(status().isBadRequest());
+        register(admin(), body("배너", img, "/\\\\evil.com", STARTS, ENDS, 0)).andExpect(status().isBadRequest());
+        assertThat(bannerCount()).isZero();
+        register(admin(), body("배너", img, "/events/1", STARTS, ENDS, 0)).andExpect(status().isCreated());
+        register(admin(), body("배너", img, "https://example.com", STARTS, ENDS, 0)).andExpect(status().isCreated());
+    }
+
+    @Test
     void 없는_배너는_404() throws Exception {
         mockMvc.perform(put("/api/admin/banners/{bannerId}", 999)
                         .header(HttpHeaders.AUTHORIZATION, admin())
