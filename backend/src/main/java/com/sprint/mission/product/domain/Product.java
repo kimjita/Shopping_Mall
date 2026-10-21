@@ -13,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.time.Instant;
 import java.util.List;
@@ -75,6 +76,16 @@ public class Product extends BaseEntity {
     @OrderColumn(name = "sort_order")
     @Column(name = "url", nullable = false, length = 500)
     private List<String> imageUrls = new ArrayList<>();
+
+    /** 리뷰 수·별점 합계·평균은 리뷰를 쓰고 고치고 지울 때 벌크 SQL로만 바꾼다. 평균은 리뷰가 없으면 null이다. */
+    @Column(insertable = false, updatable = false)
+    private int reviewCount;
+
+    @Column(insertable = false, updatable = false)
+    private int ratingSum;
+
+    @Column(insertable = false, updatable = false, precision = 3, scale = 2)
+    private BigDecimal ratingAvg;
 
     /** 걸린 세일이다. 컬럼이 모두 NULL이면 Hibernate가 null로 읽으므로 null을 "세일 없음"으로 본다. */
     @Embedded

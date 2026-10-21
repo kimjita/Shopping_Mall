@@ -27,4 +27,19 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             """)
     int refreshSearchTextByBrand(@Param("brandId") Long brandId, @Param("brandName") String brandName,
             @Param("now") Instant now);
+
+    /**
+     * 리뷰 수·별점 합계·평균을 한 문장으로 바꾼다. 쓰기는 (+1, +별점), 수정은 (0, 새 별점 - 옛 별점), 삭제는 (-1, -별점)이다.
+     * 읽고 계산해 쓰면 동시에 쓴 리뷰끼리 서로의 값을 덮어쓰므로, 행 잠금 아래에서 현재 값에 더한다. 호출자의 트랜잭션이 필요하다.
+     * 리뷰가 하나도 남지 않으면 평균은 NULL이다. {@code updated_at}은 건드리지 않는다. 바뀐 행 수를 돌려준다.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            update product set review_count = review_count + :countDelta, rating_sum = rating_sum + :sumDelta,
+                   rating_avg = case when review_count + :countDelta = 0 then null
+                                     else round((rating_sum + :sumDelta)::numeric / (review_count + :countDelta), 2) end
+            where id = :productId
+            """, nativeQuery = true)
+    int changeRating(@Param("productId") Long productId, @Param("countDelta") int countDelta,
+            @Param("sumDelta") int sumDelta);
 }
