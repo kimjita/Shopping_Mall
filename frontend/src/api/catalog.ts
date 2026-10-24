@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import { toSearchParams, type ListParams } from '../lib/listParams'
-import type { Brand, Category, CursorPage, ProductSummary } from './types'
+import type { Brand, Category, CursorPage, ProductDetail, ProductSummary } from './types'
 
 const TEN_MINUTES = 10 * 60 * 1000
 
@@ -35,3 +35,11 @@ export const useProductSearch = (p: ListParams) => {
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
 }
+
+// 상세 캐시는 찜·최근 본 상품 화면과 같은 키를 쓴다.
+export const useProduct = (id: number) =>
+  useQuery({
+    queryKey: ['product', id],
+    queryFn: () => apiFetch<ProductDetail>(`/api/products/${id}`),
+    enabled: Number.isInteger(id) && id > 0,
+  })

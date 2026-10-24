@@ -3,6 +3,7 @@ import { Layout } from './Layout'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { ProductDetailPage } from './pages/ProductDetailPage'
 import { ProductListPage } from './pages/ProductListPage'
 import { SignupPage } from './pages/SignupPage'
 
@@ -15,6 +16,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <HomePage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'products', element: <ProductListPage /> },
+      { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'signup', element: <SignupPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
