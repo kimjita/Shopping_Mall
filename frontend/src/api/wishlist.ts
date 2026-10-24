@@ -1,6 +1,7 @@
-import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueries, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { apiFetch } from './client'
+import type { CursorPage, WishItem } from './types'
 
 const CHUNK = 100 // 서버가 한 번에 받는 productIds 상한이다.
 
@@ -37,3 +38,14 @@ export function useToggleWish() {
       ]),
   })
 }
+
+export const useWishlist = () =>
+  useInfiniteQuery({
+    queryKey: ['wishlist'],
+    queryFn: ({ pageParam }) =>
+      apiFetch<CursorPage<WishItem>>(`/api/members/me/wishlist?size=20${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ''}`, {
+        auth: 'required',
+      }),
+    initialPageParam: '',
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  })
