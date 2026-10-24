@@ -16,6 +16,8 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null)
 
+const MEMBER_QUERY_KEYS = ['me', 'cart', 'wishIds', 'wishlist', 'recentViews']
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthValue {
   const value = useContext(AuthContext)
@@ -29,7 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [booted, setBooted] = useState(false)
 
   useEffect(() => {
-    const unsubscribe = tokenStore.subscribe(setToken)
+    let prev = tokenStore.getToken()
+    const unsubscribe = tokenStore.subscribe((t) => {
+      setToken(t)
+      // 요청 중 refresh가 401이면 토큰만 사라지므로 이전 회원의 캐시를 여기서 버린다. 비회원 부팅의 null은 건드리지 않는다.
+      if (prev !== null && t === null) MEMBER_QUERY_KEYS.forEach((key) => queryClient.removeQueries({ queryKey: [key] }))
+      prev = t
+    })
     // StrictMode의 두 번째 실행은 refresh.ts의 inFlight가 같은 요청으로 묶는다.
     refreshAccessToken()
       .catch(() => {}) // 네트워크·5xx면 토큰 없이 비회원으로 둔다.
@@ -89,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ? 'guest'
           : 'loading'
 
-  const value = useMemo(() => ({ status, me: meQuery.data, login, logout }), [status, meQuery.data, login, logout])
+  const me = status === 'member' ? meQuery.data : undefined
+  const value = useMemo(() => ({ status, me, login, logout }), [status, me, login, logout])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

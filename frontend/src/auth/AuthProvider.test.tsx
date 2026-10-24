@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { server } from '../test/server'
+import { Header } from '../components/Header'
 import { renderWithProviders, testMe } from '../test/render'
 import { authChannel, type AuthMessage } from './authChannel'
 import { useAuth } from './AuthProvider'
@@ -67,5 +68,41 @@ describe('AuthProvider', () => {
     await act(async () => onMessage({ type: 'login' }))
 
     expect(await screen.findByText('name:김철수')).toBeInTheDocument()
+  })
+
+  it('요청 중 refresh가 401이면 이전 회원의 데이터를 화면에서 지운다', async () => {
+    const cartLine = {
+      skuId: 1,
+      skuName: '기본',
+      productId: 1,
+      productName: '상품',
+      brandName: '브랜드',
+      thumbnailUrl: null,
+      quantity: 1,
+      unitPrice: 1000,
+      unitSalePrice: 1000,
+      lineTotal: 1000,
+      status: 'AVAILABLE',
+    }
+    server.use(http.get('*/api/members/me/cart', () => HttpResponse.json({ items: [1, 2].map((id) => ({ ...cartLine, id })) })))
+    const { queryClient } = renderWithProviders(
+      <>
+        <Header />
+        <Probe />
+      </>,
+      { member: { name: '홍길동' } },
+    )
+    expect(await screen.findByRole('link', { name: '장바구니 2개' })).toBeInTheDocument()
+    const expired = { code: 'INVALID_REFRESH_TOKEN', message: '다시 로그인해 주세요.', errors: [] }
+    server.use(
+      http.get('*/api/members/me/cart', () => HttpResponse.json({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다.', errors: [] }, { status: 401 })),
+      http.post('*/api/auth/refresh', () => HttpResponse.json(expired, { status: 401 })),
+    )
+
+    await act(() => queryClient.invalidateQueries({ queryKey: ['cart'] }))
+
+    expect(await screen.findByText('status:guest')).toBeInTheDocument()
+    expect(screen.getByText('name:-')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '장바구니' })).toBeInTheDocument()
   })
 })
