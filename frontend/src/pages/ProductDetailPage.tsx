@@ -276,5 +276,5 @@ export function ProductDetailPage() {
   if (id <= 0 || (query.error instanceof ApiError && query.error.status === 404)) return <NotSold />
   if (query.isError) return <SectionError onRetry={() => query.refetch()} />
   if (!query.data) return <Spinner />
-  return <Detail product={query.data} />
+  return <Detail key={query.data.id} product={query.data} />
 }

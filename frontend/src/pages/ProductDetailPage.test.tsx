@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import { expect, it } from 'vitest'
-import { Route, Routes, useLocation } from 'react-router'
+import { Link, Route, Routes, useLocation } from 'react-router'
 import type { CartItem, CursorPage, Me, ProductDetail, Review } from '../api/types'
 import { guestRecentViews } from '../lib/guestRecentViews'
 import { renderWithProviders } from '../test/render'
@@ -62,7 +62,13 @@ function setup(opts: Opts = {}) {
   const reviewReqs: URLSearchParams[] = []
   const recentPosts: unknown[] = []
   server.use(
-    http.get('*/api/products/:id', () => HttpResponse.json(opts.product ?? detail())),
+    http.get('*/api/products/:id', ({ params }) =>
+      HttpResponse.json(
+        params.id === '6'
+          ? detail({ id: 6, name: '다른 토너', skus: [{ id: 9, name: '단일', price: 3000, salePrice: 3000, soldOut: false }], imageUrls: [] })
+          : (opts.product ?? detail()),
+      ),
+    ),
     http.get('*/api/products/:id/reviews', ({ request }) => {
       const q = new URL(request.url).searchParams
       reviewReqs.push(q)
@@ -79,7 +85,7 @@ function setup(opts: Opts = {}) {
     }),
   )
   server.use(...(opts.handlers ?? []))
-  renderWithProviders(
+  const { queryClient } = renderWithProviders(
     <>
       <Routes>
         <Route path="/products/:productId" element={<ProductDetailPage />} />
@@ -88,10 +94,11 @@ function setup(opts: Opts = {}) {
         <Route path="/" element={<p>홈 화면</p>} />
       </Routes>
       <Probe />
+      <Link to="/products/6">다른 상품</Link>
     </>,
     { route: opts.route ?? '/products/5', member: opts.member },
   )
-  return { reviewReqs, recentPosts }
+  return { reviewReqs, recentPosts, queryClient }
 }
 
 const cartItem: CartItem = {
@@ -252,4 +259,21 @@ it('리뷰가 없으면 안내하고, 전성분이 없으면 안내한다', asyn
   await user.click(screen.getByRole('tab', { name: '리뷰(0)' }))
   expect(await screen.findByText('아직 리뷰가 없습니다.')).toBeInTheDocument()
   expect(within(screen.getByRole('tablist')).getAllByRole('tab')).toHaveLength(3)
+})
+
+it('캐시된 다른 상품으로 이동해도 선택한 옵션·수량을 비운다', async () => {
+  const { queryClient } = setup()
+  // 캐시가 있으면 로딩 없이 같은 화면이 이어지므로 상태가 남기 쉽다.
+  queryClient.setQueryData(['product', 6], {
+    ...detail({ id: 6, name: '다른 토너', imageUrls: [] }),
+    skus: [{ id: 9, name: '단일', price: 3000, salePrice: 3000, soldOut: false }],
+  })
+  const user = userEvent.setup()
+  await user.selectOptions(await screen.findByRole('combobox', { name: '옵션' }), '200ml')
+  await user.click(screen.getByRole('button', { name: '수량 늘리기' }))
+  expect(screen.getByRole('spinbutton', { name: '수량' })).toHaveValue(2)
+  await user.click(screen.getByRole('link', { name: '다른 상품' }))
+  expect(await screen.findByRole('heading', { name: '다른 토너' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: '옵션' })).toHaveValue('9')
+  expect(screen.getByRole('spinbutton', { name: '수량' })).toHaveValue(1)
 })
