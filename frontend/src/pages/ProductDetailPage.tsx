@@ -224,7 +224,11 @@ function Detail({ product }: { product: ProductDetail }) {
             ))}
           </select>
           <QuantityStepper value={quantity} onChange={setQuantity} />
-          {message && <p className="text-sm text-sale">{message}</p>}
+          {message && (
+            <p role="alert" className="text-sm text-sale">
+              {message}
+            </p>
+          )}
           {addToCart.isError && (
             <p role="alert" className="text-sm text-sale">
               {addToCart.error instanceof ApiError ? addToCart.error.message : '잠시 후 다시 시도해 주세요.'}
@@ -274,7 +278,6 @@ export function ProductDetailPage() {
   useRecordRecentView(id, query.isSuccess)
 
   if (id <= 0 || (query.error instanceof ApiError && query.error.status === 404)) return <NotSold />
-  if (query.isError) return <SectionError onRetry={() => query.refetch()} />
-  if (!query.data) return <Spinner />
+  if (!query.data) return query.isError ? <SectionError onRetry={() => query.refetch()} /> : <Spinner />
   return <Detail key={query.data.id} product={query.data} />
 }

@@ -19,19 +19,23 @@ export function WishlistPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">찜한 상품</h1>
-      {q.isPending ? (
-        <Spinner />
-      ) : q.isError ? (
-        <SectionError onRetry={() => q.refetch()} />
+      {!q.data ? (
+        q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
       ) : items.length === 0 ? (
-        q.hasNextPage ? <Spinner /> : <p className="py-10 text-center text-ink/60">찜한 상품이 없습니다.</p>
+        q.isFetchNextPageError ? (
+          <SectionError onRetry={() => q.fetchNextPage()} />
+        ) : q.hasNextPage ? (
+          <Spinner />
+        ) : (
+          <p className="py-10 text-center text-ink/60">찜한 상품이 없습니다.</p>
+        )
       ) : (
         <>
           <ProductGrid
             products={items.map((i) => i.product)}
             renderItem={(p, _wished, index) => <AvailabilityCard product={p} wished available={items[index].available} />}
           />
-          <InfiniteSentinel onReach={() => q.fetchNextPage()} hasNext={q.hasNextPage} loading={q.isFetchingNextPage} />
+          <InfiniteSentinel onReach={() => q.fetchNextPage()} hasNext={q.hasNextPage} loading={q.isFetchingNextPage} error={q.isFetchNextPageError} />
         </>
       )}
     </div>

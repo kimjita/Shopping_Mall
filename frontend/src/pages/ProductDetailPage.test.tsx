@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import { expect, it } from 'vitest'
@@ -276,4 +276,21 @@ it('캐시된 다른 상품으로 이동해도 선택한 옵션·수량을 비�
   expect(await screen.findByRole('heading', { name: '다른 토너' })).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: '옵션' })).toHaveValue('9')
   expect(screen.getByRole('spinbutton', { name: '수량' })).toHaveValue(1)
+})
+
+it('다시 읽기가 실패해도 보던 화면과 고른 옵션을 둔다', async () => {
+  const { queryClient } = setup()
+  const user = userEvent.setup()
+  await user.selectOptions(await screen.findByRole('combobox', { name: '옵션' }), '200ml')
+  server.use(http.get('*/api/products/:id', () => HttpResponse.json({ code: 'INTERNAL', message: '오류', errors: [] }, { status: 500 })))
+  await act(() => queryClient.invalidateQueries({ queryKey: ['product', 5] }))
+  await waitFor(() => expect(queryClient.getQueryState(['product', 5])?.status).toBe('error'))
+  expect(screen.getByRole('heading', { name: '수분 토너' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: '옵션' })).toHaveValue('1')
+})
+
+it('옵션 안내는 보조 기술에 알린다', async () => {
+  setup({ member: {} })
+  await userEvent.setup().click(await screen.findByRole('button', { name: '장바구니 담기' }))
+  expect(screen.getByRole('alert')).toHaveTextContent('옵션을 선택해 주세요.')
 })

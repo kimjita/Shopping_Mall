@@ -42,8 +42,7 @@ function MemberRecent() {
   const q = useRecentViews()
   const remove = useRemoveRecentView()
   const clear = useClearRecentViews()
-  if (q.isPending) return <Spinner />
-  if (q.isError) return <SectionError onRetry={() => q.refetch()} />
+  if (!q.data) return q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
   return (
     <RecentList
       products={q.data.map((v) => v.product)}

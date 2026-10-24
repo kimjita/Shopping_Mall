@@ -14,7 +14,7 @@ import { isExternalLink, isSafeLink } from '../lib/links'
 const SKIN_ORDER: SkinType[] = ['DRY', 'OILY', 'COMBINATION', 'SENSITIVE', 'NORMAL']
 
 interface QueryLike {
-  isPending: boolean
+  data: unknown
   isError: boolean
   refetch: () => unknown
 }
@@ -31,17 +31,15 @@ function Section({ title, note, children }: { title: string; note?: string; chil
   )
 }
 
-// 로딩·오류를 처리하고, 데이터가 있을 때만 children을 그린다.
+// 로딩·오류를 처리하고, 데이터가 있을 때만 children을 그린다. 다시 읽기가 실패해도 이전 데이터는 그대로 둔다.
 function State({ q, children }: { q: QueryLike; children: ReactNode }) {
-  if (q.isPending) return <Spinner />
-  if (q.isError) return <SectionError onRetry={() => q.refetch()} />
+  if (q.data === undefined) return q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
   return <>{children}</>
 }
 
 function BannerStrip() {
   const q = useBanners()
-  if (q.isPending) return <Spinner />
-  if (q.isError) return <SectionError onRetry={() => q.refetch()} />
+  if (!q.data) return q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
   const banners = q.data.filter((b) => isSafeLink(b.linkUrl))
   if (banners.length === 0) return null
   return (
@@ -66,7 +64,7 @@ function BannerStrip() {
 
 function TodaySale() {
   const q = useTodaySale()
-  if (!q.isPending && !q.isError && q.data.items.length === 0) return null
+  if (q.data?.items.length === 0) return null
   return (
     <Section title="오늘의 특가">
       <State q={q}>{q.data && <ProductGrid products={q.data.items} />}</State>
@@ -76,7 +74,7 @@ function TodaySale() {
 
 function Rankings() {
   const q = useRankings()
-  if (!q.isPending && !q.isError && q.data.items.length === 0) return null
+  if (q.data?.items.length === 0) return null
   const items = q.data?.items.slice(0, 10) ?? []
   return (
     <Section title="랭킹" note="결제 기준 최근 7일 판매량 · 매시 정각 갱신">
@@ -96,7 +94,7 @@ function Recommendations() {
   const memberSkin = me?.skinType ?? null
   const skinType = memberSkin ?? picked
   const q = useRecommendations(skinType)
-  const empty = q.isSuccess && q.data.items.length === 0
+  const empty = q.data?.items.length === 0
   if (memberSkin !== null && empty) return null
   return (
     <Section title="피부 타입 추천">

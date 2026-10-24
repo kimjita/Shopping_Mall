@@ -127,3 +127,16 @@ it('목록 요청이 실패하면 다시 시도할 수 있다', async () => {
   )
   expect(await screen.findByRole('alert')).toBeInTheDocument()
 })
+
+it('다음 페이지만 실패하면 읽은 목록을 두고 짧게 알린다', async () => {
+  setup('/products', [
+    { items: [product(1, '첫 토너')], nextCursor: 'c1' },
+    { items: [product(2, '둘째 토너')], nextCursor: null },
+  ])
+  await screen.findByText('첫 토너')
+  server.use(http.get('*/api/products', () => HttpResponse.json({ code: 'INTERNAL', message: '오류', errors: [] }, { status: 500 })))
+  await userEvent.click(screen.getByRole('button', { name: '더보기' }))
+  expect(await screen.findByText('다음 상품을 불러오지 못했습니다.')).toBeInTheDocument()
+  expect(screen.getByText('첫 토너')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '더보기' })).toBeEnabled()
+})

@@ -68,3 +68,12 @@ it('비회원은 로그인으로 보낸다', async () => {
   setup([{ items: [], nextCursor: null }], false)
   expect(await screen.findByText('로그인 화면')).toBeInTheDocument()
 })
+
+it('다음 페이지만 실패하면 읽은 목록을 두고 짧게 알린다', async () => {
+  setup([{ items: [wish(1, '상품A')], nextCursor: 'c1' }])
+  await screen.findByText('상품A')
+  server.use(http.get('*/api/members/me/wishlist', () => HttpResponse.json({ code: 'INTERNAL', message: '오류', errors: [] }, { status: 500 })))
+  screen.getByRole('button', { name: '더보기' }).click()
+  expect(await screen.findByText('다음 상품을 불러오지 못했습니다.')).toBeInTheDocument()
+  expect(screen.getByText('상품A')).toBeInTheDocument()
+})

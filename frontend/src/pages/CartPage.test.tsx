@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { expect, it } from 'vitest'
@@ -131,4 +131,15 @@ it('비면 안내와 홈 링크를 보여 준다', async () => {
   setup([])
   expect(await screen.findByText('장바구니가 비어 있습니다.')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '쇼핑 계속하기' })).toHaveAttribute('href', '/')
+})
+
+it('다시 읽기가 실패해도 담은 줄을 둔다', async () => {
+  server.use(http.get('*/api/members/me/cart', () => HttpResponse.json({ items: [line(1, 10000)] })))
+  const { queryClient } = renderWithProviders(<CartPage />, { member: {} })
+  await screen.findByText('상품1')
+  server.use(http.get('*/api/members/me/cart', () => HttpResponse.json({ code: 'INTERNAL', message: '오류', errors: [] }, { status: 500 })))
+  await act(() => queryClient.invalidateQueries({ queryKey: ['cart'] }))
+  await waitFor(() => expect(queryClient.getQueryState(['cart'])?.status).toBe('error'))
+  expect(screen.getByText('상품1')).toBeInTheDocument()
+  expect(screen.queryByText('불러오지 못했습니다.')).not.toBeInTheDocument()
 })

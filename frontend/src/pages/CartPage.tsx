@@ -85,8 +85,7 @@ export function CartPage() {
     else if ([...selected].some((id) => !availableIds.has(id))) setSelected(new Set([...selected].filter((id) => availableIds.has(id))))
   }
 
-  if (q.isPending) return <Spinner />
-  if (q.isError) return <SectionError onRetry={() => q.refetch()} />
+  if (!q.data) return q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
   const sel = selected ?? new Set<number>()
   const availableItems = q.data.items.filter((i) => i.status === 'AVAILABLE')
   const allChecked = availableItems.length > 0 && availableItems.every((i) => sel.has(i.id))

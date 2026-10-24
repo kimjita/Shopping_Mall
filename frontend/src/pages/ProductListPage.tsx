@@ -135,16 +135,14 @@ export function ProductListPage() {
           onClose={() => setFilterOpen(false)}
         />
       )}
-      {q.isPending ? (
-        <Spinner />
-      ) : q.isError ? (
-        <SectionError onRetry={() => q.refetch()} />
+      {!q.data ? (
+        q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
       ) : products.length === 0 ? (
         <p className="py-10 text-center text-ink/60">조건에 맞는 상품이 없습니다.</p>
       ) : (
         <>
           <ProductGrid products={products} />
-          <InfiniteSentinel onReach={() => q.fetchNextPage()} hasNext={q.hasNextPage} loading={q.isFetchingNextPage} />
+          <InfiniteSentinel onReach={() => q.fetchNextPage()} hasNext={q.hasNextPage} loading={q.isFetchingNextPage} error={q.isFetchNextPageError} />
         </>
       )}
     </div>
