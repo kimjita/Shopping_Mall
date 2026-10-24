@@ -14,3 +14,12 @@ afterEach(() => {
   resetRefreshForTest()
 })
 afterAll(() => server.close())
+
+// jsdom에는 <dialog>의 showModal·close가 없어 open 속성만 바꾸는 최소 대체를 둔다.
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+  this.setAttribute('open', '')
+}
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+  this.removeAttribute('open')
+  this.dispatchEvent(new Event('close'))
+}
