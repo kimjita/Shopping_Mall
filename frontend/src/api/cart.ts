@@ -20,3 +20,23 @@ export function useAddToCart() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cart'] }),
   })
 }
+
+export function useChangeQuantity() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, quantity }: { id: number; quantity: number }) =>
+      apiFetch<CartItem>(`/api/members/me/cart/items/${id}`, { method: 'PATCH', auth: 'required', json: { quantity } }),
+    onSuccess: (item) =>
+      queryClient.setQueryData<{ items: CartItem[] }>(['cart'], (old) =>
+        old && { items: old.items.map((i) => (i.id === item.id ? item : i)) },
+      ),
+  })
+}
+
+export function useRemoveCartItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => apiFetch<void>(`/api/members/me/cart/items/${id}`, { method: 'DELETE', auth: 'required' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cart'] }),
+  })
+}

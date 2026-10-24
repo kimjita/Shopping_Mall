@@ -1,6 +1,7 @@
 import { useRoutes, type RouteObject } from 'react-router'
 import { RequireAuth } from './auth/RequireAuth'
 import { Layout } from './Layout'
+import { CartPage } from './pages/CartPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -21,6 +22,7 @@ export const routes: RouteObject[] = [
       { path: 'products', element: <ProductListPage /> },
       { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'wishlist', element: <RequireAuth><WishlistPage /></RequireAuth> },
+      { path: 'cart', element: <RequireAuth><CartPage /></RequireAuth> },
       { path: 'recent', element: <RecentViewsPage /> },
       { path: 'signup', element: <SignupPage /> },
       { path: '*', element: <NotFoundPage /> },
