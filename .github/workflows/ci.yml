@@ -47,3 +47,6 @@ jobs:
       - run: npm run typecheck
       - run: npm test -- --run
       - run: npm run build
+      # Node 22는 디렉터리 인자를 찾지 못할 수 있어 셸 glob으로 파일을 넘긴다.
+      - run: node --test scripts/demo/*.test.mjs
+        working-directory: .
