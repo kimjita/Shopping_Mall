@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { expect, it, vi } from 'vitest'
@@ -92,6 +92,8 @@ it('데이터가 빈 배너·특가·랭킹은 제목째 숨긴다', async () =>
   mockHome({ emptyLists: true })
   const { container } = renderWithProviders(<HomePage />)
   expect(await screen.findByText('신상 크림')).toBeInTheDocument()
+  // 로딩 중에는 제목이 보이므로 모든 섹션의 로딩이 끝난 뒤에 확인한다.
+  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
   expect(screen.queryByRole('heading', { name: '오늘의 특가' })).not.toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: '랭킹' })).not.toBeInTheDocument()
   expect(container.querySelector('img')).toBeNull()

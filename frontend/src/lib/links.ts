@@ -13,7 +13,8 @@ export function isExternalLink(url: string): boolean {
   return parsed !== null && parsed.origin !== window.location.origin
 }
 
-// 해석되는 http(s) 주소이거나 단일 슬래시 경로(`//`·`/\`는 프로토콜 상대 주소라 제외)만 링크로 그린다.
+// 공백·제어 문자가 없고(브라우저가 탭·줄바꿈을 지워 `//`가 되는 것을 막는다), 해석되는 http(s) 주소이거나 단일 슬래시 경로(`//`·`/\`는 프로토콜 상대 주소라 제외)만 링크로 그린다.
 export function isSafeLink(url: string): boolean {
-  return parseHttp(url) !== null || (/^\/(?![/\\])/.test(url))
+  if ([...url].some((c) => c <= ' ' || c === '\x7F')) return false
+  return parseHttp(url) !== null || /^\/(?![/\\])/.test(url)
 }

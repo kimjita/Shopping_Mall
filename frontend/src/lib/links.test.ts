@@ -19,4 +19,7 @@ it('해석되는 http(s) 주소와 단일 슬래시 경로만 안전한 링크�
   expect(isSafeLink('//evil.com')).toBe(false)
   expect(isSafeLink('/\\evil.com')).toBe(false)
   expect(isSafeLink('javascript:alert(1)')).toBe(false)
+  // 브라우저는 탭·줄바꿈을 지우므로 `//evil.com`이 된다.
+  expect(isSafeLink('/\t/evil.com')).toBe(false)
+  expect(isSafeLink('/\n/evil.com')).toBe(false)
 })
