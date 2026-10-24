@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="세럼 스포이드 병">
+  <rect width="600" height="600" fill="#FEF3E2"/>
+  <circle cx="300" cy="560" r="170" fill="#fff" opacity=".55"/>
+  <ellipse cx="300" cy="520" rx="130" ry="14" fill="#0F172A" opacity=".12"/>
+  <rect x="280" y="70" width="40" height="70" rx="20" fill="#0F172A"/>
+  <rect x="255" y="130" width="90" height="50" rx="10" fill="#0F172A"/>
+  <rect x="225" y="180" width="150" height="330" rx="28" fill="#F59E0B"/>
+  <rect x="245" y="270" width="110" height="130" rx="10" fill="#fff"/>
+  <rect x="262" y="295" width="76" height="12" rx="6" fill="#0F172A"/>
+  <circle cx="300" cy="360" r="14" fill="#F59E0B"/>
+</svg>

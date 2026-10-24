@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="헤어 용기">
+  <rect width="600" height="600" fill="#FFEDD5"/>
+  <circle cx="300" cy="560" r="170" fill="#fff" opacity=".55"/>
+  <ellipse cx="300" cy="520" rx="130" ry="14" fill="#0F172A" opacity=".12"/>
+  <rect x="255" y="90" width="90" height="70" rx="14" fill="#0F172A"/>
+  <rect x="215" y="160" width="170" height="350" rx="40" fill="#FB923C"/>
+  <path d="M255 250q45-40 90 0t0 90q-45 40-90 0t0-90z" fill="#fff"/>
+  <path d="M275 270q25 30 0 60M300 262q25 38 0 76M325 270q25 30 0 60" stroke="#FB923C" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <rect x="250" y="400" width="100" height="12" rx="6" fill="#fff"/>
+</svg>

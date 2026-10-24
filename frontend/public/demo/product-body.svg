@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="바디 펌프 용기">
+  <rect width="600" height="600" fill="#DCFCE7"/>
+  <circle cx="300" cy="560" r="170" fill="#fff" opacity=".55"/>
+  <ellipse cx="300" cy="520" rx="130" ry="14" fill="#0F172A" opacity=".12"/>
+  <path d="M290 70h120v22h-90v40h-30z" fill="#0F172A"/>
+  <rect x="270" y="130" width="60" height="40" fill="#0F766E"/>
+  <rect x="210" y="170" width="180" height="340" rx="32" fill="#22C55E"/>
+  <rect x="235" y="260" width="130" height="150" rx="14" fill="#fff"/>
+  <circle cx="300" cy="320" r="30" fill="#22C55E"/>
+  <rect x="258" y="370" width="84" height="12" rx="6" fill="#0F172A"/>
+</svg>
