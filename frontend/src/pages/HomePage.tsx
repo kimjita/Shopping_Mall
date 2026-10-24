@@ -9,7 +9,7 @@ import { SectionError } from '../components/SectionError'
 import { Spinner } from '../components/Spinner'
 import { formatRating } from '../lib/format'
 import { SKIN_TYPE_LABEL } from '../lib/labels'
-import { isExternalLink } from '../lib/links'
+import { isExternalLink, isSafeLink } from '../lib/links'
 
 const SKIN_ORDER: SkinType[] = ['DRY', 'OILY', 'COMBINATION', 'SENSITIVE', 'NORMAL']
 
@@ -42,10 +42,11 @@ function BannerStrip() {
   const q = useBanners()
   if (q.isPending) return <Spinner />
   if (q.isError) return <SectionError onRetry={() => q.refetch()} />
-  if (q.data.length === 0) return null
+  const banners = q.data.filter((b) => isSafeLink(b.linkUrl))
+  if (banners.length === 0) return null
   return (
     <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4">
-      {q.data.map((b) => {
+      {banners.map((b) => {
         const img = <img src={b.imageUrl} alt={b.title} className="h-40 w-[85vw] max-w-xl rounded object-cover" />
         return (
           <li key={b.id} className="shrink-0 snap-center">
@@ -95,6 +96,8 @@ function Recommendations() {
   const memberSkin = me?.skinType ?? null
   const skinType = memberSkin ?? picked
   const q = useRecommendations(skinType)
+  const empty = q.isSuccess && q.data.items.length === 0
+  if (memberSkin !== null && empty) return null
   return (
     <Section title="피부 타입 추천">
       {memberSkin === null && (
@@ -118,7 +121,8 @@ function Recommendations() {
       )}
       {skinType !== null && (
         <State q={q}>
-          {q.data && (
+          {empty && <p className="text-sm">아직 추천할 상품이 없습니다.</p>}
+          {q.data && !empty && (
             <ProductGrid
               products={q.data.items.map((i) => i.product)}
               renderItem={(p, wished, idx) => {
