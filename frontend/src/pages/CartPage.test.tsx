@@ -97,6 +97,22 @@ it('수량 변경 실패 시 메시지를 보여 주고 서버 값으로 되돌�
   expect(screen.getByText('상품 금액 10,000원')).toBeInTheDocument()
 })
 
+it('입력 후 Enter로 확정한 수량이 거절되면 서버 값으로 되돌린다', async () => {
+  const patches = setup([line(1, 10000, 1)])
+  server.use(
+    http.patch('*/api/members/me/cart/items/:id', async ({ params, request }) => {
+      patches.push({ id: String(params.id), body: await request.json() })
+      return HttpResponse.json({ code: 'OUT_OF_STOCK', message: '재고가 부족합니다.', errors: [] }, { status: 409 })
+    }),
+  )
+  const input = await screen.findByRole('spinbutton', { name: '수량' })
+  await userEvent.clear(input)
+  await userEvent.type(input, '12{Enter}')
+  expect(await screen.findByRole('alert')).toHaveTextContent('재고가 부족합니다.')
+  expect(screen.getByRole('spinbutton', { name: '수량' })).toHaveValue(1)
+  expect(patches).toEqual([{ id: '1', body: { quantity: 12 } }])
+})
+
 it('삭제하면 목록에서 사라진다', async () => {
   setup([line(1, 10000), line(2, 5000)])
   const row = (await screen.findByText('상품1')).closest('li')!

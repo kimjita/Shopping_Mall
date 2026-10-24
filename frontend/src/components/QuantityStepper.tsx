@@ -38,7 +38,11 @@ export function QuantityStepper({ value, onChange, onCommit, min = 1, max = 99 }
           setDraft(null)
           onCommit?.(value)
         }}
-        onKeyDown={(e) => e.key === 'Enter' && onCommit?.(value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return
+          setDraft(null)
+          onCommit?.(value)
+        }}
         className="h-9 w-14 rounded border border-ink/20 text-center"
       />
       <button type="button" aria-label="수량 늘리기" disabled={value >= max} onClick={() => set(value + 1)} className={btn}>
