@@ -1,9 +1,10 @@
-import { screen } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { server } from '../test/server'
-import { renderWithProviders } from '../test/render'
+import { renderWithProviders, testMe } from '../test/render'
+import { authChannel, type AuthMessage } from './authChannel'
 import { useAuth } from './AuthProvider'
 
 function Probe() {
@@ -16,6 +17,8 @@ function Probe() {
     </>
   )
 }
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('AuthProvider', () => {
   it('refresh 쿠키가 유효하면 member가 되고 me를 읽는다', async () => {
@@ -44,5 +47,25 @@ describe('AuthProvider', () => {
 
     expect(await screen.findByText('status:guest')).toBeInTheDocument()
     expect(logoutCalled).toHaveBeenCalledTimes(1)
+  })
+
+  it('다른 탭의 login 메시지를 받으면 캐시를 비우고 새 계정의 me를 읽는다', async () => {
+    let onMessage: (msg: AuthMessage) => void = () => {}
+    vi.spyOn(authChannel, 'onMessage').mockImplementation((fn) => {
+      onMessage = fn
+      return () => {}
+    })
+    renderWithProviders(<Probe />, { member: { name: '홍길동' } })
+    await screen.findByText('name:홍길동')
+    server.use(
+      http.post('*/api/auth/refresh', () =>
+        HttpResponse.json({ accessToken: 'tab-b-token', tokenType: 'Bearer', expiresIn: 1800 }),
+      ),
+      http.get('*/api/members/me', () => HttpResponse.json({ ...testMe, name: '김철수' })),
+    )
+
+    await act(async () => onMessage({ type: 'login' }))
+
+    expect(await screen.findByText('name:김철수')).toBeInTheDocument()
   })
 })

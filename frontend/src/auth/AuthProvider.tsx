@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tokenStore.setToken(null)
         queryClient.clear()
       } else {
+        queryClient.clear() // 이 탭이 들고 있던 이전 계정의 캐시를 버린다.
         refreshAccessToken().catch(() => {})
       }
     })

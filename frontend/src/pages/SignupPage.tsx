@@ -28,10 +28,10 @@ export function SignupPage() {
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
-    const v = Object.fromEntries(FIELDS.map((f) => [f.name, String(form.get(f.name)).trim()])) as Record<
-      (typeof FIELDS)[number]['name'],
-      string
-    >
+    // 비밀번호는 입력한 그대로 보낸다. 나머지는 앞뒤 공백을 다듬는다.
+    const v = Object.fromEntries(
+      FIELDS.map((f) => [f.name, f.name === 'password' ? String(form.get(f.name)) : String(form.get(f.name)).trim()]),
+    ) as Record<(typeof FIELDS)[number]['name'], string>
     const local: Record<string, string> = {}
     for (const f of FIELDS) if (!v[f.name]) local[f.name] = '필수 입력입니다.'
     if (v.password && !PASSWORD_RULE.test(v.password)) local.password = PASSWORD_MESSAGE
@@ -45,7 +45,8 @@ export function SignupPage() {
       const apiError = err instanceof ApiError ? err : null
       // 이메일 중복은 필드 오류 없이 message만 오므로 이메일 입력 아래에 붙인다.
       if (apiError?.code === 'DUPLICATE_EMAIL') setErrors({ email: apiError.message })
-      else if (apiError && Object.keys(apiError.fieldErrors).length > 0) setErrors(apiError.fieldErrors)
+      else if (apiError && Object.keys(apiError.fieldErrors).length > 0)
+        setErrors({ ...apiError.fieldErrors, form: apiError.message }) // 입력이 없는 필드 오류도 놓치지 않도록 message를 함께 보인다.
       else setErrors({ form: apiError?.message ?? '잠시 후 다시 시도해 주세요.' })
       setPending(false)
       return

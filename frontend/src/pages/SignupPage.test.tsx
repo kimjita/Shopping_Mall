@@ -85,6 +85,7 @@ describe('SignupPage', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: '가입하기' }))
     expect(await screen.findByText('휴대폰 번호 형식이 아닙니다.')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('입력값이 올바르지 않습니다.')
     expect(screen.getByLabelText('휴대폰 번호')).toHaveAccessibleDescription('휴대폰 번호 형식이 아닙니다.')
   })
 
@@ -98,6 +99,22 @@ describe('SignupPage', () => {
     )
     renderSignup()
     await fill('abcdefgh')
+    expect(
+      await screen.findByText('비밀번호는 영문과 숫자를 각각 1자 이상 포함한 8~64자여야 합니다.'),
+    ).toBeInTheDocument()
+    expect(called).not.toHaveBeenCalled()
+  })
+
+  it('비밀번호는 다듬지 않고 그대로 검사한다', async () => {
+    const called = vi.fn()
+    server.use(
+      http.post('*/api/auth/signup', () => {
+        called()
+        return HttpResponse.json({ memberId: 1 }, { status: 201 })
+      }),
+    )
+    renderSignup()
+    await fill('password1 ')
     expect(
       await screen.findByText('비밀번호는 영문과 숫자를 각각 1자 이상 포함한 8~64자여야 합니다.'),
     ).toBeInTheDocument()
