@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../api/client'
 import { useCart, useChangeQuantity, useRemoveCartItem } from '../api/cart'
 import type { CartItem } from '../api/types'
@@ -76,6 +76,7 @@ function CartLine({ item, checked, onToggle }: { item: CartItem; checked: boolea
 
 export function CartPage() {
   const q = useCart()
+  const navigate = useNavigate()
   const items = q.data?.items
   // 처음 불러온 뒤에는 구매 가능한 줄을 모두 선택하고, 이후에는 사라지거나 구매 불가가 된 줄만 뺀다.
   const [selected, setSelected] = useState<Set<number> | null>(null)
@@ -128,12 +129,14 @@ export function CartPage() {
             <p>선택 상품 {count}개</p>
             <p className="text-lg font-bold">상품 금액 {formatWon(amount)}</p>
             <p className="text-sm text-ink/60">배송비와 쿠폰 할인은 주문서에서 계산됩니다.</p>
-            <div className="flex items-center gap-3">
-              <button type="button" disabled className="rounded bg-brand px-6 py-3 font-bold text-white disabled:opacity-40">
-                주문하기
-              </button>
-              <span className="text-sm text-ink/60">주문 기능은 준비 중입니다.</span>
-            </div>
+            <button
+              type="button"
+              disabled={sel.size === 0}
+              onClick={() => navigate(`/checkout?items=${q.data.items.filter((i) => sel.has(i.id)).map((i) => i.id).join(',')}`)}
+              className="rounded bg-brand px-6 py-3 font-bold text-white disabled:opacity-40"
+            >
+              주문하기
+            </button>
           </section>
         </>
       )}

@@ -3,6 +3,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { Layout } from './Layout'
 import { AddressesPage } from './pages/AddressesPage'
 import { CartPage } from './pages/CartPage'
+import { CheckoutPage } from './pages/CheckoutPage'
 import { CouponsPage } from './pages/CouponsPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -40,6 +41,7 @@ export const routes: RouteObject[] = [
       { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'wishlist', element: <RequireAuth><WishlistPage /></RequireAuth> },
       { path: 'cart', element: <RequireAuth><CartPage /></RequireAuth> },
+      { path: 'checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
       { path: 'coupons', element: <RequireAuth><CouponsPage /></RequireAuth> },
       { path: 'mypage', element: <RequireAuth><MyPage /></RequireAuth> },
       { path: 'mypage/addresses', element: <RequireAuth><AddressesPage /></RequireAuth> },

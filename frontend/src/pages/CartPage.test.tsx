@@ -1,6 +1,8 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import type { ReactElement } from 'react'
+import { Route, Routes, useLocation } from 'react-router'
 import { expect, it } from 'vitest'
 import type { CartItem } from '../api/types'
 import { renderWithProviders } from '../test/render'
@@ -22,7 +24,12 @@ const line = (id: number, price: number, quantity = 1, status: CartItem['status'
   status,
 })
 
-function setup(items: CartItem[]) {
+function Probe() {
+  const { pathname, search } = useLocation()
+  return <p>위치 {pathname + search}</p>
+}
+
+function setup(items: CartItem[], extraRoute?: ReactElement) {
   const patches: { id: string; body: unknown }[] = []
   let current = items
   server.use(
@@ -38,7 +45,13 @@ function setup(items: CartItem[]) {
       return new HttpResponse(null, { status: 204 })
     }),
   )
-  renderWithProviders(<CartPage />, { member: {} })
+  renderWithProviders(
+    <Routes>
+      <Route path="/" element={<CartPage />} />
+      {extraRoute}
+    </Routes>,
+    { member: {} },
+  )
   return patches
 }
 
@@ -121,10 +134,18 @@ it('삭제하면 목록에서 사라진다', async () => {
   expect(screen.queryByText('상품1')).not.toBeInTheDocument()
 })
 
-it('주문하기는 비활성', async () => {
-  setup([line(1, 10000)])
-  expect(await screen.findByRole('button', { name: '주문하기' })).toBeDisabled()
-  expect(screen.getByText('주문 기능은 준비 중입니다.')).toBeInTheDocument()
+it('주문하기는 선택한 구매 가능 줄로 주문서에 간다', async () => {
+  setup([...mixed(), line(4, 2000)], <Route path="/checkout" element={<Probe />} />)
+  await userEvent.click(await screen.findByRole('checkbox', { name: '상품4 선택' }))
+  await userEvent.click(screen.getByRole('button', { name: '주문하기' }))
+  expect(await screen.findByText('위치 /checkout?items=1,2')).toBeInTheDocument()
+})
+
+it('선택이 없으면 주문하기가 막힌다', async () => {
+  setup(mixed())
+  await userEvent.click(await screen.findByRole('checkbox', { name: '전체 선택' }))
+  expect(screen.getByRole('button', { name: '주문하기' })).toBeDisabled()
+  expect(screen.queryByText('주문 기능은 준비 중입니다.')).not.toBeInTheDocument()
 })
 
 it('비면 안내와 홈 링크를 보여 준다', async () => {
