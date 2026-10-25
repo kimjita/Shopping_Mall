@@ -7,12 +7,14 @@ import { CheckoutPage } from './pages/CheckoutPage'
 import { CouponsPage } from './pages/CouponsPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
+import { MyCouponsPage } from './pages/MyCouponsPage'
 import { MyPage } from './pages/MyPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
 import { OrdersPage } from './pages/OrdersPage'
 import { PaymentFailPage } from './pages/PaymentFailPage'
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
+import { PointsPage } from './pages/PointsPage'
 import { ProductDetailPage } from './pages/ProductDetailPage'
 import { ProductListPage } from './pages/ProductListPage'
 import { RecentViewsPage } from './pages/RecentViewsPage'
@@ -49,6 +51,8 @@ export const routes: RouteObject[] = [
       { path: 'mypage', element: <RequireAuth><MyPage /></RequireAuth> },
       { path: 'mypage/addresses', element: <RequireAuth><AddressesPage /></RequireAuth> },
       { path: 'mypage/settings', element: <RequireAuth><SettingsPage /></RequireAuth> },
+      { path: 'mypage/points', element: <RequireAuth><PointsPage /></RequireAuth> },
+      { path: 'mypage/coupons', element: <RequireAuth><MyCouponsPage /></RequireAuth> },
       { path: 'mypage/orders', element: <RequireAuth><OrdersPage /></RequireAuth> },
       { path: 'mypage/orders/:orderNumber', element: <RequireAuth><OrderDetailPage /></RequireAuth> },
       { path: 'payments/success', element: <RequireAuth><PaymentSuccessPage /></RequireAuth> },
