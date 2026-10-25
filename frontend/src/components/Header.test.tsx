@@ -56,12 +56,14 @@ it('회원이면 장바구니 개수를 보여 준다', async () => {
   expect(await screen.findByRole('link', { name: '장바구니 2개' })).toHaveAttribute('href', '/cart')
   expect(screen.getByRole('button', { name: '로그아웃' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '찜' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '마이' })).toHaveAttribute('href', '/mypage')
 })
 
 it('비회원은 장바구니 개수 없이 로그인 링크를 본다', async () => {
   renderWithProviders(ui)
   expect(await screen.findByRole('link', { name: '로그인' })).toHaveAttribute('href', '/login')
   expect(screen.getByRole('link', { name: '장바구니' })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: '마이' })).not.toBeInTheDocument()
 })
 
 it('카테고리를 고르면 목록으로 이동하고 닫힌다', async () => {

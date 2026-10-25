@@ -4,6 +4,7 @@ import { Layout } from './Layout'
 import { CartPage } from './pages/CartPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
+import { MyPage } from './pages/MyPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProductDetailPage } from './pages/ProductDetailPage'
 import { ProductListPage } from './pages/ProductListPage'
@@ -35,6 +36,7 @@ export const routes: RouteObject[] = [
       { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'wishlist', element: <RequireAuth><WishlistPage /></RequireAuth> },
       { path: 'cart', element: <RequireAuth><CartPage /></RequireAuth> },
+      { path: 'mypage', element: <RequireAuth><MyPage /></RequireAuth> },
       { path: 'recent', element: <RecentViewsPage /> },
       { path: 'signup', element: <SignupPage /> },
       { path: '*', element: <NotFoundPage /> },

@@ -16,7 +16,19 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null)
 
-const MEMBER_QUERY_KEYS = ['me', 'cart', 'wishIds', 'wishlist', 'recentViews']
+const MEMBER_QUERY_KEYS = [
+  'me',
+  'cart',
+  'wishIds',
+  'wishlist',
+  'recentViews',
+  'addresses',
+  'myCoupons',
+  'downloadableCoupons',
+  'orders',
+  'order',
+  'checkoutPreview',
+]
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthValue {

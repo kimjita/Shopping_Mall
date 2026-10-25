@@ -13,7 +13,7 @@ export const testMe: Me = {
   name: '홍길동',
   phone: '010-1234-5678',
   role: 'USER',
-  grade: 'BASIC',
+  grade: 'BABY',
   skinType: null,
   skinTone: null,
   skinConcerns: [],

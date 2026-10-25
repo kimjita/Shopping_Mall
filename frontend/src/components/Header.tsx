@@ -55,6 +55,9 @@ export function Header() {
               <Link to="/wishlist" className={linkClass}>
                 찜
               </Link>
+              <Link to="/mypage" className={linkClass}>
+                마이
+              </Link>
               <button type="button" onClick={onLogout} className={linkClass}>
                 로그아웃
               </button>
