@@ -36,6 +36,7 @@ function useInvalidateReviews() {
 }
 
 export function useWriteReview() {
+  const queryClient = useQueryClient()
   const invalidate = useInvalidateReviews()
   return useMutation({
     mutationFn: ({
@@ -54,7 +55,9 @@ export function useWriteReview() {
         auth: 'required',
         json: body,
       }),
+    // 409(이미 작성됨·작성 불가)도 목록이 바뀌었다는 뜻이라 실패해도 작성 가능 목록을 다시 받는다.
     onSuccess: (_res, { productId }) => invalidate(productId),
+    onError: () => queryClient.invalidateQueries({ queryKey: ['writableReviews'] }),
   })
 }
 

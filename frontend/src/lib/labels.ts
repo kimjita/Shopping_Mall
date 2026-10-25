@@ -43,8 +43,22 @@ export const SKIN_CONCERN_LABEL: Record<SkinConcern, string> = {
   DARK_CIRCLE: '다크서클',
 }
 
-// 표시 순서이며 객체 키 순서에 기대지 않도록 배열로 둔다.
-export const SKIN_CONCERNS = Object.keys(SKIN_CONCERN_LABEL) as SkinConcern[]
+// 표시 순서를 명시한 배열이다.
+export const SKIN_CONCERNS: SkinConcern[] = [
+  'BLEMISH',
+  'WHITENING',
+  'WRINKLE',
+  'DEAD_SKIN',
+  'TROUBLE',
+  'BLACKHEAD',
+  'EXCESS_SEBUM',
+  'SENSITIVITY',
+  'PORE',
+  'ELASTICITY',
+  'REDNESS',
+  'ATOPY',
+  'DARK_CIRCLE',
+]
 
 export const POINT_TYPE_LABEL: Record<PointType, string> = {
   EARN: '구매 적립',

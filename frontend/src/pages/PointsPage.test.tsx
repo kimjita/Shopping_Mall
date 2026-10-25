@@ -70,3 +70,20 @@ it('내역이 없으면 안내', async () => {
   setup([{ items: [], nextCursor: null }])
   expect(await screen.findByText('적립금 내역이 없습니다.')).toBeInTheDocument()
 })
+
+it('잔액을 불러오지 못하면 안내하고 다시 시도로 읽는다', async () => {
+  let fail = true
+  server.use(
+    http.get('*/api/members/me/points', () =>
+      fail ? HttpResponse.json({ code: 'INTERNAL', message: '오류', errors: [] }, { status: 500 }) : HttpResponse.json({ balance: 1300 }),
+    ),
+    http.get('*/api/members/me/points/history', () => HttpResponse.json({ items: [item(1)], nextCursor: null })),
+  )
+  renderWithProviders(<PointsPage />, { route: '/mypage/points', member: {} })
+  expect(await screen.findByText('적립금을 불러오지 못했습니다.')).toBeInTheDocument()
+  expect(await screen.findByText('구매 적립')).toBeInTheDocument()
+  fail = false
+  await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
+  expect(await screen.findByText('1,300원')).toBeInTheDocument()
+  expect(screen.queryByText('적립금을 불러오지 못했습니다.')).not.toBeInTheDocument()
+})

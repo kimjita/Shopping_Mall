@@ -137,8 +137,8 @@ it('삭제는 확인 뒤 DELETE하고 상품 평점 캐시를 무효화한다', 
   await vi.waitFor(() => expect(queryClient.getQueryState(['product', 7])?.isInvalidated).toBe(true))
 })
 
-it('이미 쓴 리뷰면 서버 메시지를 dialog에 보여 준다', async () => {
-  setup({ writable: [writable(1)] })
+it('이미 쓴 리뷰면 서버 메시지를 dialog에 보여 주고 작성 가능 목록을 다시 읽는다', async () => {
+  const { calls } = setup({ writable: [writable(1)] })
   server.use(
     http.post('*/api/members/me/reviews', () =>
       HttpResponse.json({ code: 'REVIEW_ALREADY_EXISTS', message: '이미 리뷰를 작성한 상품입니다.', errors: [] }, { status: 409 }),
@@ -146,8 +146,11 @@ it('이미 쓴 리뷰면 서버 메시지를 dialog에 보여 준다', async () 
   )
   await userEvent.click(await screen.findByRole('button', { name: '리뷰 쓰기' }))
   await fill(5, '촉촉하고 순해서 좋아요')
+  const before = calls.writableGets
   await userEvent.click(within(dialog()).getByRole('button', { name: '등록', hidden: true }))
   expect(await within(dialog()).findByRole('alert', { hidden: true })).toHaveTextContent('이미 리뷰를 작성한 상품입니다.')
+  // 활성 쿼리는 무효화 즉시 다시 받으므로 isInvalidated 대신 요청 횟수로 확인한다.
+  await vi.waitFor(() => expect(calls.writableGets).toBeGreaterThan(before))
   expect(dialog()).toHaveAttribute('open')
   // 다시 열면 오류가 사라진다.
   await userEvent.click(within(dialog()).getByRole('button', { name: '취소', hidden: true }))

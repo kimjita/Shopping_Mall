@@ -25,39 +25,37 @@ export const useOrder = (orderNumber: string) => {
 }
 
 // 성공한 뮤테이션의 응답으로 상세 캐시를 바꾸고 목록은 다시 받는다.
-function useOrderMutation<V>(request: (v: V) => Promise<Order>, alsoCart = false) {
+function useOrderMutation<V>(request: (v: V) => Promise<Order>, alsoKeys: string[] = []) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: request,
     onSuccess: (order) => {
       queryClient.setQueryData(['order', order.orderNumber], order)
-      return refresh(queryClient, alsoCart)
+      return refresh(queryClient, alsoKeys)
     },
   })
 }
 
-const refresh = (queryClient: QueryClient, alsoCart: boolean) =>
-  Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['orders'] }),
-    alsoCart ? queryClient.invalidateQueries({ queryKey: ['cart'] }) : undefined,
-  ])
+const refresh = (queryClient: QueryClient, alsoKeys: string[]) =>
+  Promise.all(['orders', ...alsoKeys].map((key) => queryClient.invalidateQueries({ queryKey: [key] })))
 
 const post = (path: string, json?: unknown) => apiFetch<Order>(path, { method: 'POST', auth: 'required', json })
 
 export const useCreateOrder = () =>
   useOrderMutation((v: { cartItemIds: number[]; memberCouponId: number | null; points: number; addressId: number }) =>
     post('/api/members/me/orders', v),
+    ['myCoupons', 'points'],
   )
 
 export const useConfirmPayment = () =>
   useOrderMutation(
     ({ orderNumber, ...json }: { orderNumber: string; paymentKey: string; amount: number }) =>
       post(`/api/members/me/orders/${orderNumber}/payment`, json),
-    true,
+    ['cart'],
   )
 
 export const useCancelOrder = () =>
-  useOrderMutation((orderNumber: string) => post(`/api/members/me/orders/${orderNumber}/cancel`))
+  useOrderMutation((orderNumber: string) => post(`/api/members/me/orders/${orderNumber}/cancel`), ['myCoupons', 'points'])
 
 export const useConfirmOrder = () =>
-  useOrderMutation((orderNumber: string) => post(`/api/members/me/orders/${orderNumber}/confirm`))
+  useOrderMutation((orderNumber: string) => post(`/api/members/me/orders/${orderNumber}/confirm`), ['writableReviews', 'points'])

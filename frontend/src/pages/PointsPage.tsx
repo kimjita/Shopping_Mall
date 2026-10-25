@@ -13,11 +13,13 @@ export function PointsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-xl font-bold">적립금</h1>
-      {balance.data && (
+      {balance.data ? (
         <p className="rounded bg-ink/5 p-4">
           <span className="text-sm text-ink/60">보유 적립금</span>
           <span className="block text-2xl font-bold">{formatWon(balance.data.balance)}</span>
         </p>
+      ) : (
+        balance.isError && <SectionError message="적립금을 불러오지 못했습니다." onRetry={() => balance.refetch()} />
       )}
       {!q.data ? (
         q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
