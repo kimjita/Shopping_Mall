@@ -149,7 +149,8 @@ class CheckoutPreviewApiTest extends ApiTest {
                         .content("{\"cartItemIds\":[" + lineId + "],\"memberCouponId\":" + memberCouponId
                                 + ",\"points\":3000,\"addressId\":" + addressId + "}"))
                 .andExpect(status().isCreated());
-        return jdbcTemplate.queryForObject("select id from orders where member_id = ?", Long.class, memberId);
+        return jdbcTemplate.queryForObject("select id from orders where member_id = ? order by id desc limit 1",
+                Long.class, memberId);
     }
 
     private JsonNode json(ResultActions result) throws Exception {
@@ -463,6 +464,27 @@ class CheckoutPreviewApiTest extends ApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("USED"))
                 .andExpect(jsonPath("$[0].usedAt").isNotEmpty());
+    }
+
+    @Test
+    void 다른_주문이_쓴_쿠폰은_결제_대기_주문이_있어도_COUPON_NOT_USABLE이고_내_쿠폰에서_USED() throws Exception {
+        Long couponId = adminCouponService.create(CouponFixtures.fixed("3천원 쿠폰", 10, null)).id();
+        Long memberCouponId = memberCouponId(memberId, couponId);
+        pointService.grant(memberId, 10_000, "이벤트");
+        // 회원당 결제 대기 주문은 하나라서 쿠폰을 쓴 주문 Q를 먼저 PAID로 바꾼 뒤 결제 대기 주문 P를 만든다.
+        Long paidOrderId = pendingOrder(saleLine(), memberCouponId);
+        jdbcTemplate.update("update orders set status = 'PAID' where id = ?", paidOrderId);
+        Long lineId = cartLine("라운드랩 크림", 20_000, 10, 1, null);
+        Long pendingOrderId = pendingOrder(lineId, null);
+        assertThat(pendingOrderId).isNotEqualTo(paidOrderId);
+
+        preview(body("[" + lineId + "]", memberCouponId, 0))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COUPON_NOT_USABLE"));
+        mockMvc.perform(get("/api/members/me/coupons").header(HttpHeaders.AUTHORIZATION, token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(memberCouponId))
+                .andExpect(jsonPath("$[0].status").value("USED"));
     }
 
     @Test
