@@ -15,11 +15,11 @@ cd frontend && npm install && npm run dev   # 5173
 
 ## 데모 데이터
 
-화면 확인용 가상 브랜드 8개, 상품 41개, 배너 3개를 관리자 API로 채우는 스크립트다. 이미지는 `frontend/public/demo/`의 SVG이며 프론트 개발 서버가 `IMAGE_BASE_URL`(기본 `http://localhost:5173`)로 제공한다.
+화면 확인용 가상 브랜드 8개, 상품 41개, 배너 3개, 쿠폰 3개를 관리자 API로 채우는 스크립트다. 이미지는 `frontend/public/demo/`의 SVG이며 프론트 개발 서버가 `IMAGE_BASE_URL`(기본 `http://localhost:5173`)로 제공한다.
 
 로컬 DB를 비우려면 `docker compose down -v`를 실행한다. 성능용 더미 10만 건도 함께 지워지며, 다시 만들려면 `scripts/perf/seed-catalog.sql`을 쓴다.
 
-백엔드를 `ADMIN_EMAIL`·`ADMIN_PASSWORD`로 띄운 뒤 같은 값으로 시드를 실행한다. 데모 브랜드가 이미 있으면 아무것도 만들지 않고 끝난다.
+백엔드를 `ADMIN_EMAIL`·`ADMIN_PASSWORD`로 띄운 뒤 같은 값으로 시드를 실행한다. 데모 브랜드가 이미 있으면 상품·배너는 만들지 않고 끝나며, 같은 이름의 쿠폰이 없을 때만 쿠폰을 추가한다.
 
 ```bash
 ADMIN_EMAIL=… ADMIN_PASSWORD=… node scripts/demo/seed.mjs
@@ -27,3 +27,13 @@ node --test scripts/demo/   # 데이터 규칙 검사
 ```
 
 `API_BASE_URL`(기본 `http://localhost:8080`)로 백엔드 주소를 바꿀 수 있다. 리뷰·랭킹·추천 데이터는 시드로 만들지 않고, 주문·구매확정 흐름(10b)을 거치며 쌓인다.
+
+
+## 토스 테스트 결제
+
+주문 결제는 토스페이먼츠 결제창을 쓴다. 토스 개발자센터나 문서에서 받은 같은 세트의 테스트 키를 아래 두 곳에 넣는다. 테스트 키로는 실제 돈이 나가지 않는다.
+
+- 프론트: `frontend/.env.local`의 `VITE_TOSS_CLIENT_KEY`(`test_ck_…`). 이름은 `frontend/.env.example`에 있다. `*.local`은 git이 무시한다.
+- 백엔드: 환경변수 `TOSS_SECRET_KEY`(`test_sk_…`).
+
+결제창(구버전)용 키여야 하며 결제위젯 키(`test_gck_…`)는 쓰지 않는다. 키 값은 저장소에 커밋하지 않는다.

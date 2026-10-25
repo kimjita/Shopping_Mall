@@ -122,3 +122,18 @@ export function buildBanners(imageBaseUrl, now) {
     { title: '듀이 프로젝트 소개', imageUrl: img('banner-skincare'), linkUrl: 'https://github.com', startsAt, endsAt, sortOrder: 3 },
   ]
 }
+
+export function buildCoupons(now) {
+  const at = (ms) => new Date(now.getTime() + ms).toISOString()
+  const common = {
+    issueStartsAt: at(-3600e3),
+    issueEndsAt: at(30 * 86400e3),
+    useStartsAt: at(-3600e3),
+    useEndsAt: at(60 * 86400e3),
+  }
+  return [
+    { name: '웰컴 3천원 쿠폰', discountType: 'FIXED', discountValue: 3000, maxDiscount: null, minOrderAmount: 15000, totalQuantity: 1000, requiredGrade: null, ...common },
+    { name: '전 상품 10% 쿠폰', discountType: 'RATE', discountValue: 10, maxDiscount: 5000, minOrderAmount: 20000, totalQuantity: 1000, requiredGrade: null, ...common },
+    { name: '핑크 등급 5천원 쿠폰', discountType: 'FIXED', discountValue: 5000, maxDiscount: null, minOrderAmount: 30000, totalQuantity: 500, requiredGrade: 'PINK', ...common },
+  ]
+}

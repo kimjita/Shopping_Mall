@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { brands, buildProducts, buildBanners } from './data.mjs'
+import { brands, buildProducts, buildBanners, buildCoupons } from './data.mjs'
 
 const demoDir = fileURLToPath(new URL('../../frontend/public/demo/', import.meta.url))
 const products = buildProducts('http://x')
@@ -70,4 +70,28 @@ test('배너', () => {
     assert.match(b.linkUrl, /^(https?:\/\/\S+|\/(?![/\\])\S*)$/)
     assert.ok(existsSync(demoDir + b.imageUrl.slice('http://x/demo/'.length)), b.imageUrl)
   }
+})
+
+test('쿠폰', () => {
+  const now = new Date('2026-10-25T00:00:00Z')
+  const coupons = buildCoupons(now)
+  assert.equal(coupons.length, 3)
+  assert.equal(new Set(coupons.map((c) => c.name)).size, 3)
+  for (const c of coupons) {
+    assert.ok(c.name.length >= 1 && c.name.length <= 50)
+    assert.ok(c.minOrderAmount >= 0 && c.totalQuantity >= 1 && c.totalQuantity <= 1_000_000)
+    if (c.discountType === 'FIXED') {
+      assert.ok(c.discountValue >= 100 && c.discountValue <= 1_000_000)
+      assert.equal(c.maxDiscount, null)
+    } else {
+      assert.equal(c.discountType, 'RATE')
+      assert.ok(c.discountValue >= 1 && c.discountValue <= 90)
+      assert.ok(c.maxDiscount > 0)
+    }
+    assert.ok(Date.parse(c.issueEndsAt) > Date.parse(c.issueStartsAt))
+    assert.ok(Date.parse(c.useEndsAt) > Date.parse(c.useStartsAt))
+    assert.ok(Date.parse(c.issueStartsAt) <= now.getTime() && now.getTime() < Date.parse(c.issueEndsAt))
+  }
+  assert.equal(coupons.filter((c) => c.requiredGrade).length, 1)
+  assert.ok(coupons.every((c) => c.requiredGrade === null || ['BABY', 'PINK', 'GREEN', 'BLACK', 'GOLD'].includes(c.requiredGrade)))
 })

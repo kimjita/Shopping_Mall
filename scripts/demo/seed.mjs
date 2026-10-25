@@ -1,5 +1,5 @@
 // 로컬 백엔드에 데모 데이터를 관리자 API로 채운다. 사용법은 README "데모 데이터" 절에 있다.
-import { brands, buildProducts, buildBanners } from './data.mjs'
+import { brands, buildProducts, buildBanners, buildCoupons } from './data.mjs'
 
 const apiBase = process.env.API_BASE_URL ?? 'http://localhost:8080'
 const imageBase = process.env.IMAGE_BASE_URL ?? 'http://localhost:5173'
@@ -30,9 +30,15 @@ async function call(method, path, body) {
 
 token = (await call('POST', '/api/auth/login', { email: ADMIN_EMAIL, password: ADMIN_PASSWORD })).accessToken
 
+// 상품만 있는 DB에 다시 돌려도 없는 쿠폰은 채워지도록 브랜드 검사보다 먼저 한다.
+const couponNames = new Set((await call('GET', '/api/admin/coupons')).map((c) => c.name))
+const newCoupons = buildCoupons(new Date()).filter((c) => !couponNames.has(c.name))
+for (const c of newCoupons) await call('POST', '/api/admin/coupons', c)
+if (newCoupons.length) console.log(`쿠폰 ${newCoupons.length}개를 만들었습니다.`)
+
 const existing = await call('GET', '/api/brands')
 if (existing.some((b) => brands.some((d) => d.name === b.name))) {
-  console.log('이미 데모 데이터가 있습니다.')
+  console.log('이미 데모 상품이 있습니다.')
   process.exit(0)
 }
 
