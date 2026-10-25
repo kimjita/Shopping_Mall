@@ -4,16 +4,17 @@ import { http, HttpResponse } from 'msw'
 import { Route, Routes, useLocation } from 'react-router'
 import { expect, it, vi } from 'vitest'
 import { useAuth } from '../auth/AuthProvider'
+import { RequireAuth } from '../auth/RequireAuth'
 import { testMe, renderWithProviders } from '../test/render'
 import { server } from '../test/server'
 import { SettingsPage } from './SettingsPage'
 
 function LoginStub() {
   const { status } = useAuth()
-  const notice = (useLocation().state as { notice?: string } | null)?.notice
+  const { state, search } = useLocation()
   return (
     <p>
-      login page {status} {notice}
+      login page {status} {(state as { notice?: string } | null)?.notice} [{search}]
     </p>
   )
 }
@@ -40,7 +41,14 @@ function setup(member = {}) {
   )
   renderWithProviders(
     <Routes>
-      <Route path="/mypage/settings" element={<SettingsPage />} />
+      <Route
+        path="/mypage/settings"
+        element={
+          <RequireAuth>
+            <SettingsPage />
+          </RequireAuth>
+        }
+      />
       <Route path="/login" element={<LoginStub />} />
     </Routes>,
     { route: '/mypage/settings', member },
@@ -142,8 +150,8 @@ it('비밀번호를 바꾸면 로그아웃하고 로그인 화면에서 안내�
     }),
   )
   await fillPassword('oldpass1', 'newpass12', 'newpass12')
-  expect(await screen.findByText(/login page guest 비밀번호를 바꿨습니다\. 다시 로그인해 주세요\./)).toBeInTheDocument()
-  expect(calls.map((c) => c.url)).toEqual(['/password', '/api/auth/logout'])
+  expect(await screen.findByText(/login page guest 비밀번호를 바꿨습니다\. 다시 로그인해 주세요\. \[\]/)).toBeInTheDocument()
+  expect(calls.map((c) => c.url)).toEqual(['/password', '/api/auth/logout']) // 로그아웃은 한 번만
   expect(calls[0].body).toEqual({ currentPassword: 'oldpass1', newPassword: 'newpass12' })
 })
 
@@ -188,9 +196,17 @@ it('탈퇴하면 로그아웃하고 안내한다', async () => {
     }),
   )
   await openWithdraw('password1')
-  expect(await screen.findByText(/login page guest 탈퇴가 완료되었습니다\./)).toBeInTheDocument()
+  expect(await screen.findByText(/login page guest 탈퇴가 완료되었습니다\. \[\]/)).toBeInTheDocument()
   await vi.waitFor(() => expect(calls.map((c) => c.url)).toEqual(['/me', '/api/auth/logout']))
   expect(calls[0].body).toEqual({ password: 'password1' })
+})
+
+it('탈퇴 창은 비밀번호가 비면 요청하지 않는다', async () => {
+  const calls = setup()
+  await userEvent.click(await screen.findByRole('button', { name: '회원 탈퇴' }))
+  const dialog = screen.getByRole('dialog', { name: '회원 탈퇴' })
+  expect(within(dialog).getByLabelText('비밀번호')).toBeRequired()
+  expect(calls).toHaveLength(0)
 })
 
 it('탈퇴 안내 문구를 보여 준다', async () => {

@@ -11,6 +11,23 @@ const INPUT = 'mt-1 w-full rounded border border-ink/20 px-3 py-2'
 const SAVE = 'rounded bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-50'
 const apiMessage = (e: unknown) => (e instanceof ApiError ? e.message : '잠시 후 다시 시도해 주세요.')
 
+// 페이지를 떠난 뒤에 로그아웃해야 RequireAuth가 guest 상태로 /login?redirect=로 다시 보내지 않는다.
+function useLogoutOnLeave() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+  const leaving = useRef(false)
+  useEffect(
+    () => () => {
+      if (leaving.current) void logout()
+    },
+    [logout],
+  )
+  return (notice: string) => {
+    leaving.current = true
+    navigate('/login', { replace: true, state: { notice } })
+  }
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const id = `settings-${title.replace(/\s/g, '-')}` // aria-labelledby는 공백으로 id를 나눈다.
   return (
@@ -184,8 +201,7 @@ function SkinSection({ me }: { me: Me }) {
 
 function PasswordSection() {
   const change = useChangePassword()
-  const { logout } = useAuth()
-  const navigate = useNavigate()
+  const leave = useLogoutOnLeave()
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -209,8 +225,7 @@ function PasswordSection() {
       else setErrors({ form: apiMessage(err) })
       return
     }
-    await logout()
-    navigate('/login', { replace: true, state: { notice: '비밀번호를 바꿨습니다. 다시 로그인해 주세요.' } })
+    leave('비밀번호를 바꿨습니다. 다시 로그인해 주세요.')
   }
 
   return (
@@ -220,7 +235,7 @@ function PasswordSection() {
         <Field name="newPassword" label="새 비밀번호" type="password" autoComplete="new-password" error={errors.newPassword} />
         <Field name="confirm" label="새 비밀번호 확인" type="password" autoComplete="new-password" error={errors.confirm} />
         <Result error={errors.form} />
-        <button type="submit" disabled={change.isPending} className={SAVE}>
+        <button type="submit" disabled={change.isPending || change.isSuccess} className={SAVE}>
           비밀번호 변경
         </button>
       </form>
@@ -232,8 +247,7 @@ function PasswordSection() {
 function WithdrawDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null)
   const withdraw = useWithdraw()
-  const { logout } = useAuth()
-  const navigate = useNavigate()
+  const leave = useLogoutOnLeave()
   const [error, setError] = useState<string>()
 
   useEffect(() => {
@@ -252,8 +266,7 @@ function WithdrawDialog({ open, onClose }: { open: boolean; onClose: () => void 
       setError(apiMessage(err))
       return
     }
-    await logout()
-    navigate('/login', { replace: true, state: { notice: '탈퇴가 완료되었습니다.' } })
+    leave('탈퇴가 완료되었습니다.')
   }
 
   const close = () => {
@@ -274,13 +287,13 @@ function WithdrawDialog({ open, onClose }: { open: boolean; onClose: () => void 
       {open && (
         <form onSubmit={onSubmit} className="space-y-4">
           <h2 className="font-bold">회원 탈퇴</h2>
-          <Field name="password" label="비밀번호" type="password" autoComplete="current-password" />
+          <Field name="password" label="비밀번호" type="password" autoComplete="current-password" required />
           <Result error={error} />
           <div className="flex justify-end gap-2">
             <button type="button" onClick={close} className="rounded border border-ink/20 px-4 py-2 text-sm">
               취소
             </button>
-            <button type="submit" disabled={withdraw.isPending} className="rounded bg-sale px-4 py-2 text-sm text-white disabled:opacity-50">
+            <button type="submit" disabled={withdraw.isPending || withdraw.isSuccess} className="rounded bg-sale px-4 py-2 text-sm text-white disabled:opacity-50">
               탈퇴
             </button>
           </div>
