@@ -42,11 +42,12 @@ export function PaymentSuccessPage() {
     )
   }
   if (confirm.isError && !notPayable) {
-    const delayed = error?.code === 'PAYMENT_GATEWAY_ERROR'
+    // ApiError가 아닌 오류(네트워크 실패)도 주문은 아직 결제 대기이므로 502처럼 다시 확인하게 한다.
+    const delayed = !error || error.code === 'PAYMENT_GATEWAY_ERROR'
     return (
       <div className="py-16 text-center">
-        <p role="alert">{confirm.error.message}</p>
-        {delayed && <p className="mt-2 text-sm text-ink/70">결제 확인이 지연되고 있습니다. 잠시 후 다시 확인해 주세요.</p>}
+        {error && <p role="alert">{error.message}</p>}
+        {delayed && <p role={error ? undefined : 'alert'} className="mt-2 text-sm text-ink/70">결제 확인이 지연되고 있습니다. 잠시 후 다시 확인해 주세요.</p>}
         {delayed ? (
           <button type="button" onClick={() => confirm.mutate(vars)} className="mt-4 rounded bg-brand px-4 py-2 text-sm text-white">
             다시 확인

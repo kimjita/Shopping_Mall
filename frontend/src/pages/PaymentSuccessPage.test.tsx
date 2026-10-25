@@ -85,3 +85,14 @@ it('그 밖의 오류는 메시지와 주문 상세 링크를 보여 준다', as
   expect(await screen.findByRole('alert')).toHaveTextContent('결제 금액이 다릅니다.')
   await waitFor(() => expect(screen.getByRole('link', { name: '주문 상세로' })).toHaveAttribute('href', `/mypage/orders/${NO}`))
 })
+
+it('네트워크 오류도 502처럼 다시 확인 버튼을 보여 준다', async () => {
+  let n = 0
+  const bodies = setup(QUERY, () => (++n === 1 ? HttpResponse.error() : HttpResponse.json(order)))
+  expect(await screen.findByText('결제 확인이 지연되고 있습니다. 잠시 후 다시 확인해 주세요.')).toBeInTheDocument()
+  expect(screen.queryByText(/Failed to fetch/i)).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: '다시 확인' }))
+  expect(await screen.findByText('상세 결제가 완료되었습니다.')).toBeInTheDocument()
+  expect(bodies).toHaveLength(2)
+  expect(bodies[1]).toEqual(bodies[0])
+})
