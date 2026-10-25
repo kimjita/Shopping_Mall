@@ -53,7 +53,7 @@ it('다음 페이지만 실패하면 읽은 목록을 두고 짧게 알린다', 
   await screen.findByText('상품1')
   server.use(http.get('*/api/members/me/orders', () => HttpResponse.json({ code: 'INTERNAL', message: '오류', errors: [] }, { status: 500 })))
   await userEvent.click(screen.getByRole('button', { name: '더보기' }))
-  expect(await screen.findByText('다음 상품을 불러오지 못했습니다.')).toBeInTheDocument()
+  expect(await screen.findByText('다음 주문을 불러오지 못했습니다.')).toBeInTheDocument()
   expect(screen.getByText('상품1')).toBeInTheDocument()
 })
 

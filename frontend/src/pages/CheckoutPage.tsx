@@ -8,6 +8,7 @@ import { useCreateOrder } from '../api/orders'
 import type { CheckoutPreview, Order } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
 import { AddressPicker } from '../components/AddressPicker'
+import { PriceRows } from '../components/PriceRows'
 import { ProductImage } from '../components/ProductImage'
 import { SectionError } from '../components/SectionError'
 import { Spinner } from '../components/Spinner'
@@ -206,26 +207,7 @@ function Checkout({ ids }: { ids: number[] }) {
       </section>
 
       <section className="space-y-3 rounded bg-brand/10 p-4">
-        <dl className="space-y-1 text-sm">
-          {(
-            [
-              ['상품 금액', formatWon(price.itemsPrice)],
-              ['세일 할인', `-${formatWon(price.saleDiscount)}`],
-              ['쿠폰 할인', `-${formatWon(price.couponDiscount)}`],
-              ['배송비', formatWon(price.shippingFee)],
-              ['적립금 사용', `-${formatWon(price.pointsUsed)}`],
-            ] as const
-          ).map(([label, value]) => (
-            <div key={label} className="flex justify-between">
-              <dt>{label}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
-          <div className="flex justify-between border-t border-ink/10 pt-2 text-lg font-bold">
-            <dt>결제금액</dt>
-            <dd>{formatWon(price.paymentAmount)}</dd>
-          </div>
-        </dl>
+        <PriceRows price={price} />
         {q.isError && <PreviewError error={q.error} />}
         {payError && (
           <div role="alert" className="space-y-3 text-sm text-sale">

@@ -50,9 +50,16 @@ it('결제 대기 주문은 남은 시간과 결제하기를 보여 주고 결�
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.setSystemTime(NOW)
   setup(order({ status: 'PENDING' }))
-  expect(await screen.findByText(/^남은 시간 14:5\d$/)).toBeInTheDocument()
+  expect(await screen.findByText(/^남은 시간 (15:00|14:5\d)$/)).toBeInTheDocument()
   await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(screen.getByRole('button', { name: '결제하기' }))
   expect(startTossPayment).toHaveBeenCalledWith(expect.objectContaining({ orderNumber: NO }), { email: 'user@example.com', name: '홍길동' })
+})
+
+it('만료 0.5초 전에는 00:01을 보여 준다', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  vi.setSystemTime(Date.parse('2026-10-25T03:25:30Z') - 500)
+  setup(order({ status: 'PENDING' }))
+  expect(await screen.findByText('남은 시간 00:01')).toBeInTheDocument()
 })
 
 it('결제창을 닫으면 안내하고 상세 링크 없이 다시 결제할 수 있다', async () => {

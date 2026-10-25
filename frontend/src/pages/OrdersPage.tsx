@@ -38,7 +38,13 @@ export function OrdersPage() {
               </li>
             ))}
           </ul>
-          <InfiniteSentinel onReach={() => q.fetchNextPage()} hasNext={q.hasNextPage} loading={q.isFetchingNextPage} error={q.isFetchNextPageError} />
+          <InfiniteSentinel
+            onReach={() => q.fetchNextPage()}
+            hasNext={q.hasNextPage}
+            loading={q.isFetchingNextPage}
+            error={q.isFetchNextPageError}
+            errorText="다음 주문을 불러오지 못했습니다."
+          />
         </>
       )}
     </div>

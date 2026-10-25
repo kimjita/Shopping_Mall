@@ -6,10 +6,11 @@ interface Props {
   loading: boolean
   // 다음 페이지가 실패한 동안에는 자동으로 다시 부르지 않고 버튼으로만 다시 시도한다.
   error?: boolean
+  errorText?: string
 }
 
 // 화면에 들어오면 다음 페이지를 읽고, 키보드 사용자를 위해 같은 자리에 "더보기" 버튼을 둔다.
-export function InfiniteSentinel({ onReach, hasNext, loading, error = false }: Props) {
+export function InfiniteSentinel({ onReach, hasNext, loading, error = false, errorText = '다음 상품을 불러오지 못했습니다.' }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const reach = useRef(onReach)
   useEffect(() => {
@@ -32,7 +33,7 @@ export function InfiniteSentinel({ onReach, hasNext, loading, error = false }: P
     <div ref={ref} className="flex flex-col items-center gap-2 py-6">
       {error && (
         <p role="alert" className="text-sm">
-          다음 상품을 불러오지 못했습니다.
+          {errorText}
         </p>
       )}
       <button
