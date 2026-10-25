@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import type { ReactElement } from 'react'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, type InitialEntry } from 'react-router'
 import type { Me } from '../api/types'
 import { AuthProvider } from '../auth/AuthProvider'
 import { server } from './server'
@@ -20,7 +20,7 @@ export const testMe: Me = {
 }
 
 // member가 있으면 로그인한 회원, 없으면 refresh 401인 비회원으로 시작한다.
-export function renderWithProviders(ui: ReactElement, opts: { route?: string; member?: Partial<Me> } = {}) {
+export function renderWithProviders(ui: ReactElement, opts: { route?: InitialEntry; member?: Partial<Me> } = {}) {
   if (opts.member) {
     server.use(
       http.post('*/api/auth/refresh', () =>

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { safeRedirect } from '../auth/safeRedirect'
@@ -8,6 +8,7 @@ export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
+  const notice = (useLocation().state as { notice?: string } | null)?.notice
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
@@ -28,6 +29,11 @@ export function LoginPage() {
   return (
     <div className="mx-auto max-w-sm">
       <h1 className="mb-6 text-2xl font-bold">로그인</h1>
+      {notice && (
+        <p role="status" className="mb-4 text-sm text-brand-dark">
+          {notice}
+        </p>
+      )}
       <form onSubmit={onSubmit} className="space-y-4">
         <label className="block text-sm font-medium">
           이메일

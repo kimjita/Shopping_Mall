@@ -16,6 +16,7 @@ import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
 import { ProductDetailPage } from './pages/ProductDetailPage'
 import { ProductListPage } from './pages/ProductListPage'
 import { RecentViewsPage } from './pages/RecentViewsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { SignupPage } from './pages/SignupPage'
 import { WishlistPage } from './pages/WishlistPage'
 
@@ -47,6 +48,7 @@ export const routes: RouteObject[] = [
       { path: 'coupons', element: <RequireAuth><CouponsPage /></RequireAuth> },
       { path: 'mypage', element: <RequireAuth><MyPage /></RequireAuth> },
       { path: 'mypage/addresses', element: <RequireAuth><AddressesPage /></RequireAuth> },
+      { path: 'mypage/settings', element: <RequireAuth><SettingsPage /></RequireAuth> },
       { path: 'mypage/orders', element: <RequireAuth><OrdersPage /></RequireAuth> },
       { path: 'mypage/orders/:orderNumber', element: <RequireAuth><OrderDetailPage /></RequireAuth> },
       { path: 'payments/success', element: <RequireAuth><PaymentSuccessPage /></RequireAuth> },

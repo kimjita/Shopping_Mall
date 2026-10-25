@@ -70,4 +70,14 @@ describe('LoginPage', () => {
     await submit()
     expect(await screen.findByRole('alert')).toHaveTextContent('이메일 또는 비밀번호가 올바르지 않습니다.')
   })
+
+  it('state의 notice를 보여 준다', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>,
+      { route: { pathname: '/login', state: { notice: '탈퇴가 완료되었습니다.' } } },
+    )
+    expect(await screen.findByRole('status')).toHaveTextContent('탈퇴가 완료되었습니다.')
+  })
 })
