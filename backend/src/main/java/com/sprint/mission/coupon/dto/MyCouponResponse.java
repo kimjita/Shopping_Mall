@@ -27,11 +27,17 @@ public record MyCouponResponse(
     }
 
     public static MyCouponResponse of(MemberCoupon mc, Coupon c, Instant now) {
-        Status status = mc.getStatus() == MemberCouponStatus.USED ? Status.USED
+        return of(mc, c, now, false);
+    }
+
+    /** released면 결제 대기 주문이 쓴 쿠폰을 되돌린 것처럼 AVAILABLE(또는 EXPIRED)로, usedAt은 null로 내린다. */
+    public static MyCouponResponse of(MemberCoupon mc, Coupon c, Instant now, boolean released) {
+        boolean used = mc.getStatus() == MemberCouponStatus.USED && !released;
+        Status status = used ? Status.USED
                 : !now.isBefore(c.getUseEndsAt()) ? Status.EXPIRED
                 : Status.AVAILABLE;
         return new MyCouponResponse(mc.getId(), c.getId(), c.getName(), c.getDiscountType(), c.getDiscountValue(),
                 c.getMaxDiscount(), c.getMinOrderAmount(), status, c.getUseStartsAt(), c.getUseEndsAt(),
-                mc.getUsedAt(), mc.getCreatedAt());
+                used ? mc.getUsedAt() : null, mc.getCreatedAt());
     }
 }

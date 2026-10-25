@@ -11,6 +11,9 @@ import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
 import com.sprint.mission.member.domain.Member;
 import com.sprint.mission.member.service.MemberService;
+import com.sprint.mission.order.domain.Order;
+import com.sprint.mission.order.domain.OrderStatus;
+import com.sprint.mission.order.repository.OrderRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +30,7 @@ public class CouponService {
     private final CouponRepository couponRepository;
     private final MemberCouponRepository memberCouponRepository;
     private final MemberService memberService;
+    private final OrderRepository orderRepository;
     private final Clock clock;
 
     /**
@@ -61,12 +65,18 @@ public class CouponService {
                 .toList();
     }
 
-    /** 받은 쿠폰을 최근 순으로 읽는다. 사용 기간이 끝난 AVAILABLE 쿠폰은 EXPIRED로 보인다. */
+    /**
+     * 받은 쿠폰을 최근 순으로 읽는다. 사용 기간이 끝난 AVAILABLE 쿠폰은 EXPIRED로 보인다.
+     * 결제 대기 주문이 쓴 쿠폰은 새 주문에 다시 쓸 수 있으므로 되돌린 것처럼 보인다.
+     */
     public List<MyCouponResponse> myCoupons(Long memberId) {
         memberService.getActive(memberId);
         Instant now = clock.instant();
+        Long pendingOrderId = orderRepository.findByMemberIdAndStatus(memberId, OrderStatus.PENDING)
+                .map(Order::getId).orElse(null);
         return memberCouponRepository.findRowsByMemberId(memberId).stream()
-                .map(row -> MyCouponResponse.of(row.memberCoupon(), row.coupon(), now))
+                .map(row -> MyCouponResponse.of(row.memberCoupon(), row.coupon(), now,
+                        isReleased(row.memberCoupon(), pendingOrderId)))
                 .toList();
     }
 
@@ -75,12 +85,24 @@ public class CouponService {
      * AVAILABLE이 아니거나 사용 기간 밖이면 {@code COUPON_NOT_USABLE}이다. 회원 확인은 호출한 주문 서비스가 한다.
      */
     public UsableCoupon getUsable(Long memberId, Long memberCouponId, Instant now) {
+        return getUsable(memberId, memberCouponId, now, null);
+    }
+
+    /** {@code releasedOrderId} 주문이 쓴 쿠폰은 AVAILABLE로 보고 사용 기간만 확인한다. */
+    public UsableCoupon getUsable(Long memberId, Long memberCouponId, Instant now, Long releasedOrderId) {
         MemberCouponRepository.Row row = memberCouponRepository.findRowByIdAndMemberId(memberCouponId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
         Coupon coupon = row.coupon();
-        if (row.memberCoupon().getStatus() != MemberCouponStatus.AVAILABLE || !coupon.isUsable(now)) {
+        boolean available = row.memberCoupon().getStatus() == MemberCouponStatus.AVAILABLE
+                || isReleased(row.memberCoupon(), releasedOrderId);
+        if (!available || !coupon.isUsable(now)) {
             throw new BusinessException(ErrorCode.COUPON_NOT_USABLE);
         }
         return new UsableCoupon(row.memberCoupon().getId(), coupon.getId(), coupon.getName(), coupon.terms());
+    }
+
+    private static boolean isReleased(MemberCoupon memberCoupon, Long releasedOrderId) {
+        return releasedOrderId != null && memberCoupon.getStatus() == MemberCouponStatus.USED
+                && releasedOrderId.equals(memberCoupon.getUsedOrderId());
     }
 }

@@ -19,6 +19,8 @@ import com.sprint.mission.coupon.CouponFixtures;
 import com.sprint.mission.coupon.service.AdminCouponService;
 import com.sprint.mission.coupon.service.CouponService;
 import com.sprint.mission.member.domain.Role;
+import com.sprint.mission.member.dto.AddressRequest;
+import com.sprint.mission.member.service.AddressService;
 import com.sprint.mission.member.service.MemberService;
 import com.sprint.mission.point.service.PointService;
 import com.sprint.mission.product.dto.BrandRequest;
@@ -73,6 +75,9 @@ class CheckoutPreviewApiTest extends ApiTest {
 
     @Autowired
     PointService pointService;
+
+    @Autowired
+    AddressService addressService;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -132,6 +137,19 @@ class CheckoutPreviewApiTest extends ApiTest {
 
     private static String body(String cartItemIds, Object memberCouponId, long points) {
         return "{\"cartItemIds\":" + cartItemIds + ",\"memberCouponId\":" + memberCouponId + ",\"points\":" + points + "}";
+    }
+
+    /** 쿠폰과 적립금 3,000원으로 결제 대기 주문을 만들고 주문 id를 돌려준다. */
+    private Long pendingOrder(Long lineId, Long memberCouponId) throws Exception {
+        Long addressId = addressService.create(memberId, new AddressRequest("홍길동", "01012345678", "06236",
+                "서울시 강남구 테헤란로 1", "101호", true)).id();
+        mockMvc.perform(post("/api/members/me/orders")
+                        .header(HttpHeaders.AUTHORIZATION, token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cartItemIds\":[" + lineId + "],\"memberCouponId\":" + memberCouponId
+                                + ",\"points\":3000,\"addressId\":" + addressId + "}"))
+                .andExpect(status().isCreated());
+        return jdbcTemplate.queryForObject("select id from orders where member_id = ?", Long.class, memberId);
     }
 
     private JsonNode json(ResultActions result) throws Exception {
@@ -381,6 +399,70 @@ class CheckoutPreviewApiTest extends ApiTest {
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
         preview(body("[" + lineId + "]", null, -1)).andExpect(status().isBadRequest());
         preview(body("[" + lineId + ",null]", null, 0)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 결제_대기_주문이_쓴_쿠폰과_적립금으로_다시_미리_본다() throws Exception {
+        Long lineId = saleLine();
+        Long couponId = adminCouponService.create(CouponFixtures.fixed("3천원 쿠폰", 10, null)).id();
+        Long memberCouponId = memberCouponId(memberId, couponId);
+        pointService.grant(memberId, 5_000, "이벤트");
+        Long orderId = pendingOrder(lineId, memberCouponId);
+
+        preview(body("[" + lineId + "]", memberCouponId, 5_000))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price.couponDiscount").value(3_000))
+                .andExpect(jsonPath("$.price.pointsUsed").value(5_000))
+                .andExpect(jsonPath("$.pointBalance").value(5_000));
+        // 잔액을 넘으면 여전히 막는다.
+        preview(body("[" + lineId + "]", null, 5_001))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("POINTS_NOT_ENOUGH"));
+
+        // 미리보기는 아무것도 되돌리지 않는다.
+        assertThat(jdbcTemplate.queryForObject("select status from orders where id = ?", String.class, orderId))
+                .isEqualTo("PENDING");
+        assertThat(jdbcTemplate.queryForMap("select status, used_order_id from member_coupon where id = ?",
+                memberCouponId)).containsEntry("status", "USED").containsEntry("used_order_id", orderId);
+        assertThat(pointService.balance(memberId)).isEqualTo(2_000);
+    }
+
+    @Test
+    void 결제_대기_주문이_없으면_사용한_쿠폰은_여전히_COUPON_NOT_USABLE() throws Exception {
+        Long lineId = saleLine();
+        Long couponId = adminCouponService.create(CouponFixtures.fixed("3천원 쿠폰", 10, null)).id();
+        Long memberCouponId = memberCouponId(memberId, couponId);
+        pointService.grant(memberId, 5_000, "이벤트");
+        Long orderId = pendingOrder(lineId, memberCouponId);
+        jdbcTemplate.update("update orders set status = 'PAID' where id = ?", orderId);
+
+        preview(body("[" + lineId + "]", memberCouponId, 0))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COUPON_NOT_USABLE"));
+        preview(body("[" + lineId + "]", null, 0))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pointBalance").value(2_000));
+    }
+
+    @Test
+    void 결제_대기_주문이_쓴_쿠폰은_내_쿠폰에서_AVAILABLE() throws Exception {
+        Long lineId = saleLine();
+        Long couponId = adminCouponService.create(CouponFixtures.fixed("3천원 쿠폰", 10, null)).id();
+        Long memberCouponId = memberCouponId(memberId, couponId);
+        pointService.grant(memberId, 5_000, "이벤트");
+        Long orderId = pendingOrder(lineId, memberCouponId);
+
+        mockMvc.perform(get("/api/members/me/coupons").header(HttpHeaders.AUTHORIZATION, token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(memberCouponId))
+                .andExpect(jsonPath("$[0].status").value("AVAILABLE"))
+                .andExpect(jsonPath("$[0].usedAt").doesNotExist());
+
+        jdbcTemplate.update("update orders set status = 'PAID' where id = ?", orderId);
+        mockMvc.perform(get("/api/members/me/coupons").header(HttpHeaders.AUTHORIZATION, token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("USED"))
+                .andExpect(jsonPath("$[0].usedAt").isNotEmpty());
     }
 
     @Test
