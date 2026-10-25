@@ -3,15 +3,20 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { Address, CheckoutPreview, MyCoupon, Order } from '../api/types'
-import { startTossPayment, TossCancelError } from '../payments/toss'
+import { isTossConfigured, startTossPayment, TossCancelError } from '../payments/toss'
 import { renderWithProviders } from '../test/render'
 import { server } from '../test/server'
 import { CheckoutPage } from './CheckoutPage'
 
-vi.mock('../payments/toss', () => ({ startTossPayment: vi.fn(), TossCancelError: class TossCancelError extends Error {} }))
+vi.mock('../payments/toss', () => ({
+  startTossPayment: vi.fn(),
+  isTossConfigured: vi.fn(),
+  TossCancelError: class TossCancelError extends Error {},
+}))
 
 beforeEach(() => {
   vi.mocked(startTossPayment).mockReset().mockResolvedValue(undefined)
+  vi.mocked(isTossConfigured).mockReset().mockReturnValue(true)
 })
 
 const NO = '20261025-Y1GAX7TR'
@@ -92,8 +97,8 @@ function setup({
       return HttpResponse.json({ orderNumber: NO, status: 'PENDING' } as Order, { status: 201 })
     }),
   )
-  renderWithProviders(<CheckoutPage />, { member: {}, route: `/checkout?items=${items}` })
-  return calls
+  const { queryClient } = renderWithProviders(<CheckoutPage />, { member: {}, route: `/checkout?items=${items}` })
+  return { ...calls, queryClient }
 }
 
 const row = (label: string) => screen.getByText(label).closest('div')!
@@ -275,5 +280,45 @@ it('배송지가 없으면 피커에서 추가한 배송지를 고른다', async
   await userEvent.click(within(dialog).getByRole('button', { name: '저장' }))
   expect(await screen.findByText('새사람')).toBeInTheDocument()
   expect(screen.queryByText('배송지를 등록해 주세요.')).not.toBeInTheDocument()
+  expect(await payButton()).toBeEnabled()
+})
+
+it('적용하지 않은 적립금이 있으면 결제하기를 막고 안내한다', async () => {
+  const calls = setup()
+  await screen.findByText('상품1')
+  const input = screen.getByRole('spinbutton', { name: '사용할 적립금' })
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  await userEvent.clear(input)
+  await userEvent.type(input, '5000')
+  expect(screen.getByRole('status')).toHaveTextContent('적용을 눌러야 적립금이 반영됩니다.')
+  expect(await payButton()).toBeDisabled()
+  await userEvent.click(screen.getByRole('button', { name: '적용' }))
+  await waitFor(() => expect(row('적립금 사용')).toHaveTextContent('-5,000원'))
+  expect(calls.previews.at(-1)).toEqual({ cartItemIds: [1, 2], memberCouponId: null, points: 5000 })
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  expect(await payButton()).toBeEnabled()
+})
+
+it('고른 쿠폰이 더는 쓸 수 없으면 선택을 풀고 다시 미리보기한다', async () => {
+  const usable = coupon(1, { name: '3천원 쿠폰' })
+  const calls = setup({ coupons: [usable] })
+  const select = await screen.findByRole('combobox', { name: '쿠폰' })
+  await screen.findByText('상품1')
+  await userEvent.selectOptions(select, '3천원 쿠폰 · 3,000원 할인')
+  await waitFor(() => expect(calls.previews.at(-1)?.memberCouponId).toBe(1))
+  server.use(http.get('*/api/members/me/coupons', () => HttpResponse.json([{ ...usable, status: 'USED' }])))
+  await act(() => calls.queryClient.invalidateQueries({ queryKey: ['myCoupons'] }))
+  await waitFor(() => expect(select).toHaveValue(''))
+  await waitFor(() => expect(calls.previews.at(-1)?.memberCouponId).toBeNull())
+})
+
+it('토스 키가 없으면 주문을 만들지 않고 안내한다', async () => {
+  vi.mocked(isTossConfigured).mockReturnValue(false)
+  const calls = setup()
+  await screen.findByText('상품1')
+  await userEvent.click(await payButton())
+  expect(await screen.findByRole('alert')).toHaveTextContent('결제 설정이 없습니다. 관리자에게 문의해 주세요.')
+  expect(calls.orders).toHaveLength(0)
+  expect(startTossPayment).not.toHaveBeenCalled()
   expect(await payButton()).toBeEnabled()
 })

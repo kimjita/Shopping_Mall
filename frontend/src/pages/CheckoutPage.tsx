@@ -12,15 +12,14 @@ import { PriceRows } from '../components/PriceRows'
 import { ProductImage } from '../components/ProductImage'
 import { SectionError } from '../components/SectionError'
 import { Spinner } from '../components/Spinner'
-import { maxUsablePoints, parseCheckoutItems } from '../lib/checkoutParams'
+import { maxUsablePoints, parseCheckoutItems, toPoints } from '../lib/checkoutParams'
 import { formatWon } from '../lib/format'
 import { couponDiscountText } from '../lib/labels'
 import { isOrderNumber } from '../lib/orderName'
-import { startTossPayment, TossCancelError } from '../payments/toss'
+import { isTossConfigured, startTossPayment, TossCancelError } from '../payments/toss'
 
 const errorMessage = (e: unknown) => (e instanceof ApiError ? e.message : '잠시 후 다시 시도해 주세요.')
 const LINE_ERRORS = ['CART_ITEM_UNAVAILABLE', 'CART_ITEM_NOT_FOUND']
-const toPoints = (s: string) => Math.max(0, Math.floor(Number(s))) || 0
 const linkClass = 'inline-block rounded border border-ink/20 px-4 py-2 text-sm'
 
 const CartLink = () => (
@@ -57,11 +56,16 @@ function Checkout({ ids }: { ids: number[] }) {
   const coupons = useMyCoupons()
   const create = useCreateOrder()
   const [addressId, setAddressId] = useState<number | null>(null)
-  const [couponId, setCouponId] = useState<number | null>(null)
+  const [pickedCouponId, setCouponId] = useState<number | null>(null)
   const [draft, setDraft] = useState('0') // 입력 중인 적립금. 적용해야 미리보기에 반영한다.
   const [points, setPoints] = useState(0)
   const [paying, setPaying] = useState(false)
   const [now] = useState(Date.now) // 쿠폰 사용 기간은 화면을 연 시각으로 판단한다.
+  const usableCoupons = (coupons.data ?? []).filter(
+    (c) => c.status === 'AVAILABLE' && Date.parse(c.useStartsAt) <= now && now < Date.parse(c.useEndsAt),
+  )
+  // 고른 쿠폰이 다시 받은 목록에서 빠지면(예: 대기 주문이 썼다) 선택을 푼다.
+  const couponId = usableCoupons.some((c) => c.id === pickedCouponId) ? pickedCouponId : null
   const [payError, setPayError] = useState<{ message: string; orderNumber?: string } | null>(null)
   const q = useCheckoutPreview(ids, couponId, points)
 
@@ -76,10 +80,8 @@ function Checkout({ ids }: { ids: number[] }) {
 
   const { lines, price, pointBalance } = good.data
   const address = addresses.data?.find((a) => a.id === addressId) ?? addresses.data?.[0]
-  const usableCoupons = (coupons.data ?? []).filter(
-    (c) => c.status === 'AVAILABLE' && Date.parse(c.useStartsAt) <= now && now < Date.parse(c.useEndsAt),
-  )
-  const canPay = !!address && !!me && q.isSuccess && !q.isPlaceholderData && !paying
+  const unapplied = toPoints(draft) !== points
+  const canPay = !!address && !!me && q.isSuccess && !q.isPlaceholderData && !paying && !unapplied
 
   const apply = (n: number) => {
     setDraft(String(n))
@@ -90,6 +92,11 @@ function Checkout({ ids }: { ids: number[] }) {
     if (!address || !me) return
     setPaying(true)
     setPayError(null)
+    if (!isTossConfigured()) {
+      setPayError({ message: '결제 설정이 없습니다. 관리자에게 문의해 주세요.' })
+      setPaying(false)
+      return
+    }
     let order: Order
     try {
       order = await create.mutateAsync({ cartItemIds: ids, memberCouponId: couponId, points, addressId: address.id })
@@ -204,6 +211,11 @@ function Checkout({ ids }: { ids: number[] }) {
             모두 사용
           </button>
         </div>
+        {unapplied && (
+          <p role="status" className="text-sm text-sale">
+            적용을 눌러야 적립금이 반영됩니다.
+          </p>
+        )}
       </section>
 
       <section className="space-y-3 rounded bg-brand/10 p-4">

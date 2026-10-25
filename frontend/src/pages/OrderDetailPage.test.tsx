@@ -68,7 +68,7 @@ it('결제창을 닫으면 안내하고 상세 링크 없이 다시 결제할 �
   vi.mocked(startTossPayment).mockRejectedValue(new TossCancelError('결제를 취소했습니다.'))
   setup(order({ status: 'PENDING' }))
   await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(await screen.findByRole('button', { name: '결제하기' }))
-  expect(await screen.findByText('결제가 취소되었습니다. 주문 상세에서 15분 안에 다시 결제할 수 있습니다.')).toBeInTheDocument()
+  expect(await screen.findByText('결제가 취소되었습니다. 남은 시간 안에 다시 결제할 수 있습니다.')).toBeInTheDocument()
   expect(screen.queryByRole('link', { name: '주문 상세 보기' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: '결제하기' })).toBeEnabled()
 })

@@ -1,7 +1,7 @@
 import { ANONYMOUS, loadTossPayments } from '@tosspayments/tosspayments-sdk'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { Order } from '../api/types'
-import { startTossPayment, TossCancelError } from './toss'
+import { isTossConfigured, startTossPayment, TossCancelError } from './toss'
 
 vi.mock('@tosspayments/tosspayments-sdk', () => ({ ANONYMOUS: '@@ANONYMOUS', loadTossPayments: vi.fn() }))
 
@@ -53,4 +53,10 @@ it('키가 없으면 결제 설정 오류', async () => {
   vi.stubEnv('VITE_TOSS_CLIENT_KEY', '')
   await expect(startTossPayment(order, customer)).rejects.toThrow('결제 설정이 없습니다. 관리자에게 문의해 주세요.')
   expect(loadTossPayments).not.toHaveBeenCalled()
+})
+
+it('isTossConfigured는 클라이언트 키가 있을 때만 참이다', () => {
+  expect(isTossConfigured()).toBe(true)
+  vi.stubEnv('VITE_TOSS_CLIENT_KEY', '')
+  expect(isTossConfigured()).toBe(false)
 })

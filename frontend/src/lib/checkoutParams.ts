@@ -13,3 +13,6 @@ export function parseCheckoutItems(raw: string | null): number[] | null {
 // 서버 규칙: 결제금액이 100원 이상 남아야 한다.
 export const maxUsablePoints = (p: PriceBreakdown, balance: number) =>
   Math.max(0, Math.min(balance, p.itemsSalePrice - p.couponDiscount + p.shippingFee - 100))
+
+// 입력 문자열을 0 이상의 안전한 정수로 바꾼다. 너무 큰 값은 상한으로 두고 서버가 검증한다.
+export const toPoints = (s: string) => Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(Number(s)))) || 0

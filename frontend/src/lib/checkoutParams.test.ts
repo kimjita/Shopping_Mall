@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { PriceBreakdown } from '../api/types'
-import { maxUsablePoints, parseCheckoutItems } from './checkoutParams'
+import { maxUsablePoints, parseCheckoutItems, toPoints } from './checkoutParams'
 
 it('콤마로 나눈 양의 정수 목록을 읽는다', () => {
   expect(parseCheckoutItems('1,2')).toEqual([1, 2])
@@ -37,4 +37,16 @@ it('적립금은 결제금액 100원을 남기고 잔액을 넘지 않는다', (
   expect(maxUsablePoints(price({ itemsSalePrice: 20000 }), 3000)).toBe(3000)
   expect(maxUsablePoints(price({ itemsSalePrice: 100 }), 50000)).toBe(0)
   expect(maxUsablePoints(price({ itemsSalePrice: 15000, couponDiscount: 3000, shippingFee: 2500 }), 50000)).toBe(14400)
+})
+
+it.each([
+  ['5000', 5000],
+  ['-500', 0],
+  ['1.9', 1],
+  ['', 0],
+  ['abc', 0],
+  ['1e400', Number.MAX_SAFE_INTEGER],
+  ['1e30', Number.MAX_SAFE_INTEGER],
+])('toPoints는 0 이상 안전한 정수로 만든다 (%s)', (raw, expected) => {
+  expect(toPoints(raw)).toBe(expected)
 })

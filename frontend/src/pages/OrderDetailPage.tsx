@@ -63,7 +63,7 @@ function Detail({ order }: { order: NonNullable<ReturnType<typeof useOrder>['dat
     } catch (e) {
       setPayError(
         e instanceof TossCancelError
-          ? '결제가 취소되었습니다. 주문 상세에서 15분 안에 다시 결제할 수 있습니다.'
+          ? '결제가 취소되었습니다. 남은 시간 안에 다시 결제할 수 있습니다.'
           : e instanceof Error && e.message
             ? e.message
             : '잠시 후 다시 시도해 주세요.',

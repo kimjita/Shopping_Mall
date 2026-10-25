@@ -30,7 +30,7 @@ export function CouponsPage() {
   }
 
   return (
-    <section className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+    <section className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-xl font-bold">쿠폰 받기</h1>
       {download.isSuccess && (
         <p role="status" className="text-sm text-brand-dark">

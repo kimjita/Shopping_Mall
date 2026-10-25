@@ -14,7 +14,7 @@ export function MyPage() {
   const { me } = useAuth()
   if (!me) return null // RequireAuth 안에서만 쓰므로 me가 없는 순간은 전환 중이다.
   return (
-    <section className="mx-auto max-w-2xl px-4 py-6">
+    <section className="mx-auto max-w-2xl">
       <h1 className="text-xl font-bold">{me.name}님</h1>
       <p className="mt-1 text-sm text-ink/70">{GRADE_LABEL[me.grade]} 등급</p>
       <ul className="mt-6 divide-y divide-ink/10 border-y border-ink/10">

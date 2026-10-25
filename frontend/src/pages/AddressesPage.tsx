@@ -51,7 +51,7 @@ export function AddressesPage() {
     save.mutate({ id, input: { ...a, address2: a.address2 ?? '', isDefault: true } })
 
   return (
-    <section className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+    <section className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">배송지 관리</h1>
         <button
