@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../api/client'
 import { signup } from '../api/member'
 import { useAuth } from '../auth/AuthProvider'
-
-const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)[\x21-\x7E]{8,64}$/
-const PASSWORD_MESSAGE = '비밀번호는 영문과 숫자를 각각 1자 이상 포함한 8~64자여야 합니다.'
+import { isValidPassword, PASSWORD_RULE_MESSAGE } from '../lib/password'
 
 const FIELDS = [
   { name: 'email', label: '이메일', type: 'email', autoComplete: 'email' },
@@ -34,7 +32,7 @@ export function SignupPage() {
     ) as Record<(typeof FIELDS)[number]['name'], string>
     const local: Record<string, string> = {}
     for (const f of FIELDS) if (!v[f.name]) local[f.name] = '필수 입력입니다.'
-    if (v.password && !PASSWORD_RULE.test(v.password)) local.password = PASSWORD_MESSAGE
+    if (v.password && !isValidPassword(v.password)) local.password = PASSWORD_RULE_MESSAGE
     setErrors(local)
     if (Object.keys(local).length > 0) return
 

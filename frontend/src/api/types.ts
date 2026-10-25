@@ -1,6 +1,22 @@
 export type SkinType = 'DRY' | 'OILY' | 'COMBINATION' | 'SENSITIVE' | 'NORMAL'
 export type ProductSort = 'NEWEST' | 'SALES' | 'PRICE_ASC' | 'PRICE_DESC' | 'RATING' | 'REVIEW_COUNT'
 export type ReviewSort = 'LATEST' | 'RATING_DESC' | 'RATING_ASC'
+export type SkinTone = 'COOL' | 'WARM' | 'NEUTRAL'
+export type SkinConcern =
+  | 'BLEMISH'
+  | 'WHITENING'
+  | 'WRINKLE'
+  | 'DEAD_SKIN'
+  | 'TROUBLE'
+  | 'BLACKHEAD'
+  | 'EXCESS_SEBUM'
+  | 'SENSITIVITY'
+  | 'PORE'
+  | 'ELASTICITY'
+  | 'REDNESS'
+  | 'ATOPY'
+  | 'DARK_CIRCLE'
+export type PointType = 'EARN' | 'USE' | 'RESTORE' | 'ADMIN_GRANT'
 export type Grade = 'BABY' | 'PINK' | 'GREEN' | 'BLACK' | 'GOLD'
 export type OrderStatus = 'PENDING' | 'PAID' | 'PREPARING' | 'SHIPPING' | 'DELIVERED' | 'CONFIRMED' | 'CANCELED'
 export type CancelReason = 'EXPIRED' | 'REPLACED' | 'USER' | 'ADMIN'
@@ -24,8 +40,8 @@ export interface Me {
   role: 'USER' | 'ADMIN'
   grade: Grade
   skinType: SkinType | null
-  skinTone: string | null
-  skinConcerns: string[]
+  skinTone: SkinTone | null
+  skinConcerns: SkinConcern[]
 }
 export interface ProductSummary {
   id: number
@@ -94,8 +110,8 @@ export interface Review {
   imageUrls: string[]
   skuName: string
   skinType: SkinType | null
-  skinTone: string | null
-  skinConcerns: string[]
+  skinTone: SkinTone | null
+  skinConcerns: SkinConcern[]
   createdAt: string
   updatedAt: string
 }
@@ -225,4 +241,38 @@ export interface OrderSummary {
   thumbnailUrl: string | null
   itemCount: number
   paymentAmount: number
+}
+export interface PointHistoryItem {
+  id: number
+  type: PointType
+  amount: number
+  balanceAfter: number
+  reason: string | null
+  orderId: number | null
+  createdAt: string
+}
+export interface MyReview {
+  reviewId: number
+  orderItemId: number
+  productId: number
+  productName: string
+  skuName: string
+  thumbnailUrl: string | null
+  rating: number
+  content: string
+  imageUrls: string[]
+  skinType: SkinType | null
+  skinTone: SkinTone | null
+  skinConcerns: SkinConcern[]
+  createdAt: string
+  updatedAt: string
+}
+export interface WritableReview {
+  orderItemId: number
+  orderNumber: string
+  productId: number
+  productName: string
+  skuName: string
+  thumbnailUrl: string | null
+  confirmedAt: string
 }

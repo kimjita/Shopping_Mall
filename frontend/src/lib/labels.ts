@@ -4,8 +4,11 @@ import type {
   DiscountType,
   Grade,
   OrderStatus,
+  PointType,
   ProductSort,
   ReviewSort,
+  SkinConcern,
+  SkinTone,
   SkinType,
 } from '../api/types'
 import { formatWon } from './format'
@@ -17,6 +20,40 @@ export const SKIN_TYPE_LABEL: Record<SkinType, string> = {
   SENSITIVE: '민감성',
   NORMAL: '중성',
 }
+
+export const SKIN_TONE_LABEL: Record<SkinTone, string> = {
+  COOL: '쿨톤',
+  WARM: '웜톤',
+  NEUTRAL: '뉴트럴',
+}
+
+export const SKIN_CONCERN_LABEL: Record<SkinConcern, string> = {
+  BLEMISH: '잡티',
+  WHITENING: '미백',
+  WRINKLE: '주름',
+  DEAD_SKIN: '각질',
+  TROUBLE: '트러블',
+  BLACKHEAD: '블랙헤드',
+  EXCESS_SEBUM: '피지 과다',
+  SENSITIVITY: '민감성',
+  PORE: '모공',
+  ELASTICITY: '탄력',
+  REDNESS: '홍조',
+  ATOPY: '아토피',
+  DARK_CIRCLE: '다크서클',
+}
+
+// 표시 순서이며 객체 키 순서에 기대지 않도록 배열로 둔다.
+export const SKIN_CONCERNS = Object.keys(SKIN_CONCERN_LABEL) as SkinConcern[]
+
+export const POINT_TYPE_LABEL: Record<PointType, string> = {
+  EARN: '구매 적립',
+  USE: '주문 사용',
+  RESTORE: '사용 취소 복원',
+  ADMIN_GRANT: '관리자 지급',
+}
+
+export const signedPoints = (type: PointType, amount: number) => `${type === 'USE' ? '-' : '+'}${formatWon(amount)}`
 
 export const PRODUCT_SORT_LABEL: Record<ProductSort, string> = {
   NEWEST: '신상품순',

@@ -4,10 +4,14 @@ import { GRADE_LABEL } from '../lib/labels'
 
 const LINKS = [
   { to: '/mypage/orders', label: '주문 내역' },
-  { to: '/mypage/addresses', label: '배송지 관리' },
+  { to: '/mypage/reviews', label: '리뷰' },
+  { to: '/mypage/coupons', label: '내 쿠폰' },
   { to: '/coupons', label: '쿠폰 받기' },
+  { to: '/mypage/points', label: '적립금' },
+  { to: '/mypage/addresses', label: '배송지 관리' },
   { to: '/wishlist', label: '찜' },
   { to: '/recent', label: '최근 본 상품' },
+  { to: '/mypage/settings', label: '설정' },
 ]
 
 export function MyPage() {

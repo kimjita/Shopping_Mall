@@ -28,6 +28,10 @@ const MEMBER_QUERY_KEYS = [
   'orders',
   'order',
   'checkoutPreview',
+  'points',
+  'pointHistory',
+  'myReviews',
+  'writableReviews',
 ]
 
 // eslint-disable-next-line react-refresh/only-export-components
