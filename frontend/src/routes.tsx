@@ -8,6 +8,8 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { MyPage } from './pages/MyPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { PaymentFailPage } from './pages/PaymentFailPage'
+import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
 import { ProductDetailPage } from './pages/ProductDetailPage'
 import { ProductListPage } from './pages/ProductListPage'
 import { RecentViewsPage } from './pages/RecentViewsPage'
@@ -41,6 +43,8 @@ export const routes: RouteObject[] = [
       { path: 'coupons', element: <RequireAuth><CouponsPage /></RequireAuth> },
       { path: 'mypage', element: <RequireAuth><MyPage /></RequireAuth> },
       { path: 'mypage/addresses', element: <RequireAuth><AddressesPage /></RequireAuth> },
+      { path: 'payments/success', element: <RequireAuth><PaymentSuccessPage /></RequireAuth> },
+      { path: 'payments/fail', element: <RequireAuth><PaymentFailPage /></RequireAuth> },
       { path: 'recent', element: <RecentViewsPage /> },
       { path: 'signup', element: <SignupPage /> },
       { path: '*', element: <NotFoundPage /> },
