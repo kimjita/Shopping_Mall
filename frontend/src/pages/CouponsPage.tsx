@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useDownloadableCoupons, useDownloadCoupon } from '../api/coupons'
 import { ApiError } from '../api/client'
 import { SectionError } from '../components/SectionError'
@@ -8,10 +9,25 @@ import { couponDiscountText, GRADE_LABEL, minOrderText } from '../lib/labels'
 export function CouponsPage() {
   const q = useDownloadableCoupons()
   const download = useDownloadCoupon()
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
 
   if (!q.data) return q.isError ? <SectionError onRetry={() => q.refetch()} /> : <Spinner />
-  // 같은 mutation 인스턴스라 가장 최근 요청의 결과만 남고, 누른 쿠폰만 대기 표시를 한다.
-  const pendingId = download.isPending ? download.variables : null
+  // 안내는 공유 mutation의 가장 최근 결과이고, 대기 표시는 동시에 여러 쿠폰이 진행될 수 있어 id별로 따로 둔다.
+  const setPending = (id: number, on: boolean) =>
+    setPendingIds((prev) => {
+      const next = new Set(prev)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  const receive = (id: number) => {
+    setPending(id, true)
+    // mutate()의 콜백은 마지막 호출에만 불리므로, 호출마다 끝나는 mutateAsync로 해제한다. 오류는 download.error로 표시한다.
+    download
+      .mutateAsync(id)
+      .catch(() => {})
+      .finally(() => setPending(id, false))
+  }
 
   return (
     <section className="mx-auto max-w-2xl space-y-4 px-4 py-6">
@@ -42,8 +58,8 @@ export function CouponsPage() {
               </p>
               <button
                 type="button"
-                disabled={!c.eligible || pendingId === c.couponId}
-                onClick={() => download.mutate(c.couponId)}
+                disabled={!c.eligible || pendingIds.has(c.couponId)}
+                onClick={() => receive(c.couponId)}
                 className="mt-2 rounded bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
               >
                 받기

@@ -101,3 +101,43 @@ it('누른 쿠폰만 대기하고 안내는 가장 최근 결과로 바뀐다', 
   expect(await screen.findByRole('alert')).toHaveTextContent('이미 받은 쿠폰입니다.')
   expect(screen.queryByRole('status')).toBeNull()
 })
+
+it('먼저 누른 쿠폰의 요청이 끝나기 전에 다른 쿠폰을 눌러도 먼저 누른 버튼은 계속 막힌다', async () => {
+  let release: () => void = () => {}
+  const gate = new Promise<void>((r) => (release = r))
+  const downloads: string[] = []
+  server.use(
+    http.get('*/api/members/me/coupons/downloadable', () =>
+      HttpResponse.json([coupon(), coupon({ couponId: 2, name: '두 번째 쿠폰' })]),
+    ),
+    http.get('*/api/members/me/coupons', () => HttpResponse.json([])),
+    http.post('*/api/members/me/coupons/:id/download', async ({ params }) => {
+      downloads.push(String(params.id))
+      if (params.id === '1') await gate
+      return HttpResponse.json({ id: 1, couponId: 1 }, { status: 201 })
+    }),
+  )
+  renderWithProviders(<CouponsPage />, { member: {} })
+  const [first, second] = await screen.findAllByRole('button', { name: '받기' })
+  await userEvent.click(first)
+  await vi.waitFor(() => expect(first).toBeDisabled())
+  await userEvent.click(second)
+  await screen.findByRole('status')
+  expect(first).toBeDisabled()
+  release()
+  await vi.waitFor(() => expect(first).toBeEnabled())
+  expect(downloads).toEqual(['1', '2'])
+})
+
+it('받기에 성공하면 내 쿠폰 목록을 다시 받도록 표시한다', async () => {
+  server.use(
+    http.get('*/api/members/me/coupons/downloadable', () => HttpResponse.json([coupon()])),
+    http.post('*/api/members/me/coupons/1/download', () => HttpResponse.json({ id: 1, couponId: 1 }, { status: 201 })),
+  )
+  const { queryClient } = renderWithProviders(<CouponsPage />, { member: {} })
+  queryClient.setQueryData(['myCoupons'], [])
+  expect(queryClient.getQueryState(['myCoupons'])?.isInvalidated).toBe(false)
+  await userEvent.click(await screen.findByRole('button', { name: '받기' }))
+  await screen.findByRole('status')
+  expect(queryClient.getQueryState(['myCoupons'])?.isInvalidated).toBe(true)
+})
