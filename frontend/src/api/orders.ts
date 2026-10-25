@@ -1,8 +1,19 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { isOrderNumber } from '../lib/orderName'
 import { apiFetch } from './client'
-import type { Order } from './types'
+import type { CursorPage, Order, OrderSummary } from './types'
+
+export const useOrders = () =>
+  useInfiniteQuery({
+    queryKey: ['orders'],
+    queryFn: ({ pageParam }) =>
+      apiFetch<CursorPage<OrderSummary>>(`/api/members/me/orders?size=20${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ''}`, {
+        auth: 'required',
+      }),
+    initialPageParam: '',
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  })
 
 export const useOrder = (orderNumber: string) => {
   const { status } = useAuth()
