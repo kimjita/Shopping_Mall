@@ -45,7 +45,7 @@ function BannerStrip() {
   return (
     <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4">
       {banners.map((b) => {
-        const img = <img src={b.imageUrl} alt={b.title} className="h-40 w-[85vw] max-w-xl rounded object-cover" />
+        const img = <img src={b.imageUrl} alt={b.title} className="aspect-[3/1] w-[85vw] max-w-xl rounded object-cover" />
         return (
           <li key={b.id} className="shrink-0 snap-center">
             {isExternalLink(b.linkUrl) ? (
