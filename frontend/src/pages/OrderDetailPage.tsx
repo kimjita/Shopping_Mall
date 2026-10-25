@@ -160,6 +160,11 @@ function Detail({ order }: { order: NonNullable<ReturnType<typeof useOrder>['dat
             구매확정
           </button>
         )}
+        {order.status === 'CONFIRMED' && (
+          <Link to="/mypage/reviews?tab=writable" className="block w-full rounded bg-brand px-6 py-3 text-center font-bold text-white">
+            리뷰 쓰기
+          </Link>
+        )}
       </section>
 
       <ConfirmDialog

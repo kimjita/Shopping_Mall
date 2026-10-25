@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { MyCouponsPage } from './pages/MyCouponsPage'
 import { MyPage } from './pages/MyPage'
+import { MyReviewsPage } from './pages/MyReviewsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
 import { OrdersPage } from './pages/OrdersPage'
@@ -53,6 +54,7 @@ export const routes: RouteObject[] = [
       { path: 'mypage/settings', element: <RequireAuth><SettingsPage /></RequireAuth> },
       { path: 'mypage/points', element: <RequireAuth><PointsPage /></RequireAuth> },
       { path: 'mypage/coupons', element: <RequireAuth><MyCouponsPage /></RequireAuth> },
+      { path: 'mypage/reviews', element: <RequireAuth><MyReviewsPage /></RequireAuth> },
       { path: 'mypage/orders', element: <RequireAuth><OrdersPage /></RequireAuth> },
       { path: 'mypage/orders/:orderNumber', element: <RequireAuth><OrderDetailPage /></RequireAuth> },
       { path: 'payments/success', element: <RequireAuth><PaymentSuccessPage /></RequireAuth> },

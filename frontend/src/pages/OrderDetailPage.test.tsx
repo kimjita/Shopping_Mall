@@ -150,3 +150,14 @@ it('잘못된 주문번호는 요청 없이 안내한다', async () => {
   expect(screen.getByRole('link', { name: '주문 내역' })).toHaveAttribute('href', '/mypage/orders')
   expect(called).toBe(false)
 })
+
+it('구매확정 주문에는 리뷰 쓰기 링크가 있다', async () => {
+  setup(order({ status: 'CONFIRMED', confirmedAt: '2026-10-27T03:00:00Z' }))
+  expect(await screen.findByRole('link', { name: '리뷰 쓰기' })).toHaveAttribute('href', '/mypage/reviews?tab=writable')
+})
+
+it('구매확정이 아닌 주문에는 리뷰 쓰기 링크가 없다', async () => {
+  setup(order({ status: 'DELIVERED', deliveredAt: '2026-10-26T03:00:00Z' }))
+  await screen.findByText(NO)
+  expect(screen.queryByRole('link', { name: '리뷰 쓰기' })).not.toBeInTheDocument()
+})
