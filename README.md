@@ -13,6 +13,10 @@ cd frontend && npm install && npm run dev   # 5173
 
 개발 서버는 `/api` 요청을 `http://localhost:8080`으로 프록시한다. Safari는 `http://localhost`에서 `Secure` 쿠키를 저장하지 않으므로 백엔드를 `APP_AUTH_REFRESH_COOKIESECURE=false`로 띄운다.
 
+## 로컬 이미지 업로드
+
+이미지는 S3 presigned URL로 올린다. 로컬에서는 `docker compose up`(또는 `bootRun`)이 PostgreSQL과 함께 LocalStack S3도 띄우고, `scripts/localstack/init-s3.sh`가 `dewy-images` 버킷과 공개 읽기 정책, 프론트(`http://localhost:5173`)용 CORS를 건다. 올린 이미지는 `http://localhost:4566/dewy-images/...`로 열린다. LocalStack은 데이터를 저장하지 않으므로 컨테이너를 다시 띄우면 올린 이미지가 사라진다.
+
 ## 데모 데이터
 
 화면 확인용 가상 브랜드 8개, 상품 41개, 배너 3개, 쿠폰 3개를 관리자 API로 채우는 스크립트다. 이미지는 `frontend/public/demo/`의 SVG이며 프론트 개발 서버가 `IMAGE_BASE_URL`(기본 `http://localhost:5173`)로 제공한다.

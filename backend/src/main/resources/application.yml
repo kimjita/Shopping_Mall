@@ -41,3 +41,12 @@ app:
     base-url: https://api.tosspayments.com
     connect-timeout: 3s
     read-timeout: 10s
+  storage:
+    # 로컬 기본값은 LocalStack(compose.yaml)이다. 운영은 환경변수로 덮는다. endpoint·access-key를 비우면 AWS 기본값을 쓴다.
+    bucket: dewy-images
+    region: ap-northeast-2
+    endpoint: http://localhost:4566
+    public-base-url: http://localhost:4566/dewy-images
+    path-style: true
+    access-key: test
+    secret-key: test
