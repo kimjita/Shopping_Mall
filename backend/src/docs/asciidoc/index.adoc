@@ -1501,6 +1501,28 @@ include::{snippets}/admin-product/create/response-headers.adoc[]
 
 include::{snippets}/admin-product/create/response-fields.adoc[]
 
+=== 상품 목록(관리자)
+
+성공하면 `200 OK`다. 판매 중지(`STOPPED`)와 삭제(`DELETED`) 상품도 포함해 최근 등록한 상품부터 보여 준다.
+`keyword`는 공개 검색과 같은 규칙(앞뒤 공백을 지운 1~50자, 제어 문자 불가)이다.
+`lowStock=true`는 판매 중(`ON_SALE`)이고 재고가 5개 이하인 옵션이 하나라도 있는 상품만 보여 준다.
+`cursor`는 이전 응답의 `nextCursor`이며, 마지막 페이지면 `nextCursor`가 `null`이다.
+`keyword`·`cursor`·`size`가 규칙에 맞지 않거나 `status`가 알 수 없는 값이면 `400 INVALID_INPUT`이다.
+
+==== 요청
+
+include::{snippets}/admin-product/list/http-request.adoc[]
+
+include::{snippets}/admin-product/list/query-parameters.adoc[]
+
+include::{snippets}/admin-product/list/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-product/list/http-response.adoc[]
+
+include::{snippets}/admin-product/list/response-fields.adoc[]
+
 === 상품 상세(관리자)
 
 성공하면 `200 OK`다. 없는 상품이거나 삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다. 판매 중지(`STOPPED`) 상품은 관리자에게 보인다.

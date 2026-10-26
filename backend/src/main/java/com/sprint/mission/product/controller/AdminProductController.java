@@ -1,6 +1,8 @@
 package com.sprint.mission.product.controller;
 
+import com.sprint.mission.product.dto.AdminProductPage;
 import com.sprint.mission.product.dto.AdminProductResponse;
+import com.sprint.mission.product.dto.AdminProductSearchCondition;
 import com.sprint.mission.product.dto.IdResponse;
 import com.sprint.mission.product.dto.ProductCreateRequest;
 import com.sprint.mission.product.dto.ProductStatusRequest;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +35,11 @@ public class AdminProductController {
     public ResponseEntity<IdResponse> create(@Valid @RequestBody ProductCreateRequest request) {
         Long id = adminProductService.create(request);
         return ResponseEntity.created(URI.create("/api/admin/products/" + id)).body(new IdResponse(id));
+    }
+
+    @GetMapping
+    public AdminProductPage list(@Valid @ModelAttribute AdminProductSearchCondition condition) {
+        return adminProductService.list(condition);
     }
 
     @GetMapping("/{productId}")

@@ -7,12 +7,16 @@ import com.sprint.mission.product.domain.Category;
 import com.sprint.mission.product.domain.Product;
 import com.sprint.mission.product.domain.Sale;
 import com.sprint.mission.product.domain.Sku;
+import com.sprint.mission.product.dto.AdminProductPage;
 import com.sprint.mission.product.dto.AdminProductResponse;
+import com.sprint.mission.product.dto.AdminProductSearchCondition;
+import com.sprint.mission.product.dto.AdminProductSummary;
 import com.sprint.mission.product.dto.ProductCreateRequest;
 import com.sprint.mission.product.dto.ProductStatusRequest;
 import com.sprint.mission.product.dto.ProductUpdateRequest;
 import com.sprint.mission.product.dto.SaleRequest;
 import com.sprint.mission.product.dto.SkuRequest;
+import com.sprint.mission.product.repository.AdminProductSearchRepository;
 import com.sprint.mission.product.repository.ProductRepository;
 import com.sprint.mission.product.repository.SkuRepository;
 import java.time.Clock;
@@ -31,6 +35,7 @@ public class AdminProductService {
 
     private final ProductRepository productRepository;
     private final SkuRepository skuRepository;
+    private final AdminProductSearchRepository adminProductSearchRepository;
     private final ProductService productService;
     private final BrandService brandService;
     private final CategoryService categoryService;
@@ -89,6 +94,17 @@ public class AdminProductService {
     @Transactional
     public void endSale(Long productId) {
         productService.getProduct(productId).endSale();
+    }
+
+    /** 상태와 상관없이 최근 등록한 상품부터 한 페이지 읽는다. 커서는 마지막 상품의 id다. */
+    public AdminProductPage list(AdminProductSearchCondition condition) {
+        int size = condition.size();
+        // 다음 페이지가 있는지 알기 위해 한 개 더 읽는다.
+        List<AdminProductSummary> rows = adminProductSearchRepository.search(condition, condition.cursorId(),
+                Instant.now(clock), size + 1);
+        boolean hasNext = rows.size() > size;
+        List<AdminProductSummary> page = hasNext ? rows.subList(0, size) : rows;
+        return new AdminProductPage(page, hasNext ? String.valueOf(page.get(size - 1).id()) : null);
     }
 
     /** 삭제된 상품은 관리자도 볼 수 없다. */
