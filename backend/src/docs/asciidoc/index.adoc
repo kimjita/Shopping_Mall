@@ -2023,3 +2023,28 @@ include::{snippets}/admin-member/detail/path-parameters.adoc[]
 include::{snippets}/admin-member/detail/http-response.adoc[]
 
 include::{snippets}/admin-member/detail/response-fields.adoc[]
+
+== 관리자 - 대시보드
+
+이 장의 API는 관리자 전용이다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`, 관리자가 아니면 `403 FORBIDDEN`이다.
+
+=== 대시보드 요약
+
+성공하면 `200 OK`다. 기준일(`date`)은 서울 시각의 오늘이고, `today`로 시작하는 지표는 서울 오늘 00:00부터 내일 00:00 전까지만 센다.
+
+* `todayPaidCount`, `todayPaidAmount`: 결제 승인 시각이 오늘이고 주문이 결제 완료(`PAID`)부터 구매확정(`CONFIRMED`)까지인 주문의 수와 결제 금액(`paymentAmount`) 합이다. 취소된 주문은 세지 않는다.
+* `paidCount`, `preparingCount`, `shippingCount`: 지금 결제 완료, 상품 준비 중, 배송 중 상태인 주문 수다. 날짜와 상관없다.
+* `lowStockSkuCount`: 판매 중(`ON_SALE`) 상품의 옵션 중 재고가 5개 이하인 옵션 수다. 품절(0개)도 포함한다.
+* `todaySignupCount`: 오늘 가입한 회원 수다. 그사이 탈퇴한 회원도 센다.
+
+==== 요청
+
+include::{snippets}/admin-dashboard/get/http-request.adoc[]
+
+include::{snippets}/admin-dashboard/get/request-headers.adoc[]
+
+==== 응답
+
+include::{snippets}/admin-dashboard/get/http-response.adoc[]
+
+include::{snippets}/admin-dashboard/get/response-fields.adoc[]
