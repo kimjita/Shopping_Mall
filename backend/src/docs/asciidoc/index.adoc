@@ -859,7 +859,7 @@ include::{snippets}/order/create/response-fields.adoc[]
 
 * `401 UNAUTHORIZED`: 토큰이 없거나 유효하지 않다.
 * `404 MEMBER_NOT_FOUND`: 탈퇴한 회원이다.
-* `400 INVALID_INPUT`: `memberId`가 숫자가 아니거나, `cursor`가 올바르지 않거나(숫자가 아니거나 20자를 넘는다) `size`가 1~50이 아니다.
+* `400 INVALID_INPUT`: `cursor`가 올바르지 않거나(숫자가 아니거나 20자를 넘는다) `size`가 1~50이 아니다.
 
 ==== 요청
 
@@ -1868,7 +1868,7 @@ include::{snippets}/admin-banner/list/response-fields.adoc[]
 `size`는 1~50이고 기본값은 20이다. 응답의 `nextCursor`를 다음 요청의 `cursor`로 보내면 이어서 읽고, 마지막 페이지면 `nextCursor`가 `null`이다.
 `firstProductName`은 첫 번째 주문상품의 주문 시점 값이고, `itemCount`는 주문상품 줄 수다.
 
-* `400 INVALID_INPUT`: `status`가 주문 상태 이름이 아니거나, `cursor`가 올바르지 않거나(숫자가 아니거나 20자를 넘는다) `size`가 1~50이 아니다.
+* `400 INVALID_INPUT`: `status`가 주문 상태 이름이 아니거나, `memberId`가 숫자가 아니거나, `cursor`가 올바르지 않거나(숫자가 아니거나 20자를 넘는다) `size`가 1~50이 아니다.
 
 ==== 요청
 

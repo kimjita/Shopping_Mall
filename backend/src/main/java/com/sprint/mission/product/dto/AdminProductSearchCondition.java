@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/** 관리자 상품 목록 조건이다. 쿼리 파라미터로 받으며, 비어 있는 값은 거르지 않는 것으로 본다. */
+/** 관리자 상품 목록 조건이다. 쿼리 파라미터로 받는다. 없는 값은 거르지 않고, 공백뿐인 keyword는 400이며, 빈 cursor는 커서가 없는 것으로 본다. */
 public record AdminProductSearchCondition(
         @Size(min = 1, max = 50, message = "검색어는 1~50자여야 합니다.")
         @Pattern(regexp = "[^\\p{Cntrl}]*", message = "검색어가 올바르지 않습니다.")
