@@ -275,6 +275,18 @@ class CartApiTest extends ApiTest {
     }
 
     @Test
+    void 수량에_소수를_보내면_400() throws Exception {
+        Long skuId = skuWithStock(10);
+        mockMvc.perform(post("/api/members/me/cart/items")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberId, Role.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"skuId\":" + skuId + ",\"quantity\":1.5}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        assertThat(quantities()).isEmpty();
+    }
+
+    @Test
     void 수량을_바꾸고_뺀다() throws Exception {
         Long skuId = skuWithStock(10);
         add(skuId, 2);

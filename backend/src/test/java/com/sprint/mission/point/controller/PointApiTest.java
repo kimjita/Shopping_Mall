@@ -190,6 +190,22 @@ class PointApiTest extends ApiTest {
     }
 
     @Test
+    void 지급_사유에_제어_문자가_있으면_400() throws Exception {
+        for (String reason : new String[] {"사유\\u001C", "사유\\u001F", "사유\\u0000", "사유\\u007F", "사유\\n"}) {
+            grantAsAdmin("{\"amount\":100,\"reason\":\"" + reason + "\"}")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+    }
+
+    @Test
+    void 금액에_소수를_보내면_400() throws Exception {
+        grantAsAdmin("{\"amount\":1.9,\"reason\":\"이벤트 보상\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
     void 없는_회원에게는_지급할_수_없다() throws Exception {
         grant(bearer(1L, Role.ADMIN), 999_999L, """
                 {"amount":100,"reason":"이벤트 보상"}""")

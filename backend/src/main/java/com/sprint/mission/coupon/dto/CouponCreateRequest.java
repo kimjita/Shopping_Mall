@@ -1,6 +1,7 @@
 package com.sprint.mission.coupon.dto;
 
 import com.sprint.mission.coupon.domain.DiscountType;
+import com.sprint.mission.global.validation.InstantRange;
 import com.sprint.mission.member.domain.Grade;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -30,11 +31,15 @@ public record CouponCreateRequest(
         Integer totalQuantity,
         Grade requiredGrade,
         @NotNull(message = "발급 시작 시각을 입력해 주세요.")
+        @InstantRange
         Instant issueStartsAt,
         @NotNull(message = "발급 종료 시각을 입력해 주세요.")
+        @InstantRange
         Instant issueEndsAt,
         @NotNull(message = "사용 시작 시각을 입력해 주세요.")
+        @InstantRange
         Instant useStartsAt,
         @NotNull(message = "사용 종료 시각을 입력해 주세요.")
+        @InstantRange
         Instant useEndsAt) {
 }

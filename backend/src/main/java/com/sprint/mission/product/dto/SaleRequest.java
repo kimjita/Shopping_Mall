@@ -1,5 +1,6 @@
 package com.sprint.mission.product.dto;
 
+import com.sprint.mission.global.validation.InstantRange;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -13,8 +14,10 @@ public record SaleRequest(
         Integer rate,
 
         @NotNull(message = "세일 시작 시각을 입력해 주세요.")
+        @InstantRange
         Instant startsAt,
 
         @NotNull(message = "세일 종료 시각을 입력해 주세요.")
+        @InstantRange
         Instant endsAt) {
 }

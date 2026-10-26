@@ -376,6 +376,20 @@ class CouponApiTest extends ApiTest {
     }
 
     @Test
+    void 쿠폰_발급_시각이_2000년_전이거나_9999년을_넘으면_400() throws Exception {
+        Instant now = Instant.now();
+        String ie = now.plus(Duration.ofDays(1)).toString();
+        String us = now.minus(Duration.ofDays(1)).toString();
+        String ue = now.plus(Duration.ofDays(30)).toString();
+
+        createAsAdmin(couponJson("FIXED", "3000", "null", "1999-12-31T23:59:59Z", ie, us, ue))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        createAsAdmin(couponJson("FIXED", "3000", "null", us, ie, us, "+300000-01-01T00:00:00Z"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        assertThat(jdbcTemplate.queryForObject("select count(*) from coupon", Integer.class)).isZero();
+    }
+
+    @Test
     void 앞뒤_공백을_뺀_이름이_50자면_만들어진다() throws Exception {
         Instant now = Instant.now();
         String body = couponJson("FIXED", "3000", "null", now.minus(Duration.ofDays(1)).toString(),

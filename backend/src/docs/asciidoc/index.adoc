@@ -11,6 +11,8 @@
 
 include::{snippets}/common/error-response/response-fields.adoc[]
 
+정수 필드에 소수(`1.9`)를 보내면 잘라서 받지 않고 `400 INVALID_INPUT`으로 거절한다. 시각 필드는 2000-01-01T00:00:00Z부터 9999-12-31T23:59:59Z까지만 받으며, 범위를 벗어나면 `400 INVALID_INPUT`이다.
+
 === 응답 예시
 
 include::{snippets}/common/error-response/http-response.adoc[]
@@ -606,7 +608,7 @@ include::{snippets}/point/history/response-fields.adoc[]
 === 관리자 적립금 지급
 
 관리자 전용이다. 요청마다 `Authorization: Bearer <access token>` 헤더를 보내야 하고, 없거나 유효하지 않으면 `401 UNAUTHORIZED`, 관리자가 아니면 `403 FORBIDDEN`이다.
-지급 금액은 1~1,000,000원이고 사유는 앞뒤 공백을 지운 값이 1~100자여야 한다. 규칙에 맞지 않으면 `400 INVALID_INPUT`이다.
+지급 금액은 1~1,000,000원이고 사유는 앞뒤 공백을 지운 값이 1~100자여야 하며, 줄바꿈·탭을 포함한 제어 문자는 쓸 수 없다. 규칙에 맞지 않으면 `400 INVALID_INPUT`이다.
 없거나 탈퇴한 회원이면 `404 MEMBER_NOT_FOUND`다. 성공하면 `200 OK`이고 지급 후 잔액을 내려준다. 내역에는 `ADMIN_GRANT`로 남는다.
 
 ==== 요청
@@ -1657,7 +1659,7 @@ include::{snippets}/admin-sku/adjust-stock/response-fields.adoc[]
 
 성공하면 `200 OK`이고 세일이 걸린 관리자 상세를 돌려준다. 이미 세일이 있으면 새 세일로 교체된다.
 할인율(`rate`)은 1~90이고 시작·종료 시각(`startsAt`, `endsAt`)은 필수이며, 아니면 `400 INVALID_INPUT`이다.
-종료 시각이 시작 시각보다 늦지 않으면 `400 INVALID_SALE_PERIOD`다. 없거나 삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
+시작·종료 시각의 연도는 2000~9999년이어야 하며 벗어나면 `400 INVALID_INPUT`이다. 종료 시각이 시작 시각보다 늦지 않으면 `400 INVALID_SALE_PERIOD`다. 없거나 삭제된 상품이면 `404 PRODUCT_NOT_FOUND`다.
 시작 시각 정각부터 세일이 적용되고, 종료 시각 정각에는 적용되지 않는다. 응답의 `sale.active`는 지금 세일이 진행 중인지를 나타내며, 기간이 아닌 세일도 관리자에게는 보인다.
 
 ==== 요청
@@ -1708,6 +1710,7 @@ include::{snippets}/admin-product/end-sale/http-response.adoc[]
 * `requiredGrade`는 `BABY`, `PINK`, `GREEN`, `BLACK`, `GOLD` 중 하나이고, `null`이면 누구나 받을 수 있다.
 * 발급 기간과 사용 기간은 각각 종료 시각이 시작 시각보다 늦어야 한다.
 * 사용 종료 시각은 발급 종료 시각보다 빠를 수 없다. 받는 시점에 이미 사용 기간이 끝나 있는 쿠폰을 막기 위해서다.
+* 네 시각(`issueStartsAt`, `issueEndsAt`, `useStartsAt`, `useEndsAt`)의 연도(UTC)는 2000~9999년이어야 한다.
 
 ==== 요청
 

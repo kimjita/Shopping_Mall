@@ -119,6 +119,16 @@ class SaleApiTest extends ApiTest {
     }
 
     @Test
+    void 세일_종료_시각이_9999년을_넘으면_400() throws Exception {
+        String far = "{\"rate\":15,\"startsAt\":\"2026-11-01T00:00:00Z\",\"endsAt\":\"+300000-01-01T00:00:00Z\"}";
+        String old = "{\"rate\":15,\"startsAt\":\"1999-12-31T23:59:59Z\",\"endsAt\":\"2026-11-01T00:00:00Z\"}";
+        for (String body : new String[] {far, old}) {
+            putSale(productId, body).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+    }
+
+    @Test
     void 기간이_지난_세일은_정가로_나온다() throws Exception {
         Instant now = Instant.now();
 

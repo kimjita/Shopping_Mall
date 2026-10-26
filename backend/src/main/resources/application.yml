@@ -10,6 +10,10 @@ spring:
         default_batch_fetch_size: 100
         jdbc:
           time_zone: UTC
+  jackson:
+    deserialization:
+      # 정수 필드에 1.9를 보내면 1로 잘려 저장되므로 400으로 막는다.
+      accept-float-as-int: false
 
 app:
   scheduling:

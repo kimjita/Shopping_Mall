@@ -8,7 +8,6 @@ import com.sprint.mission.global.error.BusinessException;
 import com.sprint.mission.global.error.ErrorCode;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,10 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BannerService {
-
-    // PostgreSQL timestamptz가 받는 범위 안에서 운영에 의미 있는 연도만 허용한다.
-    private static final int MIN_YEAR = 2000;
-    private static final int MAX_YEAR = 9999;
 
     private final BannerRepository bannerRepository;
     private final Clock clock;
@@ -73,15 +68,6 @@ public class BannerService {
         if (!request.endsAt().isAfter(request.startsAt())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "노출 종료 시각은 시작 시각보다 늦어야 합니다.");
         }
-        if (!isSupportedYear(request.startsAt()) || !isSupportedYear(request.endsAt())) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT,
-                    "노출 시각의 연도는 " + MIN_YEAR + "~" + MAX_YEAR + "년이어야 합니다.");
-        }
         return title;
-    }
-
-    private static boolean isSupportedYear(Instant instant) {
-        int year = instant.atOffset(ZoneOffset.UTC).getYear();
-        return year >= MIN_YEAR && year <= MAX_YEAR;
     }
 }
