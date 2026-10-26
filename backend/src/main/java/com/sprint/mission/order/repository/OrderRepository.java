@@ -24,15 +24,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByMemberIdAndIdLessThanOrderByIdDesc(Long memberId, Long id, Limit limit);
 
-    /** 관리자 목록용이다. 전체 주문을 최신순으로 읽는다. */
-    List<Order> findAllByOrderByIdDesc(Limit limit);
-
-    List<Order> findByIdLessThanOrderByIdDesc(Long id, Limit limit);
-
-    /** 관리자 목록용이다. 상태로 걸러 읽는다. */
-    List<Order> findByStatusOrderByIdDesc(OrderStatus status, Limit limit);
-
-    List<Order> findByStatusAndIdLessThanOrderByIdDesc(OrderStatus status, Long id, Limit limit);
+    /** 회원의 모든 상태 주문 수다. */
+    long countByMemberId(Long memberId);
 
     /** 결제 기한이 지난 PENDING 주문의 id를 id 오름차순으로 읽는다. afterId를 넘겨 다음 묶음을 이어 읽는다. */
     @Query("select o.id from Order o where o.status = com.sprint.mission.order.domain.OrderStatus.PENDING "

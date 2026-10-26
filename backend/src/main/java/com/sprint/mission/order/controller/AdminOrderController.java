@@ -30,11 +30,12 @@ public class AdminOrderController {
 
     @GetMapping
     public AdminOrderPage list(@RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) Long memberId,
             @RequestParam(required = false) @Size(max = 20, message = "커서가 올바르지 않습니다.") String cursor,
             @RequestParam(defaultValue = "20")
             @Min(value = 1, message = "size는 1~50이어야 합니다.")
             @Max(value = 50, message = "size는 1~50이어야 합니다.") int size) {
-        return adminOrderService.list(status, cursor, size);
+        return adminOrderService.list(status, memberId, cursor, size);
     }
 
     @GetMapping("/{orderNumber}")

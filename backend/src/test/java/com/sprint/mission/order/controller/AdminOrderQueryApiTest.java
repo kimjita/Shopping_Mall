@@ -241,6 +241,8 @@ class AdminOrderQueryApiTest extends ApiTest {
                                 parameterWithName("status").optional()
                                         .description("주문 상태로 거른다 (`PENDING`, `PAID`, `PREPARING`, `SHIPPING`, "
                                                 + "`DELIVERED`, `CONFIRMED`, `CANCELED`). 없으면 모든 상태다"),
+                                parameterWithName("memberId").optional()
+                                        .description("주문자 회원 ID로 거른다. `status`와 함께 주면 둘 다 만족하는 주문만 읽는다"),
                                 parameterWithName("cursor").optional().description("이전 응답의 `nextCursor`"),
                                 parameterWithName("size").optional().description("한 페이지 크기 (1~50, 기본 20)")),
                         responseFields(
@@ -274,6 +276,33 @@ class AdminOrderQueryApiTest extends ApiTest {
                 .andExpect(jsonPath("$.items[2].orderNumber").value(paid1));
         list(admin(), "status", "SHIPPING").andExpect(jsonPath("$.items.length()").value(0))
                 .andExpect(jsonPath("$.nextCursor").doesNotExist());
+    }
+
+    @Test
+    void 회원으로_거른다() throws Exception {
+        Long first = newMember("first@mall.com");
+        Long second = newMember("second@mall.com");
+        String paid = placeOrder(first, "토너", 1, "PAID");
+        String pending = placeOrder(first, "에센스", 1, "PENDING");
+        placeOrder(second, "크림", 1, "PAID");
+
+        list(admin(), "memberId", first.toString())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.items[0].orderNumber").value(pending))
+                .andExpect(jsonPath("$.items[1].orderNumber").value(paid));
+        // 상태와는 AND다.
+        list(admin(), "memberId", first.toString(), "status", "PAID")
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].orderNumber").value(paid));
+        list(admin(), "memberId", second.toString(), "status", "PENDING")
+                .andExpect(jsonPath("$.items.length()").value(0));
+        // 커서와도 함께 쓴다.
+        list(admin(), "memberId", first.toString(), "size", "1")
+                .andExpect(jsonPath("$.items[0].orderNumber").value(pending))
+                .andExpect(jsonPath("$.nextCursor").isString());
+        list(admin(), "memberId", "999999").andExpect(jsonPath("$.items.length()").value(0));
+        list(admin(), "memberId", "abc").andExpect(status().isBadRequest());
     }
 
     @Test
